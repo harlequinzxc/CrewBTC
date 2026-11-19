@@ -8,6 +8,18 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '0.7.1',
+    date: '2026-11-19',
+    title: 'The dish photo is the photo, on every page',
+    highlights: [
+      'Fixed: the cell picture lookup could never find the extracted photo, so every card showed a full-page render instead',
+      'Fixed: photos and copy were read from page 1 only, so later pages of a multi-card PDF showed the first dish',
+      'Each card now takes its words and its photo from its own page, and never borrows another page’s dish',
+      'A page with no readable photo or copy leaves that band empty rather than showing another dish',
+      'Layout, cell size and grid are unchanged',
+    ],
+  },
+  {
     version: '0.7.0',
     date: '2026-11-19',
     title: 'The card fills itself, and the photo is the photo',

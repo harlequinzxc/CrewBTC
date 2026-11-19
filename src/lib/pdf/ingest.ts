@@ -1,4 +1,5 @@
-import type { IngestedDocument, TextRegion } from '../../types/document'
+import type { PDFDocumentProxy } from './engine'
+import type { IngestedDocument, RecipeCopy, TextRegion } from '../../types/document'
 import { closePdf, openPdf } from './client'
 import { extractPageText } from './extract'
 import { renderPagePreview } from './preview'
@@ -40,7 +41,9 @@ export async function ingestFile(
     regions: [],
     pagePreviewUrl: null,
     copy: null,
+    copies: {},
     photoUrl: null,
+    photos: {},
     error: null,
   }
 
@@ -74,13 +77,24 @@ export async function ingestFile(
     const recipe = await readRecipeText(firstPage)
     const photo = await extractEmbeddedPhoto(firstPage)
 
+    // Every page with an embedded photo gets one, so a multi-page batch never falls back
+    // to a page render on pages 2+. Pages are read in parallel; a failure on one page is
+    // that page's fallback, not the whole file's.
+    const photos = await extractPhotos(doc)
+
+    // Copy per page, for the same reason as photos: each page of a multi-card PDF is a
+    // different dish. Pages are read in parallel.
+    const copies = await readCopies(doc)
+
     const regions: readonly TextRegion[] = extracted.ok ? extracted.regions : []
     const error = extracted.ok ? null : extracted.reason
 
     return finish(base, {
       status: 'parsed',
-      copy: { header: recipe.header, footer: recipe.footer },
+      copy: copies[1] ?? { header: recipe.header, footer: recipe.footer },
+      copies,
       photoUrl: photo?.dataUrl ?? preview,
+      photos,
       metrics: {
         pageCount: doc.numPages,
         widthPt: viewport.width,
@@ -103,4 +117,61 @@ function finish(
 ): IngestedDocument {
   const document: IngestedDocument = { ...base, ...patch, status: patch.status ?? base.status }
   return document
+}
+
+/**
+ * The embedded photo for each page, `1`-based.
+ *
+ * A recipe batch is usually one card per PDF, but a file can hold several; reading only
+ * page 1 is what left later cells showing a page render. Each page is independent, so one
+ * awkward page cannot stop the rest.
+ */
+async function extractPhotos(
+  doc: PDFDocumentProxy,
+): Promise<Readonly<Record<number, string>>> {
+  const out: Record<number, string> = {}
+
+  await Promise.all(
+    Array.from({ length: doc.numPages }, async (_unused, index) => {
+      const pageNumber = index + 1
+      try {
+        const page = await doc.getPage(pageNumber)
+        const photo = await extractEmbeddedPhoto(page)
+        if (photo !== null) out[pageNumber] = photo.dataUrl
+      } catch {
+        // No photo on this page; the sheet falls back to its cropped render.
+      }
+    }),
+  )
+
+  return out
+}
+
+/**
+ * Header and footer copy for each page, `1`-based.
+ *
+ * A page with nothing readable is simply absent: the sheet then leaves that card empty
+ * rather than filling it with another dish's words.
+ */
+async function readCopies(
+  doc: PDFDocumentProxy,
+): Promise<Readonly<Record<number, RecipeCopy>>> {
+  const out: Record<number, RecipeCopy> = {}
+
+  await Promise.all(
+    Array.from({ length: doc.numPages }, async (_unused, index) => {
+      const pageNumber = index + 1
+      try {
+        const page = await doc.getPage(pageNumber)
+        const recipe = await readRecipeText(page)
+        if (!recipe.empty) {
+          out[pageNumber] = { header: recipe.header, footer: recipe.footer }
+        }
+      } catch {
+        // No readable copy on this page; leave its card blank rather than guessing.
+      }
+    }),
+  )
+
+  return out
 }

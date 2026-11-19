@@ -31,10 +31,20 @@ export interface IngestedDocument {
   readonly metrics: DocumentMetrics | null
   readonly regions: readonly TextRegion[]
   readonly pagePreviewUrl: string | null
-  /** Copy lifted from the page's first page, ready to fill a card's bands. */
+  /** Copy from the first page. Kept for the single-page case and older callers. */
   readonly copy: RecipeCopy | null
-  /** The page's embedded photo, extracted rather than re-rendered. */
+  /**
+   * Copy per page, `1`-based. A multi-card PDF has a different dish on every page, so
+   * reading only the first would put one dish's name on all of them.
+   */
+  readonly copies: Readonly<Record<number, RecipeCopy>>
+  /** The first page's embedded photo. Kept for the queue's single-thumbnail view. */
   readonly photoUrl: string | null
+  /**
+   * Embedded photo per page, `1`-based. A page with no extractable image is absent, and
+   * the sheet falls back to that page's cropped render rather than an empty band.
+   */
+  readonly photos: Readonly<Record<number, string>>
   readonly error: string | null
 }
 

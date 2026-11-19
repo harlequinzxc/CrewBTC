@@ -32,7 +32,9 @@ describe('sheet planning', () => {
       { id: 'd1', fileName: 'card.pdf', byteLength: 10, addedAt: '', status: 'parsed',
         metrics: { pageCount: 25, widthPt: 147, heightPt: 190 }, regions: [], pagePreviewUrl: null,
       copy: null,
-      photoUrl: null, error: null },
+      copies: {},
+      photoUrl: null,
+      photos: {}, error: null },
     ])
     expect(pages.length).toBe(25)
 
