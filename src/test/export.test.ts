@@ -7,7 +7,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import { PDFDocument, StandardFonts, rgb } from '@cantoo/pdf-lib'
-import { createCanvas } from '@napi-rs/canvas'
+import type { PhotoSource } from '../types/edit'
+import { tinyPhoto } from './photo-fixture'
 import { writeSheets } from '../lib/export/write-sheet'
 import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
@@ -36,14 +37,7 @@ function refsFor(fileName: string, documentId: string, count: number): PageRef[]
   }))
 }
 
-/** One 8x8 PNG, reused wherever a card needs a dish photo. */
-function tinyPng(): string {
-  const canvas = createCanvas(8, 8)
-  const context = canvas.getContext('2d')
-  context.fillStyle = '#8e44ad'
-  context.fillRect(0, 0, 8, 8)
-  return `data:image/png;base64,${canvas.toBuffer('image/png').toString('base64')}`
-}
+
 
 /**
  * A photo for every placed page, keyed `cellIndex|documentId|pageNumber`.
@@ -52,11 +46,11 @@ function tinyPng(): string {
  * exporter actually asks for. Keying by flat page index happened to work for one sheet
  * and silently dropped the picture for every page after the ninth.
  */
-function photosForPages(pages: readonly PageRef[], perSheet = 9): Record<string, string> {
-  const png = tinyPng()
-  const out: Record<string, string> = {}
+function photosForPages(pages: readonly PageRef[], perSheet = 9): Record<string, PhotoSource> {
+  const photo = tinyPhoto()
+  const out: Record<string, PhotoSource> = {}
   pages.forEach((page, index) => {
-    out[`${index % perSheet}|${page.documentId}|${page.pageNumber}`] = png
+    out[`${index % perSheet}|${page.documentId}|${page.pageNumber}`] = photo
   })
   return out
 }

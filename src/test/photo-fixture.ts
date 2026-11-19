@@ -1,4 +1,5 @@
 import { createCanvas } from '@napi-rs/canvas'
+import type { PhotoSource } from '../types/edit'
 
 /**
  * A real PNG as a data URL, for export tests that need a card's picture band filled.
@@ -14,6 +15,11 @@ export function tinyPng(colour = '#8e44ad'): string {
   return `data:image/png;base64,${canvas.toBuffer('image/png').toString('base64')}`
 }
 
+/** The same PNG with its pixel size attached, which is what a card now receives. */
+export function tinyPhoto(colour = '#8e44ad', widthPx = 8, heightPx = 8): PhotoSource {
+  return { dataUrl: tinyPng(colour), widthPx, heightPx }
+}
+
 /**
  * Photos for pages 0..count-1, keyed `cellIndex|documentId|pageNumber`.
  *
@@ -23,11 +29,11 @@ export function photosFor(
   count: number,
   documentId = 'doc-a',
   perSheet = 9,
-): Record<string, string> {
-  const png = tinyPng()
-  const out: Record<string, string> = {}
+): Record<string, PhotoSource> {
+  const photo = tinyPhoto()
+  const out: Record<string, PhotoSource> = {}
   for (let index = 0; index < count; index += 1) {
-    out[`${index % perSheet}|${documentId}|${index + 1}`] = png
+    out[`${index % perSheet}|${documentId}|${index + 1}`] = photo
   }
   return out
 }

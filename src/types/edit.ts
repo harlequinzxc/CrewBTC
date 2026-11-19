@@ -35,9 +35,28 @@ export const HIGHLIGHT_SWATCHES = ['#fde68a', '#bbf7d0', '#bfdbfe', '#fecaca'] a
 export interface ImageTransform {
   readonly offsetXMm: number
   readonly offsetYMm: number
-  /** Multiplier on the cover scale. 1 = exactly covers the box, with no white gaps. */
+  /**
+   * Multiplier on the fitted size. 1 fits the photo inside its box with margin to spare;
+   * above 1 it grows until it can overflow, which the box then clips.
+   */
   readonly scale: number
 }
+
+/**
+ * One extracted photo: the pixels, and how big they are.
+ *
+ * The dimensions are not decoration. Without them the box has to be sized from the PDF
+ * page instead, which draws a 360x300 photo at a 420x595 ratio and squashes it — that was
+ * the stretching.
+ */
+export interface PhotoSource {
+  readonly dataUrl: string
+  readonly widthPx: number
+  readonly heightPx: number
+}
+
+/** How much clear space "fitted" leaves inside the picture box, per side. */
+export const IMAGE_INSET_MM = 0.8
 
 export const DEFAULT_IMAGE_TRANSFORM: ImageTransform = {
   offsetXMm: 0,
@@ -152,38 +171,52 @@ export function textFor(
  * white bars down the sides is not what "picture content box" means. Overflow is
  * clipped by whatever draws it — the preview via CSS, the exporter via a real PDF clip.
  */
-export function coverRectMm(
+/**
+ * Where a photo sits inside its picture box, at its own aspect ratio.
+ *
+ * Two different sources, one rule: the photo never stretches. `widthPx`/`heightPx` give
+ * its true shape, and the drawn rectangle keeps that shape whatever the box is.
+ *
+ * Fit, not cover: at scale 1 the whole photo sits centred with `insetMm` of clear space on
+ * every side, so a dish is never cropped by default. Zooming past 1 grows it evenly about
+ * the middle until it overflows, and the box clips the overflow.
+ */
+export function containRectMm(
   box: RectMm,
-  sourceWidthMm: number,
-  sourceHeightMm: number,
+  photoWidthPx: number,
+  photoHeightPx: number,
   transform: ImageTransform,
+  insetMm = IMAGE_INSET_MM,
 ): { xMm: number; yMm: number; widthMm: number; heightMm: number } | null {
   if (
-    !Number.isFinite(sourceWidthMm) ||
-    !Number.isFinite(sourceHeightMm) ||
-    sourceWidthMm <= 0 ||
-    sourceHeightMm <= 0 ||
+    !Number.isFinite(photoWidthPx) ||
+    !Number.isFinite(photoHeightPx) ||
+    photoWidthPx <= 0 ||
+    photoHeightPx <= 0 ||
     box.widthMm <= 0 ||
     box.heightMm <= 0
   ) {
     return null
   }
 
-  const cover = Math.max(box.widthMm / sourceWidthMm, box.heightMm / sourceHeightMm)
-  if (!Number.isFinite(cover) || cover <= 0) return null
+  // Padding shrinks the fitting area, and is clamped so a tiny box still holds an image.
+  const inset = Math.max(0, Math.min(insetMm, box.widthMm / 4, box.heightMm / 4))
+  const availableWidth = Math.max(0.1, box.widthMm - inset * 2)
+  const availableHeight = Math.max(0.1, box.heightMm - inset * 2)
+
+  const fit = Math.min(availableWidth / photoWidthPx, availableHeight / photoHeightPx)
+  if (!Number.isFinite(fit) || fit <= 0) return null
 
   const scale = Number.isFinite(transform.scale) && transform.scale > 0 ? transform.scale : 1
-  // Centre on the scaled size, not the unscaled one: zooming must grow the picture
-  // about the middle of its box, or every zoom step would also shift it up-left.
-  const width = sourceWidthMm * cover * scale
-  const height = sourceHeightMm * cover * scale
 
-  const baseX = box.xMm + (box.widthMm - width) / 2
-  const baseY = box.yMm + (box.heightMm - height) / 2
+  // Centre on the *scaled* size, so a zoom grows about the photograph's middle rather
+  // than dragging it into a corner.
+  const width = photoWidthPx * fit * scale
+  const height = photoHeightPx * fit * scale
 
   return {
-    xMm: baseX + transform.offsetXMm,
-    yMm: baseY + transform.offsetYMm,
+    xMm: box.xMm + (box.widthMm - width) / 2 + transform.offsetXMm,
+    yMm: box.yMm + (box.heightMm - height) / 2 + transform.offsetYMm,
     widthMm: width,
     heightMm: height,
   }
@@ -191,3 +224,20 @@ export function coverRectMm(
 
 export const imageKey = (cellIndex: number, documentId: string, pageNumber: number): string =>
   textKey(cellIndex, documentId, pageNumber)
+
+/**
+ * The largest rectangle of `widthPx:heightPx` that fits in a box, never stretched.
+ *
+ * The fallback for a photo whose pixel size was not recorded: the card still has to
+ * show it, and the shape must come from the image rather than from the box.
+ */
+export function fitInsideMm(
+  boxWidthMm: number,
+  boxHeightMm: number,
+  widthPx: number,
+  heightPx: number,
+): { widthMm: number; heightMm: number } {
+  if (widthPx <= 0 || heightPx <= 0) return { widthMm: boxWidthMm, heightMm: boxHeightMm }
+  const factor = Math.min(boxWidthMm / widthPx, boxHeightMm / heightPx)
+  return { widthMm: widthPx * factor, heightMm: heightPx * factor }
+}

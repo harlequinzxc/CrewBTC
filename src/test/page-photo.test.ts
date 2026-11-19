@@ -169,7 +169,9 @@ describe('every page of a document', () => {
     await destroy()
 
     expect(Object.keys(map).sort()).toEqual(['1', '2'])
-    expect(Object.values(map).every((url) => url.startsWith('data:image/png'))).toBe(true)
+    expect(Object.values(map).every((photo) => photo.dataUrl.startsWith('data:image/png'))).toBe(true)
+    // The shape travels with the photo, which is what stops the card stretching it.
+    expect(Object.values(map).every((photo) => photo.widthPx > 0 && photo.heightPx > 0)).toBe(true)
   })
 })
 

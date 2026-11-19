@@ -2,6 +2,7 @@ import { render, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
+import type { PhotoSource } from '../types/edit'
 import type { PageRef } from '../lib/imposition/sheet'
 import { thumbnailKey } from '../lib/pdf/thumbnails'
 
@@ -70,10 +71,14 @@ const idle = {
 }
 
 /** A photo map for pages 1..count, keyed exactly as the sheet reads it. */
-function photosFor(count: number): Record<string, string> {
-  const out: Record<string, string> = {}
+function photosFor(count: number): Record<string, PhotoSource> {
+  const out: Record<string, PhotoSource> = {}
   for (let page = 1; page <= count; page += 1) {
-    out[thumbnailKey('cards.pdf', page)] = `data:image/png;base64,DISH-${page}`
+    out[thumbnailKey('cards.pdf', page)] = {
+      dataUrl: `data:image/png;base64,DISH-${page}`,
+      widthPx: 360,
+      heightPx: 300,
+    }
   }
   return out
 }
@@ -192,5 +197,33 @@ describe('source versions', () => {
 
     // A file that was never uploaded stays at 0, so nothing renders from nothing.
     expect(sourceVersion('missing.pdf')).toBe(0)
+  })
+})
+
+describe('the photo is drawn at its own shape on the real sheet', () => {
+  it('does not stretch the dish photo to the picture band’s shape', async () => {
+    render(
+      <SheetPreview
+        settings={DEFAULT_SHEET}
+        grid={grid}
+        pages={refs(1)}
+        showCutMarks
+        {...idle}
+        photos={photosFor(1)}
+      />,
+    )
+    await waitFor(() => {
+      expect(imageSources()).toHaveLength(1)
+    })
+
+    const img = document.querySelector('[data-cell] img') as HTMLImageElement
+    const width = Number.parseFloat(img.style.width)
+    const height = Number.parseFloat(img.style.height)
+
+    // The fixture photo is 360 x 300. The drawn rectangle must say so exactly; a
+    // stretched one would take the picture band's shape instead (64 x 57 = 1.12).
+    expect(width / height).toBeCloseTo(360 / 300, 3)
+    expect(width / height).not.toBeCloseTo(64 / 57, 2)
+    expect(img.style.objectFit).toBe('contain')
   })
 })

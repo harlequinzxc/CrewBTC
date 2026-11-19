@@ -1,4 +1,5 @@
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist'
+import type { PhotoSource } from '../../types/edit'
 import { extractEmbeddedPhoto } from './food-photo'
 import { renderThumbnail } from './thumbnails'
 
@@ -22,6 +23,9 @@ export interface PagePhoto {
   readonly pageNumber: number
   /** PNG data URL, ready for a card's picture band. */
   readonly dataUrl: string
+  /** Pixel size, so the card can hold the photo's shape instead of guessing one. */
+  readonly widthPx: number
+  readonly heightPx: number
   /** Which route produced it: an embedded image, or a crop of the rendered page. */
   readonly source: 'embedded' | 'cropped'
 }
@@ -61,20 +65,41 @@ export async function photoForPage(page: PDFPageProxy): Promise<PagePhoto | null
   const wholePage = embedded !== null && isWholePageImage(embedded, page)
 
   if (embedded !== null && !wholePage) {
-    return { pageNumber, dataUrl: embedded.dataUrl, source: 'embedded' }
+    return {
+      pageNumber,
+      dataUrl: embedded.dataUrl,
+      widthPx: embedded.widthPx,
+      heightPx: embedded.heightPx,
+      source: 'embedded',
+    }
   }
 
   // Either there was no image object, or the only one is the page itself. Both want a
   // crop: the dish out of the middle, without the printed matter around it.
   const cropped = await cropPagePhoto(page, wholePage)
   if (cropped !== null) {
-    return { pageNumber, dataUrl: cropped, source: 'cropped' }
+    // Zero dimensions mean "shape unknown", not "no photo": the card then letterboxes
+    // the picture instead of guessing a shape. A crop is never thrown away over it.
+    const size = pngSize(cropped)
+    return {
+      pageNumber,
+      dataUrl: cropped,
+      widthPx: size?.width ?? 0,
+      heightPx: size?.height ?? 0,
+      source: 'cropped',
+    }
   }
 
   // A flattened page cannot be cropped but is still a picture of the dish; better to show
   // it than an empty band, and the card's own text bands cover the printed words.
   if (embedded !== null) {
-    return { pageNumber, dataUrl: embedded.dataUrl, source: 'embedded' }
+    return {
+      pageNumber,
+      dataUrl: embedded.dataUrl,
+      widthPx: embedded.widthPx,
+      heightPx: embedded.heightPx,
+      source: 'embedded',
+    }
   }
 
   return null
@@ -120,9 +145,34 @@ export async function photosForDocument(
   return pages.filter((photo): photo is PagePhoto => photo !== null)
 }
 
-/** The same list as a `{ pageNumber: dataUrl }` map, which is how documents store them. */
-export function photoMap(photos: readonly PagePhoto[]): Readonly<Record<number, string>> {
-  const out: Record<number, string> = {}
-  for (const photo of photos) out[photo.pageNumber] = photo.dataUrl
+/** The same list keyed by page number, which is how documents store them. */
+export function photoMap(photos: readonly PagePhoto[]): Readonly<Record<number, PhotoSource>> {
+  const out: Record<number, PhotoSource> = {}
+  for (const photo of photos) {
+    out[photo.pageNumber] = {
+      dataUrl: photo.dataUrl,
+      widthPx: photo.widthPx,
+      heightPx: photo.heightPx,
+    }
+  }
   return out
+}
+
+/** Width and height from a PNG's IHDR chunk, without decoding the image. */
+function pngSize(dataUrl: string): { width: number; height: number } | null {
+  try {
+    const binary = atob(dataUrl.split(',')[1] ?? '')
+    if (binary.length < 24) return null
+    const word = (offset: number): number =>
+      ((binary.charCodeAt(offset) << 24) |
+        (binary.charCodeAt(offset + 1) << 16) |
+        (binary.charCodeAt(offset + 2) << 8) |
+        binary.charCodeAt(offset + 3)) >>>
+      0
+    const width = word(16)
+    const height = word(20)
+    return width > 0 && height > 0 ? { width, height } : null
+  } catch {
+    return null
+  }
 }

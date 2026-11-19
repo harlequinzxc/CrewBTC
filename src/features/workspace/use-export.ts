@@ -5,7 +5,7 @@ import type { PageRef } from '../../lib/imposition/sheet'
 import { planSheets } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import type { ToastInput } from '../../components/ui/use-toasts'
-import type { CellText, ImageTransform } from '../../types/edit'
+import type { CellText, ImageTransform, PhotoSource } from '../../types/edit'
 
 export interface ExportApi {
   readonly busy: boolean
@@ -22,8 +22,8 @@ export interface ExportOptions {
   readonly texts?: Readonly<Record<string, string>> | undefined
   /** Artwork framing keyed by page index. */
   readonly images?: Readonly<Record<string, ImageTransform>> | undefined
-  /** Extracted dish photos keyed `documentId#pageNumber`. */
-  readonly photos?: Readonly<Record<string, string>> | undefined
+  /** Extracted dish photos keyed `documentId#pageNumber`, each with its pixel shape. */
+  readonly photos?: Readonly<Record<string, PhotoSource>> | undefined
   /** Text styles keyed `pageIndex|band`, as the preview stores them. */
   readonly styles?: Readonly<Record<string, { color: string; highlight: string | null }>> | undefined
 }
@@ -72,7 +72,7 @@ export function useExport({
         const cellTexts: Record<string, CellText> = {}
         const cellImages: Record<string, ImageTransform> = {}
         const cellStyles: Record<string, { color: string; highlight: string | null }> = {}
-        const cellPhotos: Record<string, string> = {}
+        const cellPhotos: Record<string, PhotoSource> = {}
         const plans = planSheets(pages, grid)
         for (const plan of plans) {
           for (const placement of plan.placements) {
