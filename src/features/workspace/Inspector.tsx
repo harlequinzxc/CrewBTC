@@ -1,4 +1,4 @@
-import { Download, FileArchive, Files } from 'lucide-react'
+import { Download, Files } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Select } from '../../components/ui/Select'
@@ -17,6 +17,7 @@ export interface InspectorProps {
   readonly hasBatch: boolean
   readonly onExport: () => void
   readonly sheetPanel?: React.ReactNode | undefined
+  readonly exporting?: boolean | undefined
 }
 
 const trimOptions = TRIM_PRESETS.map((preset) => ({ value: preset.id, label: preset.label }))
@@ -32,6 +33,7 @@ export function Inspector({
   hasBatch,
   onExport,
   sheetPanel,
+  exporting = false,
 }: InspectorProps) {
   const geometry = computePageGeometry(settings)
   const activePreset =
@@ -121,21 +123,23 @@ export function Inspector({
 
       <div className="flex flex-col gap-2 p-4">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Export</h2>
-        <Button variant="primary" fullWidth disabled={!hasBatch} onClick={onExport}>
+        <Button
+          variant="primary"
+          fullWidth
+          disabled={!hasBatch || exporting}
+          loading={exporting}
+          onClick={onExport}
+        >
           <Download aria-hidden="true" strokeWidth={2} className="size-4" />
           Export current PDF
         </Button>
-        <Button variant="secondary" fullWidth disabled={!hasBatch} onClick={onExport}>
-          <FileArchive aria-hidden="true" strokeWidth={2} className="size-4" />
-          Export all as .zip
-        </Button>
-        <Button variant="secondary" fullWidth disabled={!hasBatch} onClick={onExport}>
+        <Button variant="secondary" fullWidth disabled={!hasBatch || exporting} onClick={onExport}>
           <Files aria-hidden="true" strokeWidth={2} className="size-4" />
-          Export merged PDF
+          Export all sheets as one PDF
         </Button>
         <p className="pt-1 text-[11px] leading-relaxed text-zinc-500">
-          Vector export with embedded fonts lands in Phase 4. Images keep their native
-          resolution; they are not converted to CMYK.
+          Pages are embedded as vectors at full resolution — nothing is re-typed or
+          re-rasterised. Separate one-PDF-per-page files arrive with the .zip export.
         </p>
       </div>
     </aside>

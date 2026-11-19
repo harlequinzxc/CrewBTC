@@ -108,6 +108,8 @@ Verified with a planted floating promise: plain run reported **0** warnings,
 - **Browser verification is manual.** Chromium downloads are blocked in the build
   sandbox, so breakpoint/installed-mode passes are reported as `not run` rather than
   claimed. Extraction is covered end-to-end by a Node test against a real PDF.
+- **`pdf-lib` is loaded lazily** on first export (245 KB gzip chunk). The app shell is
+  87 KB; both heavy libraries stay out of the first paint.
 - **PDF.js is loaded lazily** on the first import. The initial route is ~83 KB gzip;
   the 132 KB PDF chunk is requested only when a PDF is added. `scripts/check-bundle.sh`
   enforces both facts.
@@ -123,4 +125,4 @@ Verified with a planted floating promise: plain run reported **0** warnings,
 | 2 | `pdfjs-dist` extraction engine + queue and preview | **done — v0.2.0** |
 | 3 | Imposition grid, sheet planning, live cut-guide preview | **done — v0.3.0** |
 | 3 | Interactive canvas, DPI readout, synced inspector | not started |
-| 4 | Vector PDF writer: `drawPage` per cell, merged + zip export | not started |
+| 4 | Vector PDF writer: `embedPage` + `drawPage` per cell | **done — v0.4.0** (single merged PDF; zip/individual still to come) |

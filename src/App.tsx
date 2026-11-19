@@ -15,6 +15,7 @@ import { Inspector } from './features/workspace/Inspector'
 import { SheetPreview } from './features/workspace/SheetPreview'
 import { SheetSettings } from './features/workspace/SheetSettings'
 import { useBatch } from './features/workspace/use-batch'
+import { useExport } from './features/workspace/use-export'
 import { useSheet } from './features/workspace/use-sheet'
 import { toPageRefs } from './lib/pdf/page-refs'
 import { pickFiles } from './lib/files/open-picker'
@@ -50,6 +51,13 @@ function Workspace() {
   const sheet = useSheet()
   const [showCutMarks, setShowCutMarks] = useState(true)
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
+  const exporter = useExport({
+    settings: sheet.settings,
+    grid: sheet.grid,
+    pages: pageRefs,
+    drawCutMarks: showCutMarks,
+    notify,
+  })
 
   useEffect(() => {
     void (async () => {
@@ -172,13 +180,8 @@ function Workspace() {
                 />
               }
               hasBatch={batch.documents.length > 0}
-              onExport={() => {
-                notify({
-                  variant: 'info',
-                  title: 'Export arrives in Phase 4',
-                  description: 'Vector PDF generation is the next milestone.',
-                })
-              }}
+              onExport={exporter.exportAll}
+              exporting={exporter.busy}
             />
           </div>
         )}
