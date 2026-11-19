@@ -8,6 +8,18 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '0.3.0',
+    date: '2026-11-19',
+    title: 'Multi-up sheet imposition',
+    highlights: [
+      'A4 sheet fits 12 cells at 52 x 67 mm with a 4 mm gutter for scissors',
+      'Cell size, gutter, margin, and sheet size are all adjustable, with a live cell count',
+      'Every page of every PDF becomes its own placeable object',
+      'Pages are contain-fitted into cells, so nothing is ever cropped',
+      'Cell numbers and cut guides show exactly where the sheet will be cut',
+    ],
+  },
+  {
     version: '0.2.0',
     date: '2026-11-19',
     title: 'Add PDFs actually imports',

@@ -18,6 +18,8 @@ These are binding for the project. Changing one is a doc change plus a SemVer bu
 | **Font strategy** | Base-14 standard fonts first; user-uploaded `.ttf`/`.otf` for brand fonts | `@fontsource/inter` ships **woff/woff2 only**, and fontkit needs ttf/otf. Bundling font binaries is a Phase 4 decision. |
 | **Surface support** | **Desktop only**, explicitly declared | Overrides §4's equal-peers rule. Below 1024 px the app states the constraint instead of rendering a crushed layout. |
 | **Export honesty** | CMYK for vector text via `cmyk()`; images stay RGB; **not PDF/X** | `pdf-lib` cannot emit PDF/X with an output intent or encode CMYK JPEGs. The UI says so. |
+| **Imposition model** | Sheet → grid of cells → one page per cell | User decision: multiple PDFs tiled per sheet, every page an object, contain-fit only so nothing is cropped. |
+| **Default geometry** | A4 210×297, cell 52×67 mm, gutter 4 mm, margin 4 mm → **12 cells** | Measured, not assumed: a 4th column needs 217 mm and a 5th row 347 mm, so 12 is the true maximum at this cell size. |
 | **Trim/bleed** | User-configurable, validated | §3 of the spec left `[e.g., A4]` placeholders, which §5 forbids in shipping code. |
 
 ### §4 override in force
@@ -118,6 +120,7 @@ Verified with a planted floating promise: plain run reported **0** warnings,
 | Phase | Scope | State |
 |---|---|---|
 | 1 | Shell, design system, geometry, storage skeleton, PWA | **done — v0.1.0** |
-| 2 | `pdfjs-dist` extraction engine + queue and preview | **in progress — v0.2.0** (calibration modal still to come) |
+| 2 | `pdfjs-dist` extraction engine + queue and preview | **done — v0.2.0** |
+| 3 | Imposition grid, sheet planning, live cut-guide preview | **done — v0.3.0** |
 | 3 | Interactive canvas, DPI readout, synced inspector | not started |
-| 4 | Vector PDF exporter, bleed/marks, single/merged/zip | not started |
+| 4 | Vector PDF writer: `drawPage` per cell, merged + zip export | not started |
