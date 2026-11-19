@@ -15,12 +15,10 @@ export interface InspectorProps {
   readonly drawMarks: boolean
   readonly onDrawMarksChange: (value: boolean) => void
   readonly hasBatch: boolean
+  readonly onExport: () => void
 }
 
-const trimOptions = TRIM_PRESETS.map((preset) => ({
-  value: preset.id,
-  label: preset.label,
-}))
+const trimOptions = TRIM_PRESETS.map((preset) => ({ value: preset.id, label: preset.label }))
 
 /** Right pane: page setup plus the three export routes. */
 export function Inspector({
@@ -31,6 +29,7 @@ export function Inspector({
   drawMarks,
   onDrawMarksChange,
   hasBatch,
+  onExport,
 }: InspectorProps) {
   const geometry = computePageGeometry(settings)
   const activePreset =
@@ -42,9 +41,7 @@ export function Inspector({
   return (
     <aside className="hidden w-[320px] shrink-0 flex-col overflow-y-auto border-l border-zinc-800 bg-zinc-950 xl:flex">
       <div className="border-b border-zinc-800 px-4 py-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-          Page setup
-        </h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Page setup</h2>
       </div>
 
       <div className="flex flex-col gap-4 border-b border-zinc-800 p-4">
@@ -104,21 +101,21 @@ export function Inspector({
 
       <div className="flex flex-col gap-2 p-4">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Export</h2>
-        <Button variant="primary" fullWidth disabled={!hasBatch}>
+        <Button variant="primary" fullWidth disabled={!hasBatch} onClick={onExport}>
           <Download aria-hidden="true" strokeWidth={2} className="size-4" />
           Export current PDF
         </Button>
-        <Button variant="secondary" fullWidth disabled={!hasBatch}>
+        <Button variant="secondary" fullWidth disabled={!hasBatch} onClick={onExport}>
           <FileArchive aria-hidden="true" strokeWidth={2} className="size-4" />
           Export all as .zip
         </Button>
-        <Button variant="secondary" fullWidth disabled={!hasBatch}>
+        <Button variant="secondary" fullWidth disabled={!hasBatch} onClick={onExport}>
           <Files aria-hidden="true" strokeWidth={2} className="size-4" />
           Export merged PDF
         </Button>
         <p className="pt-1 text-[11px] leading-relaxed text-zinc-500">
-          Exports are vector PDFs with embedded fonts. Images keep their native resolution; they
-          are not converted to CMYK.
+          Vector export with embedded fonts lands in Phase 4. Images keep their native
+          resolution; they are not converted to CMYK.
         </p>
       </div>
     </aside>

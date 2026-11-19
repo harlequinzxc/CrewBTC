@@ -1,20 +1,61 @@
 #!/usr/bin/env bash
-# §7A bundle budget — gzip byte count per built JS file against the 200 KB budget.
+# §7A bundle budget. The budget applies to JS the browser must download to paint the
+# first screen — not to lazily-loaded chunks (PDF.js, the exporter), which are
+# requested only when a route needs them.
+#
+# Initial route = the entry chunk + its static imports, resolved from
+# dist/.vite/manifest.json. Lazy chunks are reported separately and must stay lazy.
 set -uo pipefail
-if [ ! -d dist/assets ]; then echo "✗ dist/assets not found — run the build first"; exit 1; fi
-BUDGET=$((200 * 1000))
-fail=0
-total=0
-for f in dist/assets/*.js; do
-  [ -e "$f" ] || continue
-  bytes=$(gzip -c "$f" | wc -c)
-  total=$((total + bytes))
-  if [ "$bytes" -gt "$BUDGET" ]; then
-    echo "✗ $(basename "$f"): ${bytes} bytes exceeds ${BUDGET}"
-    fail=1
-  else
-    echo "· $(basename "$f"): ${bytes} bytes"
-  fi
-done
-echo "· total JS gzip: ${total} bytes"
-[ "$fail" -eq 0 ] && echo "✓ bundle budget passed" || { echo "✗ bundle budget failed"; exit 1; }
+if [ ! -f dist/.vite/manifest.json ]; then
+  echo "✗ dist/.vite/manifest.json not found — run the build first"
+  exit 1
+fi
+
+BUDGET=200000
+CSS_BUDGET=40000
+
+node --input-type=module -e '
+import { readFileSync, statSync } from "node:fs"
+import { gzipSync } from "node:zlib"
+import { join } from "node:path"
+
+const BUDGET = 200000, CSS_BUDGET = 40000
+const manifest = JSON.parse(readFileSync("dist/.vite/manifest.json", "utf8"))
+
+const gz = (file) => gzipSync(readFileSync(join("dist", file))).length
+const isCss = (f) => f.endsWith(".css")
+
+// Walk the static import graph of the entry only. Dynamic imports are excluded —
+// that is the whole point of the code split.
+const seen = new Set()
+const initialJs = []
+const initialCss = []
+const lazy = []
+
+const walk = (key) => {
+  if (!key || seen.has(key)) return
+  seen.add(key)
+  const entry = manifest[key]
+  if (!entry) return
+  if (entry.file) (isCss(entry.file) ? initialCss : initialJs).push(entry.file)
+  for (const css of entry.css ?? []) initialCss.push(css)
+  for (const dep of entry.imports ?? []) walk(dep)
+  for (const dep of entry.dynamicImports ?? []) if (manifest[dep]?.file) lazy.push(manifest[dep].file)
+}
+
+walk(manifest["index.html"]?.isEntry ? "index.html" : Object.keys(manifest).find((k) => manifest[k].isEntry))
+
+const sum = (files) => [...new Set(files)].reduce((total, f) => total + gz(f), 0)
+const jsBytes = sum(initialJs)
+const cssBytes = sum(initialCss)
+
+let failed = false
+console.log("initial route JS  " + jsBytes + " B  (budget " + BUDGET + ")")
+console.log("initial route CSS " + cssBytes + " B  (budget " + CSS_BUDGET + ")")
+for (const f of [...new Set(lazy)]) console.log("lazy chunk        " + f + " — " + gz(f) + " B gzip (not counted)")
+
+if (jsBytes > BUDGET) { console.error("✗ initial JS over budget"); failed = true }
+if (cssBytes > CSS_BUDGET) { console.error("✗ initial CSS over budget"); failed = true }
+if (lazy.length === 0) { console.error("✗ expected at least one lazy chunk (PDF.js must stay out of the shell)"); failed = true }
+process.exit(failed ? 1 : 0)
+'

@@ -1,5 +1,6 @@
 import { FileStack, Settings2 } from 'lucide-react'
 import { cn } from '../../lib/cn'
+import { APP_NAME } from '../../config/brand'
 
 export type ViewId = 'workspace' | 'settings'
 
@@ -21,7 +22,7 @@ export function SidebarNav({ active, onSelect }: SidebarNavProps) {
         <span aria-hidden="true" className="grid size-7 place-items-center rounded-md bg-red-700">
           <FileStack strokeWidth={2} className="size-4 text-white" />
         </span>
-        <span className="text-sm font-semibold tracking-tight text-zinc-50">Print Studio</span>
+        <span className="text-sm font-semibold tracking-tight text-zinc-50">{APP_NAME}</span>
       </div>
       {ITEMS.map((item) => {
         const Icon = item.icon

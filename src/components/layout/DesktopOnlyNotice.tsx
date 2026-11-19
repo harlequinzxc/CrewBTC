@@ -13,7 +13,7 @@ export function DesktopOnlyNotice() {
         </span>
         <h1 className="text-base font-semibold text-zinc-50">Designed for desktop</h1>
         <p className="mt-1.5 text-sm text-zinc-400">
-          Print Studio needs a wider window for the template canvas. Widen this browser window to
+          This needs a wider window for the template canvas. Widen this browser window to
           at least 1024 pixels to continue.
         </p>
       </div>
