@@ -21,7 +21,8 @@ export function toPageRefs(documents: readonly IngestedDocument[]): readonly Pag
 
     for (let pageNumber = 1; pageNumber <= document.metrics.pageCount; pageNumber += 1) {
       refs.push({
-        documentId: document.id,
+        // The exporter resolves source bytes by file name (see doc-cache).
+        documentId: document.fileName,
         fileName: document.fileName,
         pageNumber,
         widthMm: Math.round(widthMm * 100) / 100,

@@ -15,6 +15,7 @@ import { Inspector } from './features/workspace/Inspector'
 import { SheetPreview } from './features/workspace/SheetPreview'
 import { SheetSettings } from './features/workspace/SheetSettings'
 import { useBatch } from './features/workspace/use-batch'
+import { useExport } from './features/workspace/use-export'
 import { useSheet } from './features/workspace/use-sheet'
 import { toPageRefs } from './lib/pdf/page-refs'
 import { pickFiles } from './lib/files/open-picker'
@@ -50,6 +51,13 @@ function Workspace() {
   const sheet = useSheet()
   const [showCutMarks, setShowCutMarks] = useState(true)
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
+  const exporter = useExport({
+    settings: sheet.settings,
+    grid: sheet.grid,
+    pages: pageRefs,
+    drawCutMarks: showCutMarks,
+    notify,
+  })
 
   useEffect(() => {
     void (async () => {
@@ -121,7 +129,7 @@ function Workspace() {
 
             <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-zinc-950">
               {batch.documents.length === 0 ? (
-                <div className="grid flex-1 place-items-center p-6">
+                <div className="grid min-h-0 flex-1 place-items-center overflow-hidden p-6">
                   <div className="w-full max-w-sm">
                     <DropZone onFiles={batch.addFiles} disabled={batch.busy} />
                     <Button
@@ -137,14 +145,16 @@ function Workspace() {
                   </div>
                 </div>
               ) : (
-                <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                  <div className="flex min-h-0 flex-[3] flex-col overflow-hidden">
                   <SheetPreview
                     settings={sheet.settings}
                     grid={sheet.grid}
                     pages={pageRefs}
                     showCutMarks={showCutMarks}
                   />
-                  <div className="max-h-[38%] shrink-0 overflow-y-auto border-t border-zinc-800">
+                  </div>
+                  <div className="min-h-0 flex-[2] shrink overflow-y-auto border-t border-zinc-800">
                     <DocumentPreview document={active} />
                   </div>
                 </div>
@@ -170,13 +180,8 @@ function Workspace() {
                 />
               }
               hasBatch={batch.documents.length > 0}
-              onExport={() => {
-                notify({
-                  variant: 'info',
-                  title: 'Export arrives in Phase 4',
-                  description: 'Vector PDF generation is the next milestone.',
-                })
-              }}
+              onExport={exporter.exportAll}
+              exporting={exporter.busy}
             />
           </div>
         )}

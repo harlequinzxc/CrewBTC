@@ -8,6 +8,28 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '0.4.0',
+    date: '2026-11-19',
+    title: 'Print-ready sheet export',
+    highlights: [
+      'Export writes a real multi-page PDF — one output page per sheet',
+      'Source pages are embedded as vectors: text stays selectable, no rasterising',
+      'Cells are contain-fitted, so nothing is ever cropped',
+      'Cut guides are drawn on the gutter centrelines',
+      'Unreadable sources are skipped and reported, never faked',
+    ],
+  },
+  {
+    version: '0.3.1',
+    date: '2026-11-19',
+    title: 'Fits the window',
+    highlights: [
+      'The app is exactly one viewport tall — no page scrolling',
+      'The sheet preview auto-scales to the space available, with a live zoom readout',
+      'Each pane owns its own scroll region',
+    ],
+  },
+  {
     version: '0.3.0',
     date: '2026-11-19',
     title: 'Multi-up sheet imposition',

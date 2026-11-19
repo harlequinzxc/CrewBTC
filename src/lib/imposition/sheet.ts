@@ -7,6 +7,9 @@ export interface Placement {
   readonly documentId: string
   readonly pageNumber: number
   readonly fileName: string
+  /** Source page size in mm — required to compute the embed scale. */
+  readonly sourceWidthMm: number
+  readonly sourceHeightMm: number
   /** Where the page lands on the sheet, in mm from the sheet's top-left. */
   readonly rect: {
     readonly xMm: number
@@ -64,6 +67,8 @@ export function planSheets(pages: readonly PageRef[], grid: GridLayout): readonl
         documentId: page.documentId,
         pageNumber: page.pageNumber,
         fileName: page.fileName,
+        sourceWidthMm: page.widthMm,
+        sourceHeightMm: page.heightMm,
         rect: fitted,
       })
     }

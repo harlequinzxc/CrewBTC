@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import type { IngestedDocument } from '../../types/document'
 import { ingestBatch } from '../../lib/pdf/ingest-batch'
+import { keepSource, releaseAll } from '../../lib/export/doc-cache'
 import type { ToastInput } from '../../components/ui/use-toasts'
 
 export interface BatchApi {
@@ -84,7 +85,25 @@ export function useBatch({ notify, storeBytes }: BatchOptions): BatchApi {
 
   const addFiles = useCallback(
     (files: readonly File[]) => {
-      void runIn(files)
+      // Cache the bytes before parsing so the exporter can embed real pages later.
+      void (async () => {
+        const bytes = await Promise.all(
+          files.map(async (file) => {
+            try {
+              return await file.arrayBuffer()
+            } catch {
+              return null
+            }
+          }),
+        )
+        bytes.forEach((buffer, index) => {
+          const file = files[index]
+          if (buffer !== null && file !== undefined) {
+            keepSource(file.name, buffer)
+          }
+        })
+        await runIn(files)
+      })()
     },
     [runIn],
   )
@@ -108,6 +127,7 @@ export function useBatch({ notify, storeBytes }: BatchOptions): BatchApi {
     setDocuments([])
     setActiveId(null)
     sources.current.clear()
+    releaseAll()
     if (removed > 0) {
       notify({ variant: 'info', title: `Cleared ${removed} ${removed === 1 ? 'PDF' : 'PDFs'}` })
     }

@@ -20,12 +20,22 @@
   html {
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
+    /* The shell is exactly one viewport tall; the document itself never scrolls. */
+    height: 100%;
+    overflow: hidden;
   }
 
   body {
     @apply bg-zinc-950 text-zinc-50 antialiased;
     font-feature-settings: 'cv11', 'ss01';
     font-variant-ligatures: contextual;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100%;
+    overflow: hidden;
   }
 
   /* §4.1 — every numeric readout aligns. */

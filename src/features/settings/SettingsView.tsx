@@ -37,7 +37,7 @@ export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) 
   )
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 overflow-y-auto p-6">
+    <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-5 overflow-y-auto p-6">
       <div>
         <h1 className="text-lg font-semibold tracking-tight text-zinc-50">Settings</h1>
         <p className="mt-0.5 text-sm text-zinc-400">
