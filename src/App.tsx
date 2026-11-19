@@ -12,7 +12,11 @@ import { BatchQueue } from './features/workspace/BatchQueue'
 import { DocumentPreview } from './features/workspace/DocumentPreview'
 import { DropZone } from './features/workspace/DropZone'
 import { Inspector } from './features/workspace/Inspector'
+import { SheetPreview } from './features/workspace/SheetPreview'
+import { SheetSettings } from './features/workspace/SheetSettings'
 import { useBatch } from './features/workspace/use-batch'
+import { useSheet } from './features/workspace/use-sheet'
+import { toPageRefs } from './lib/pdf/page-refs'
 import { pickFiles } from './lib/files/open-picker'
 import { DESKTOP_QUERY, useMediaQuery } from './lib/use-media-query'
 import { readSettings, requestPersistence, writeSettings } from './lib/storage/db'
@@ -43,6 +47,9 @@ function Workspace() {
   const toasts = useToasts()
   const notify = toasts.show
   const batch = useBatch({ notify })
+  const sheet = useSheet()
+  const [showCutMarks, setShowCutMarks] = useState(true)
+  const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
 
   useEffect(() => {
     void (async () => {
@@ -130,7 +137,17 @@ function Workspace() {
                   </div>
                 </div>
               ) : (
-                <DocumentPreview document={active} />
+                <div className="flex min-h-0 flex-1 flex-col">
+                  <SheetPreview
+                    settings={sheet.settings}
+                    grid={sheet.grid}
+                    pages={pageRefs}
+                    showCutMarks={showCutMarks}
+                  />
+                  <div className="max-h-[38%] shrink-0 overflow-y-auto border-t border-zinc-800">
+                    <DocumentPreview document={active} />
+                  </div>
+                </div>
               )}
             </div>
 
@@ -141,6 +158,17 @@ function Workspace() {
               onIncludeBleedChange={setIncludeBleed}
               drawMarks={drawMarks}
               onDrawMarksChange={setDrawMarks}
+              sheetPanel={
+                <SheetSettings
+                  settings={sheet.settings}
+                  grid={sheet.grid}
+                  errors={sheet.errors}
+                  onChange={sheet.update}
+                  onReset={sheet.reset}
+                  showCutMarks={showCutMarks}
+                  onShowCutMarksChange={setShowCutMarks}
+                />
+              }
               hasBatch={batch.documents.length > 0}
               onExport={() => {
                 notify({

@@ -37,11 +37,13 @@ describe('App shell', () => {
     expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Queue' })).toBeInTheDocument()
-    expect(screen.getByText('Page setup')).toBeInTheDocument()
+    expect(screen.getByText('Sheet & cells')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /export current pdf/i })).toBeDisabled()
     expect(screen.getByText(/no PDFs yet/i)).toBeInTheDocument()
     // The dead-button regression: these must be wired, not decorative.
     expect(screen.getAllByRole('button', { name: /add pdfs/i }).length).toBeGreaterThan(0)
+    // The grid engine's result must be visible without any PDF loaded.
+    expect(screen.getByText('3 × 4 = 12 per sheet')).toBeInTheDocument()
   })
 
   it('renders the reduced-motion switch in Settings and persists the choice', async () => {

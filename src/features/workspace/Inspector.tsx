@@ -16,6 +16,7 @@ export interface InspectorProps {
   readonly onDrawMarksChange: (value: boolean) => void
   readonly hasBatch: boolean
   readonly onExport: () => void
+  readonly sheetPanel?: React.ReactNode | undefined
 }
 
 const trimOptions = TRIM_PRESETS.map((preset) => ({ value: preset.id, label: preset.label }))
@@ -30,6 +31,7 @@ export function Inspector({
   onDrawMarksChange,
   hasBatch,
   onExport,
+  sheetPanel,
 }: InspectorProps) {
   const geometry = computePageGeometry(settings)
   const activePreset =
@@ -40,9 +42,27 @@ export function Inspector({
 
   return (
     <aside className="hidden w-[320px] shrink-0 flex-col overflow-y-auto border-l border-zinc-800 bg-zinc-950 xl:flex">
-      <div className="border-b border-zinc-800 px-4 py-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Page setup</h2>
-      </div>
+      {sheetPanel === undefined ? (
+        <div className="border-b border-zinc-800 px-4 py-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            Page setup
+          </h2>
+        </div>
+      ) : (
+        <>
+          <div className="border-b border-zinc-800 px-4 py-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              Sheet &amp; cells
+            </h2>
+          </div>
+          {sheetPanel}
+          <div className="border-b border-zinc-800 px-4 py-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              Trim &amp; bleed
+            </h2>
+          </div>
+        </>
+      )}
 
       <div className="flex flex-col gap-4 border-b border-zinc-800 p-4">
         <Select
