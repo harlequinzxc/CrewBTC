@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en" data-reduced-motion="false">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#09090b" />
+    <meta
+      name="description"
+      content="Batch-parse consistently formatted PDFs and recreate print-ready vector PDFs entirely in your browser."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Print Studio — Batch PDF Recreator</title>
+    <script>
+      // Applies the saved motion preference before first paint to avoid a flash of motion.
+      try {
+        var saved = localStorage.getItem('ps.reduced-motion');
+        var reduced =
+          saved === 'on' || saved === 'off'
+            ? saved === 'on'
+            : window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        document.documentElement.dataset.reducedMotion = reduced ? 'true' : 'false';
+        document.documentElement.classList.add('dark');
+      } catch (error) {
+        void error;
+      }
+    </script>
+  </head>
+  <body class="bg-zinc-950">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
