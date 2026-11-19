@@ -9,15 +9,19 @@ import { useToasts } from './components/ui/use-toasts'
 import { MotionProvider } from './features/settings/MotionProvider'
 import { SettingsView } from './features/settings/SettingsView'
 import { BatchQueue } from './features/workspace/BatchQueue'
-import { DocumentPreview } from './features/workspace/DocumentPreview'
 import { DropZone } from './features/workspace/DropZone'
 import { Inspector } from './features/workspace/Inspector'
 import { SheetPreview } from './features/workspace/SheetPreview'
 import { SheetSettings } from './features/workspace/SheetSettings'
 import { useBatch } from './features/workspace/use-batch'
+import { useEdits } from './features/workspace/use-edits'
+import { usePageText } from './features/workspace/use-page-text'
+import { pageKey } from './lib/pdf/page-text-key'
+import { sourceVersion } from './lib/export/doc-cache'
 import { useExport } from './features/workspace/use-export'
 import { useSheet } from './features/workspace/use-sheet'
 import { toPageRefs } from './lib/pdf/page-refs'
+import { planSheets } from './lib/imposition/sheet'
 import { pickFiles } from './lib/files/open-picker'
 import { DESKTOP_QUERY, useMediaQuery } from './lib/use-media-query'
 import { readSettings, requestPersistence, writeSettings } from './lib/storage/db'
@@ -50,12 +54,31 @@ function Workspace() {
   const batch = useBatch({ notify })
   const sheet = useSheet()
   const [showCutMarks, setShowCutMarks] = useState(true)
+  const [selectedCell, setSelectedCell] = useState<number | null>(null)
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
+  const editsApi = useEdits()
+
+  // Extract text for the pages actually on screen; that is what makes them editable.
+  const sheetPlans = useMemo(() => planSheets(pageRefs, sheet.grid), [pageRefs, sheet.grid])
+  const visiblePages = useMemo(
+    () =>
+      (sheetPlans[0]?.placements ?? []).map((placement) => ({
+        fileName: placement.documentId,
+        pageNumber: placement.pageNumber,
+      })),
+    [sheetPlans],
+  )
+  const textSignature = visiblePages
+    .map((page) => pageKey(page.fileName, page.pageNumber, sourceVersion(page.fileName)))
+    .join('|')
+  const blocksByPage = usePageText(visiblePages, textSignature)
   const exporter = useExport({
     settings: sheet.settings,
     grid: sheet.grid,
     pages: pageRefs,
     drawCutMarks: showCutMarks,
+    edits: editsApi.edits,
+    blocks: blocksByPage,
     notify,
   })
 
@@ -72,17 +95,20 @@ function Workspace() {
     void writeSettings(next)
   }, [])
 
+  // Clearing the batch must not leave edits or a selection pointing at documents
+  // that no longer exist, so the reset happens with the clear rather than after it.
+  const clearAll = useCallback(() => {
+    batch.clear()
+    editsApi.clear()
+    setSelectedCell(null)
+  }, [batch, editsApi])
+
   const handleAdd = useCallback(() => {
     void (async () => {
       const files = await pickFiles()
       if (files.length > 0) batch.addFiles(files)
     })()
   }, [batch])
-
-  const active = useMemo(
-    () => batch.documents.find((document) => document.id === batch.activeId) ?? null,
-    [batch.documents, batch.activeId],
-  )
 
   const header = useMemo(
     () => (
@@ -122,7 +148,7 @@ function Workspace() {
                 onSelect={batch.select}
                 onAdd={handleAdd}
                 onReRun={batch.reRun}
-                onClear={batch.clear}
+                onClear={clearAll}
                 busy={batch.busy}
               />
             </div>
@@ -146,17 +172,19 @@ function Workspace() {
                 </div>
               ) : (
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                  <div className="flex min-h-0 flex-[3] flex-col overflow-hidden">
                   <SheetPreview
                     settings={sheet.settings}
                     grid={sheet.grid}
                     pages={pageRefs}
                     showCutMarks={showCutMarks}
+                    edits={editsApi.edits}
+                    blocksByPage={blocksByPage}
+                    selectedCell={selectedCell}
+                    onSelectCell={setSelectedCell}
+                    onTextChange={editsApi.setText}
+                    onImageChange={editsApi.setImage}
+                    onResetCell={editsApi.resetCell}
                   />
-                  </div>
-                  <div className="min-h-0 flex-[2] shrink overflow-y-auto border-t border-zinc-800">
-                    <DocumentPreview document={active} />
-                  </div>
                 </div>
               )}
             </div>
