@@ -8,6 +8,18 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '0.5.0',
+    date: '2026-11-19',
+    title: 'Edit the sheet directly',
+    highlights: [
+      'Text on every cell is now editable in place — click a block and type',
+      'Move and zoom the page inside its cell; the text moves with it',
+      'Edits are per cell, so a page repeated twice can differ in each copy',
+      'The extra read-only preview pane is gone: the sheet is the workspace',
+      'Edited text is re-typeset in the exported PDF, still as vector, never a picture',
+    ],
+  },
+  {
     version: '0.4.1',
     date: '2026-11-19',
     title: 'See your pages in the cells',

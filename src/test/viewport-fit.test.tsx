@@ -3,6 +3,17 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { SheetPreview } from '../features/workspace/SheetPreview'
 import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
+/** Edits and blocks are optional to the sheet's job; tests that do not edit say so once. */
+const idle = {
+  edits: {} as Readonly<Record<string, never>>,
+  blocksByPage: {} as Readonly<Record<string, never>>,
+  selectedCell: null,
+  onSelectCell: () => undefined,
+  onTextChange: () => undefined,
+  onImageChange: () => undefined,
+  onResetCell: () => undefined,
+}
+
 
 /**
  * jsdom has no layout engine, so ResizeObserver never fires. We stub it to report a
@@ -36,7 +47,7 @@ beforeEach(() => {
 
 describe('preview scales to the available viewport', () => {
   it('reports the zoom it settled on', () => {
-    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={[]} showCutMarks />)
+    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={[]} showCutMarks {...idle} />)
     // 600px available height minus 24px breathing room, on a 297mm tall sheet.
     expect(screen.getByText(/% zoom/)).toBeInTheDocument()
   })
@@ -58,7 +69,7 @@ describe('preview scales to the available viewport', () => {
 
   it('never divides by zero when the pane has no measured size yet', () => {
     stubSize(0, 0)
-    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={[]} showCutMarks />)
+    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={[]} showCutMarks {...idle} />)
     expect(screen.getByText(/% zoom/)).toBeInTheDocument()
     expect(screen.queryByText('Infinity%')).not.toBeInTheDocument()
     expect(screen.queryByText('NaN%')).not.toBeInTheDocument()

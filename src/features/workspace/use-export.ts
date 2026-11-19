@@ -4,6 +4,10 @@ import { downloadBytes, writeSheets } from '../../lib/export/write-sheet'
 import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import type { ToastInput } from '../../components/ui/use-toasts'
+import type { PageEdit } from '../../types/edit'
+import type { BlockSource } from '../../lib/export/write-sheet'
+import { exportKey, pageKey } from '../../lib/pdf/page-text-key'
+import { sourceVersion } from '../../lib/export/doc-cache'
 
 export interface ExportApi {
   readonly busy: boolean
@@ -16,6 +20,10 @@ export interface ExportOptions {
   readonly pages: readonly PageRef[]
   readonly drawCutMarks: boolean
   readonly notify: (input: ToastInput) => void
+  /** Per-cell edits. Empty means every page prints exactly as it arrived. */
+  readonly edits?: Readonly<Record<string, PageEdit>> | undefined
+  /** Extracted blocks keyed `file#version#page`, so text edits can be re-typeset. */
+  readonly blocks?: Readonly<Record<string, readonly BlockSource[]>> | undefined
 }
 
 /** Writes the imposed sheets and hands the browser a download. Never blocks the UI. */
@@ -25,6 +33,8 @@ export function useExport({
   pages,
   drawCutMarks,
   notify,
+  edits,
+  blocks,
 }: ExportOptions): ExportApi {
   const [busy, setBusy] = useState(false)
 
@@ -51,9 +61,30 @@ export function useExport({
         return
       }
 
+      // Blocks arrive keyed by the preview's `file#version#page`; the writer asks for
+      // `file#page`, so rebuild the map with the same version lookup the UI uses.
+      const blocksForExport: Record<string, readonly BlockSource[]> = {}
+      if (blocks !== undefined) {
+        for (const page of pages) {
+          const version = sourceVersion(page.documentId)
+          const found = blocks[pageKey(page.documentId, page.pageNumber, version)]
+          if (found !== undefined) {
+            blocksForExport[exportKey(page.documentId, page.pageNumber)] = found
+          }
+        }
+      }
+
       setBusy(true)
       try {
-        const result = await writeSheets({ settings, grid, pages, sources, drawCutMarks })
+        const result = await writeSheets({
+          settings,
+          grid,
+          pages,
+          sources,
+          drawCutMarks,
+          edits,
+          blocks: blocksForExport,
+        })
 
         if (result.bytes.byteLength === 0) {
           notify({ variant: 'warning', title: 'Nothing could be placed on a sheet' })
@@ -67,10 +98,17 @@ export function useExport({
           result.pagesSkipped > 0
             ? ` · ${result.pagesSkipped} page${result.pagesSkipped === 1 ? '' : 's'} skipped`
             : ''
+        // Say it out loud when an edit could not be applied: the file would otherwise
+        // look fine while quietly ignoring what the user asked for.
+        const unedited =
+          result.pagesUnedited > 0
+            ? ` · ${result.pagesUnedited} edit${result.pagesUnedited === 1 ? '' : 's'} could not be placed`
+            : ''
+        const trouble = result.pagesSkipped > 0 || result.pagesUnedited > 0
         notify({
-          variant: result.pagesSkipped > 0 ? 'warning' : 'success',
+          variant: trouble ? 'warning' : 'success',
           title: `${result.sheetCount} sheet${result.sheetCount === 1 ? '' : 's'} exported`,
-          description: `${result.pagesPlaced} pages placed${skipped}`,
+          description: `${result.pagesPlaced} pages placed${skipped}${unedited}`,
         })
       } catch {
         notify({
@@ -82,7 +120,7 @@ export function useExport({
         setBusy(false)
       }
     })()
-  }, [settings, grid, pages, drawCutMarks, notify])
+  }, [settings, grid, pages, drawCutMarks, notify, edits, blocks])
 
   return { busy, exportAll }
 }

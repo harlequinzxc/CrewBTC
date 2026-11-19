@@ -5,6 +5,17 @@ import { computeGrid } from '../lib/imposition/grid'
 import { planSheets } from '../lib/imposition/sheet'
 import { toPageRefs } from '../lib/pdf/page-refs'
 import { DEFAULT_SHEET } from '../types/imposition'
+/** Edits and blocks are optional to the sheet's job; tests that do not edit say so once. */
+const idle = {
+  edits: {} as Readonly<Record<string, never>>,
+  blocksByPage: {} as Readonly<Record<string, never>>,
+  selectedCell: null,
+  onSelectCell: () => undefined,
+  onTextChange: () => undefined,
+  onImageChange: () => undefined,
+  onResetCell: () => undefined,
+}
+
 import { SheetPreview } from '../features/workspace/SheetPreview'
 
 beforeEach(() => {
@@ -27,7 +38,7 @@ describe('sheet planning', () => {
     expect(sheets[2]?.placements.length).toBe(1)
     expect(sheets[2]?.emptyCells).toBe(11)
 
-    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={pages} showCutMarks />)
+    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={pages} showCutMarks {...idle} />)
     expect(screen.getByText('3 × 4 = 12 cells')).toBeInTheDocument()
     expect(screen.getByText('3 sheets')).toBeInTheDocument()
   })

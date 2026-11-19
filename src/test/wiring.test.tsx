@@ -97,9 +97,10 @@ describe('Add PDFs is wired', () => {
       expect(screen.getAllByText('sample.pdf').length).toBeGreaterThan(0)
     })
 
-    // The parsed preview shows the extracted block, not a dead end.
-    expect(await screen.findByText(/CrewBTC Limited Edition/)).toBeInTheDocument()
-    expect(screen.getByText('1 blocks')).toBeInTheDocument()
+    // The extracted block now lives in the cell editor, where it can be changed,
+    // rather than in a separate read-only preview pane (removed in v0.5.0).
+    expect(await screen.findByRole('button', { name: /^Cell 1: sample page 1$/ })).toBeInTheDocument()
+    expect(screen.queryByText('Nothing selected')).not.toBeInTheDocument()
   })
 
   it('does nothing when the picker is cancelled', async () => {
