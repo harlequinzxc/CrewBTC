@@ -57,15 +57,14 @@ function refs(count: number): PageRef[] {
 }
 
 
-/** This file tests artwork placement, not editing; editing has its own suite. */
+/** These suites test sheet geometry, not copy; the new model has no text props. */
 const idle = {
-  edits: {} as Readonly<Record<string, never>>,
-  blocksByPage: {} as Readonly<Record<string, never>>,
+  texts: {} as Readonly<Record<string, string>>,
+  images: {} as Readonly<Record<string, never>>,
   selectedCell: null,
   onSelectCell: () => undefined,
-  onTextChange: () => undefined,
   onImageChange: () => undefined,
-  onResetCell: () => undefined,
+  onResetImage: () => undefined,
 }
 
 beforeEach(() => {

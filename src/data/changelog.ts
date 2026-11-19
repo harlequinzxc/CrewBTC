@@ -8,6 +8,18 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '0.6.0',
+    date: '2026-11-19',
+    title: 'A card with three bands, and one box to type in',
+    highlights: [
+      'Cards are header, picture, footer — the three bands always fill the card',
+      'Paste your copy once per page in the new Text tab; first line is the header, the rest is the footer',
+      'The picture fills its band completely and is clipped, so no white gaps',
+      'Move and zoom the picture inside its box; a framed picture can never reach the text',
+      'Header and footer heights are yours to set, in millimetres',
+    ],
+  },
+  {
     version: '0.5.0',
     date: '2026-11-19',
     title: 'Edit the sheet directly',

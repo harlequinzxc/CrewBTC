@@ -3,15 +3,14 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { SheetPreview } from '../features/workspace/SheetPreview'
 import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
-/** Edits and blocks are optional to the sheet's job; tests that do not edit say so once. */
+/** These suites test sheet geometry, not copy; the new model has no text props. */
 const idle = {
-  edits: {} as Readonly<Record<string, never>>,
-  blocksByPage: {} as Readonly<Record<string, never>>,
+  texts: {} as Readonly<Record<string, string>>,
+  images: {} as Readonly<Record<string, never>>,
   selectedCell: null,
   onSelectCell: () => undefined,
-  onTextChange: () => undefined,
   onImageChange: () => undefined,
-  onResetCell: () => undefined,
+  onResetImage: () => undefined,
 }
 
 

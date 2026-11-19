@@ -2,12 +2,10 @@ import { useCallback, useState } from 'react'
 import { getSource } from '../../lib/export/doc-cache'
 import { downloadBytes, writeSheets } from '../../lib/export/write-sheet'
 import type { PageRef } from '../../lib/imposition/sheet'
+import { planSheets } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import type { ToastInput } from '../../components/ui/use-toasts'
-import type { PageEdit } from '../../types/edit'
-import type { BlockSource } from '../../lib/export/write-sheet'
-import { exportKey, pageKey } from '../../lib/pdf/page-text-key'
-import { sourceVersion } from '../../lib/export/doc-cache'
+import type { CellText, ImageTransform } from '../../types/edit'
 
 export interface ExportApi {
   readonly busy: boolean
@@ -20,10 +18,10 @@ export interface ExportOptions {
   readonly pages: readonly PageRef[]
   readonly drawCutMarks: boolean
   readonly notify: (input: ToastInput) => void
-  /** Per-cell edits. Empty means every page prints exactly as it arrived. */
-  readonly edits?: Readonly<Record<string, PageEdit>> | undefined
-  /** Extracted blocks keyed `file#version#page`, so text edits can be re-typeset. */
-  readonly blocks?: Readonly<Record<string, readonly BlockSource[]>> | undefined
+  /** Pasted copy keyed by page index. Empty means cards print with no text. */
+  readonly texts?: Readonly<Record<string, string>> | undefined
+  /** Artwork framing keyed by page index. */
+  readonly images?: Readonly<Record<string, ImageTransform>> | undefined
 }
 
 /** Writes the imposed sheets and hands the browser a download. Never blocks the UI. */
@@ -33,8 +31,8 @@ export function useExport({
   pages,
   drawCutMarks,
   notify,
-  edits,
-  blocks,
+  texts,
+  images,
 }: ExportOptions): ExportApi {
   const [busy, setBusy] = useState(false)
 
@@ -61,29 +59,44 @@ export function useExport({
         return
       }
 
-      // Blocks arrive keyed by the preview's `file#version#page`; the writer asks for
-      // `file#page`, so rebuild the map with the same version lookup the UI uses.
-      const blocksForExport: Record<string, readonly BlockSource[]> = {}
-      if (blocks !== undefined) {
-        for (const page of pages) {
-          const version = sourceVersion(page.documentId)
-          const found = blocks[pageKey(page.documentId, page.pageNumber, version)]
-          if (found !== undefined) {
-            blocksForExport[exportKey(page.documentId, page.pageNumber)] = found
-          }
-        }
-      }
-
       setBusy(true)
       try {
+        // The writer keys by cell + page; the preview keys by page index. Translate
+        // once here so neither side has to know about the other's numbering.
+        const cellTexts: Record<string, CellText> = {}
+        const cellImages: Record<string, ImageTransform> = {}
+        const plans = planSheets(pages, grid)
+        for (const plan of plans) {
+          for (const placement of plan.placements) {
+            const index = pages.findIndex(
+              (page) =>
+                page.documentId === placement.documentId &&
+                page.pageNumber === placement.pageNumber,
+            )
+            const text = texts?.[`${index}`]
+            if (text !== undefined && text.trim() !== '') {
+              cellTexts[`${placement.cellIndex}|${placement.documentId}|${placement.pageNumber}`] = {
+                documentId: placement.documentId,
+                pageNumber: placement.pageNumber,
+                text,
+              }
+            }
+            const image = images?.[`${index}`]
+            if (image !== undefined) {
+              cellImages[`${placement.cellIndex}|${placement.documentId}|${placement.pageNumber}`] =
+                image
+            }
+          }
+        }
+
         const result = await writeSheets({
           settings,
           grid,
           pages,
           sources,
           drawCutMarks,
-          edits,
-          blocks: blocksForExport,
+          texts: cellTexts,
+          images: cellImages,
         })
 
         if (result.bytes.byteLength === 0) {
@@ -98,17 +111,10 @@ export function useExport({
           result.pagesSkipped > 0
             ? ` · ${result.pagesSkipped} page${result.pagesSkipped === 1 ? '' : 's'} skipped`
             : ''
-        // Say it out loud when an edit could not be applied: the file would otherwise
-        // look fine while quietly ignoring what the user asked for.
-        const unedited =
-          result.pagesUnedited > 0
-            ? ` · ${result.pagesUnedited} edit${result.pagesUnedited === 1 ? '' : 's'} could not be placed`
-            : ''
-        const trouble = result.pagesSkipped > 0 || result.pagesUnedited > 0
         notify({
-          variant: trouble ? 'warning' : 'success',
+          variant: result.pagesSkipped > 0 ? 'warning' : 'success',
           title: `${result.sheetCount} sheet${result.sheetCount === 1 ? '' : 's'} exported`,
-          description: `${result.pagesPlaced} pages placed${skipped}${unedited}`,
+          description: `${result.pagesPlaced} pages placed${skipped}`,
         })
       } catch {
         notify({
@@ -120,7 +126,7 @@ export function useExport({
         setBusy(false)
       }
     })()
-  }, [settings, grid, pages, drawCutMarks, notify, edits, blocks])
+  }, [settings, grid, pages, drawCutMarks, notify, texts, images])
 
   return { busy, exportAll }
 }

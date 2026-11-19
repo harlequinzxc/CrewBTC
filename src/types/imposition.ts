@@ -15,6 +15,10 @@ export interface SheetSettings {
   readonly marginMm: number
   /** Rotate the whole cell grid 90° on the sheet. */
   readonly rotateCells: boolean
+  /** Height of the header text band at the top of every cell, in mm. */
+  readonly headerMm: number
+  /** Height of the footer text band at the bottom of every cell, in mm. */
+  readonly footerMm: number
 }
 
 /** A rectangle in millimetres, origin at the sheet's top-left corner. */
@@ -62,6 +66,9 @@ export const DEFAULT_SHEET: SheetSettings = {
   gutterMm: 4,
   marginMm: 4,
   rotateCells: false,
+  // 11 + 50 + 6 = 67: a title line, a large picture, a small caption. No gaps.
+  headerMm: 11,
+  footerMm: 6,
 }
 
 export const SHEET_PRESETS = [
@@ -71,6 +78,11 @@ export const SHEET_PRESETS = [
   { id: 'letter', label: 'US Letter — 216 × 279 mm', widthMm: 215.9, heightMm: 279.4 },
   { id: 'square', label: 'Square — 210 × 210 mm', widthMm: 210, heightMm: 210 },
 ] as const
+
+export const BAND_LIMITS_MM = {
+  min: 3,
+  max: 60,
+} as const
 
 export const SHEET_LIMITS = {
   minSheetMm: 50,
