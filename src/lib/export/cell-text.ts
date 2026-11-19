@@ -2,7 +2,7 @@ import type { PDFFont, PDFPage, RGB } from '@cantoo/pdf-lib'
 import { mmToPt } from '../units'
 import { splitCellText } from '../../types/edit'
 import type { CellZones } from '../../types/edit'
-import { layoutBand } from './text-band'
+import { layoutBand, ptWidthToMm } from './text-band'
 
 /** Header type is a title; footer type is a caption. Both shrink to fit their band. */
 const HEADER_MAX_PT = 11
@@ -31,8 +31,9 @@ export interface DrawTextInput {
 export function drawCellText(input: DrawTextInput): void {
   const { page, font, zones, text, sheetHeightPt, ink } = input
   const { header, footer } = splitCellText(text)
+  // layoutBand works in millimetres; the font reports points. Convert here, once.
   const measure = (candidate: string, sizePt: number): number =>
-    font.widthOfTextAtSize(candidate, sizePt)
+    ptWidthToMm(font.widthOfTextAtSize(candidate, sizePt))
 
   if (header !== '') {
     const layout = layoutBand(

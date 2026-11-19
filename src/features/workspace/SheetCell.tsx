@@ -2,6 +2,7 @@ import { cn } from '../../lib/cn'
 import type { CellSlot } from '../../types/imposition'
 import type { ImageTransform } from '../../types/edit'
 import { cellZones, coverRectMm, splitCellText } from '../../types/edit'
+import { CardText } from './CardText'
 
 export interface SheetCellProps {
   readonly cell: CellSlot
@@ -69,11 +70,14 @@ export function SheetCell(props: SheetCellProps) {
         className="absolute overflow-hidden px-1"
         style={{ left: 0, top: 0, width: '100%', height: px(zones.headerMm) }}
       >
-        {header === '' ? null : (
-          <p className="whitespace-pre-wrap break-words text-[8px] font-medium leading-tight text-zinc-900">
-            {header}
-          </p>
-        )}
+        <CardText
+          text={header}
+          scale={scale}
+          widthMm={cell.rect.widthMm}
+          bandMm={zones.headerMm}
+          maxPt={11}
+          className="font-medium text-zinc-900"
+        />
       </div>
 
       {/* Picture band — clipped so overflow never reaches the text or the cut line. */}
@@ -119,11 +123,14 @@ export function SheetCell(props: SheetCellProps) {
           height: px(zones.footerMm),
         }}
       >
-        {footer === '' ? null : (
-          <p className="whitespace-pre-wrap break-words text-[7px] leading-tight text-zinc-600">
-            {footer}
-          </p>
-        )}
+        <CardText
+          text={footer}
+          scale={scale}
+          widthMm={cell.rect.widthMm}
+          bandMm={zones.footerMm}
+          maxPt={8}
+          className="text-zinc-600"
+        />
       </div>
 
       {/* Selection target: the whole card, above the artwork but below nothing else,

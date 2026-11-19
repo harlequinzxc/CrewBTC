@@ -1,16 +1,23 @@
 /**
  * Lays out one band of text (the header or the footer of a card) as lines that fit a
- * fixed rectangle. Shared by the preview and the exporter so the two cannot disagree
- * about where a line breaks or how big the type is.
+ * fixed rectangle.
  *
- * The band's height is fixed by the sheet settings, so the type size is what gives:
- * text that does not fit shrinks until it does, down to a legibility floor. Copying on
- * paper is meant to be read, and silently overflowing the band would print over the
- * picture.
+ * **All geometry here is millimetres** — the band's width and height, and what the
+ * measure function returns. Type sizes are points, because that is how fonts are
+ * specified, and this module converts at the boundary so no caller has to remember
+ * which unit it is holding.
+ *
+ * An earlier version compared a width in millimetres against a measurement in points.
+ * Every word "overflowed" as a result, so exported copy came out one word per line,
+ * and the type was shrunk for no reason. Mixing units silently is the worst kind of
+ * bug: the output is valid, just wrong.
  */
 
 /** Smaller than this and the words are a smudge on paper; we stop shrinking instead. */
 export const MIN_BAND_TEXT_PT = 4
+
+const PT_TO_MM = 25.4 / 72
+const MM_TO_PT = 72 / 25.4
 
 export interface BandLine {
   readonly text: string
@@ -21,6 +28,7 @@ export interface BandLine {
 
 export interface BandLayout {
   readonly lines: readonly BandLine[]
+  readonly sizePt: number
   /** True when the text still did not fit at the legibility floor. */
   readonly overflow: boolean
 }
@@ -31,9 +39,9 @@ export interface BandOptions {
 }
 
 /**
- * @param bandMm   box height in millimetres
  * @param widthMm  box width in millimetres
  * @param maxPt    the size the text would like to be
+ * @param measure  returns the rendered **width in millimetres** at a given size
  * @param lineHeight multiple of the font size used as line pitch
  */
 export function layoutBand(
@@ -56,54 +64,43 @@ export function layoutBand(
     .filter((line) => line !== '')
 
   if (paragraphs.length === 0 || innerWidth <= 0 || innerHeight <= 0) {
-    return { lines: [], overflow: false }
+    return { lines: [], sizePt: 0, overflow: false }
   }
 
-  const ptToMm = 25.4 / 72
-  let sizePt = Math.max(MIN_BAND_TEXT_PT, Number.isFinite(maxPt) ? maxPt : MIN_BAND_TEXT_PT)
+  const floorPt = Math.min(MIN_BAND_TEXT_PT, maxPt)
+  let sizePt = Math.max(floorPt, Number.isFinite(maxPt) ? maxPt : floorPt)
 
-  // Shrink until every wrapped line fits both the width and the height of the band.
-  for (;;) {
-    const wrapped = paragraphs.flatMap((paragraph) =>
-      wrapToWidth(paragraph, innerWidth, (candidate) => measure(candidate, sizePt)),
-    )
-    const blockMm = wrapped.length * sizePt * lineHeight * ptToMm
+  const linesAt = (size: number): readonly string[] =>
+    paragraphs.flatMap((paragraph) => wrapToWidth(paragraph, innerWidth, (candidate) => measure(candidate, size)))
 
-    if (blockMm <= innerHeight || sizePt <= MIN_BAND_TEXT_PT) {
-      if (blockMm > innerHeight && wrapped.length > 0) {
-        // Keep only the lines that fit at the floor rather than printing over the art.
-        const fitCount = Math.max(0, Math.floor(innerHeight / (sizePt * lineHeight * ptToMm)))
-        const kept = wrapped.slice(0, fitCount)
-        return {
-          lines: kept.map((line, index) => ({
-            text: line,
-            yMm: boxTopMm + padding + index * sizePt * lineHeight * ptToMm + sizePt * ptToMm,
-            sizePt,
-          })),
-          overflow: true,
-        }
-      }
+  const heightAt = (lineCount: number, size: number): number => lineCount * size * lineHeight * PT_TO_MM
 
-      return {
-        lines: wrapped.map((line, index) => ({
-          text: line,
-          yMm: boxTopMm + padding + index * sizePt * lineHeight * ptToMm + sizePt * ptToMm,
-          sizePt,
-        })),
-        overflow: false,
-      }
-    }
-
-    // One step down is enough to converge; 5% avoids overshooting short bands.
-    sizePt *= 0.95
-    if (sizePt < MIN_BAND_TEXT_PT) sizePt = MIN_BAND_TEXT_PT
+  // Shrink until the wrapped block fits the band on both axes.
+  let wrapped = linesAt(sizePt)
+  while (heightAt(wrapped.length, sizePt) > innerHeight && sizePt > floorPt) {
+    sizePt = Math.max(floorPt, sizePt * 0.95)
+    wrapped = linesAt(sizePt)
   }
+
+  const fits = heightAt(wrapped.length, sizePt) <= innerHeight
+  const kept = fits
+    ? wrapped
+    : wrapped.slice(0, Math.max(0, Math.floor(innerHeight / (sizePt * lineHeight * PT_TO_MM))))
+
+  const lines: BandLine[] = kept.map((line, index) => ({
+    text: line,
+    // Baseline of each line, measured down from the band's top edge.
+    yMm: boxTopMm + padding + index * sizePt * lineHeight * PT_TO_MM + sizePt * PT_TO_MM,
+    sizePt,
+  }))
+
+  return { lines, sizePt, overflow: !fits }
 }
 
-/** Greedy word wrap against real font metrics. Long single words are kept whole. */
+/** Greedy word wrap against measured widths. Long single words are kept whole. */
 export function wrapToWidth(
   text: string,
-  maxWidth: number,
+  maxWidthMm: number,
   measure: (candidate: string) => number,
 ): readonly string[] {
   const words = text.split(/\s+/).filter((word) => word !== '')
@@ -113,7 +110,7 @@ export function wrapToWidth(
   let line = ''
   for (const word of words) {
     const candidate = line === '' ? word : `${line} ${word}`
-    if (line === '' || measure(candidate) <= maxWidth) {
+    if (line === '' || measure(candidate) <= maxWidthMm) {
       line = candidate
     } else {
       lines.push(line)
@@ -123,3 +120,9 @@ export function wrapToWidth(
   if (line !== '') lines.push(line)
   return lines
 }
+
+/** Points to millimetres, for callers converting a font measurement. */
+export const ptWidthToMm = (points: number): number => points * PT_TO_MM
+
+/** Millimetres to points, for callers sizing a font from a band. */
+export const mmToPtSize = (mm: number): number => mm * MM_TO_PT
