@@ -11,6 +11,9 @@ const idle = {
   onSelectCell: () => undefined,
   onImageChange: () => undefined,
   onResetImage: () => undefined,
+  styles: {} as Readonly<Record<string, never>>,
+  onTextChange: () => undefined,
+  onStyleChange: () => undefined,
 }
 
 

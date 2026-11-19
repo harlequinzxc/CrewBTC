@@ -2,6 +2,7 @@ import { cn } from '../../lib/cn'
 import type { CellSlot } from '../../types/imposition'
 import type { ImageTransform } from '../../types/edit'
 import { cellZones, coverRectMm, splitCellText } from '../../types/edit'
+import type { TextStyle } from '../../types/edit'
 import { CardText } from './CardText'
 
 export interface SheetCellProps {
@@ -22,9 +23,20 @@ export interface SheetCellProps {
   readonly text: string
   readonly selected: boolean
   readonly onSelect: (cellIndex: number) => void
+  readonly headerStyle: TextStyle
+  readonly footerStyle: TextStyle
+  /** Which band of which cell is being typed into, if any. */
+  readonly editing: { readonly cellIndex: number; readonly band: 'header' | 'footer' } | null
+  readonly onBeginEdit: (cellIndex: number, band: 'header' | 'footer') => void
+  readonly onEndEdit: () => void
+  readonly onTextChange: (cellIndex: number, band: 'header' | 'footer', text: string) => void
 }
 
 const LABEL = (fileName: string): string => fileName.replace(/\.pdf$/i, '')
+
+/** Rebuilds the single stored string from the two bands after one of them changed. */
+const joinBands = (header: string, footer: string): string =>
+  footer.trim() === '' ? header : `${header}\n${footer}`
 
 /**
  * One card on the sheet: header band, picture band, footer band.
@@ -48,8 +60,6 @@ export function SheetCell(props: SheetCellProps) {
     props.sourceHeightMm,
     transform,
   )
-  const { header, footer } = splitCellText(text)
-
   const px = (mm: number): string => `${mm * scale}px`
 
   return (
@@ -71,12 +81,19 @@ export function SheetCell(props: SheetCellProps) {
         style={{ left: 0, top: 0, width: '100%', height: px(zones.headerMm) }}
       >
         <CardText
-          text={header}
+          text={splitCellText(text).header}
           scale={scale}
           widthMm={cell.rect.widthMm}
           bandMm={zones.headerMm}
           maxPt={11}
-          className="font-medium text-zinc-900"
+          className="font-medium"
+          style={props.headerStyle}
+          editing={props.editing?.cellIndex === cell.index && props.editing.band === 'header'}
+          onBeginEdit={() => props.onBeginEdit(cell.index, 'header')}
+          onChange={(next) =>
+            props.onTextChange(cell.index, 'header', joinBands(next, splitCellText(text).footer))
+          }
+          onEndEdit={props.onEndEdit}
         />
       </div>
 
@@ -124,12 +141,19 @@ export function SheetCell(props: SheetCellProps) {
         }}
       >
         <CardText
-          text={footer}
+          text={splitCellText(text).footer}
           scale={scale}
           widthMm={cell.rect.widthMm}
           bandMm={zones.footerMm}
           maxPt={8}
-          className="text-zinc-600"
+          className=""
+          style={props.footerStyle}
+          editing={props.editing?.cellIndex === cell.index && props.editing.band === 'footer'}
+          onBeginEdit={() => props.onBeginEdit(cell.index, 'footer')}
+          onChange={(next) =>
+            props.onTextChange(cell.index, 'footer', joinBands(splitCellText(text).header, next))
+          }
+          onEndEdit={props.onEndEdit}
         />
       </div>
 

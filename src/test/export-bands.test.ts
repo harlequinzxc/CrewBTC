@@ -125,7 +125,7 @@ describe('cards carry the copy that was typed', () => {
 
     expect(result.pagesPlaced).toBe(3)
     expect(result.sheetCount).toBe(1)
-    // The remaining cells are genuinely empty: 12 cells, 3 cards.
-    expect(grid.cellCount).toBe(12)
+    // The remaining cells are genuinely empty: 9 cells, 3 cards.
+    expect(grid.cellCount).toBe(9)
   })
 })

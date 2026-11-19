@@ -61,14 +61,16 @@ export interface GridLayout {
 export const DEFAULT_SHEET: SheetSettings = {
   sheetWidthMm: 210,
   sheetHeightMm: 297,
-  cellWidthMm: 52,
-  cellHeightMm: 67,
+  cellWidthMm: 64,
+  cellHeightMm: 90,
   gutterMm: 4,
   marginMm: 4,
   rotateCells: false,
-  // 11 + 50 + 6 = 67: a title line, a large picture, a small caption. No gaps.
-  headerMm: 11,
-  footerMm: 6,
+  // 3 x 3 on A4: a 64 x 90 mm card, 83% of the paper, no unused bands.
+  // 13 + 57 + 20 = 90 — a title, the dish photo, then the instruction box, which
+  // needs more room than a caption because plating steps run to several lines.
+  headerMm: 13,
+  footerMm: 20,
 }
 
 export const SHEET_PRESETS = [

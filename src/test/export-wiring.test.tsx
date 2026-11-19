@@ -97,7 +97,7 @@ describe('export wiring', () => {
       pagesPlaced: 10,
       pagesSkipped: 2,
     })
-    const { notify, hook } = harness(refs(12))
+    const { notify, hook } = harness(refs(9))
 
     act(() => hook.result.current.exportAll())
 

@@ -17,6 +17,20 @@ export interface CellText {
   readonly text: string
 }
 
+/** How a band's text looks. Per band, so the header and footer can differ. */
+export interface TextStyle {
+  /** Colour as a hex string, e.g. `#111827`. */
+  readonly color: string
+  /** Highlight behind the text, or null for none. */
+  readonly highlight: string | null
+}
+
+export const DEFAULT_TEXT_STYLE: TextStyle = { color: '#111827', highlight: null }
+
+/** Swatches offered for colour and highlight: dark ink, and warm markers. */
+export const TEXT_SWATCHES = ['#111827', '#b91c1c', '#1d4ed8', '#15803d'] as const
+export const HIGHLIGHT_SWATCHES = ['#fde68a', '#bbf7d0', '#bfdbfe', '#fecaca'] as const
+
 /** Artwork transform, in millimetres relative to the picture box. */
 export interface ImageTransform {
   readonly offsetXMm: number

@@ -2,6 +2,8 @@ import type { IngestedDocument, TextRegion } from '../../types/document'
 import { closePdf, openPdf } from './client'
 import { extractPageText } from './extract'
 import { renderPagePreview } from './preview'
+import { extractEmbeddedPhoto } from './food-photo'
+import { readRecipeText } from './recipe-text'
 
 export interface IngestOptions {
   /** Called as each document starts and finishes so the queue can show progress. */
@@ -37,6 +39,8 @@ export async function ingestFile(
     metrics: null,
     regions: [],
     pagePreviewUrl: null,
+    copy: null,
+    photoUrl: null,
     error: null,
   }
 
@@ -65,11 +69,18 @@ export async function ingestFile(
     const extracted = await extractPageText(firstPage)
     const preview = await renderPagePreview(firstPage)
 
+    // Fill the card from the page itself, so upload never lands the user in an empty
+    // editor. The photo is the real embedded image, not a crop of the rendered page.
+    const recipe = await readRecipeText(firstPage)
+    const photo = await extractEmbeddedPhoto(firstPage)
+
     const regions: readonly TextRegion[] = extracted.ok ? extracted.regions : []
     const error = extracted.ok ? null : extracted.reason
 
     return finish(base, {
       status: 'parsed',
+      copy: { header: recipe.header, footer: recipe.footer },
+      photoUrl: photo?.dataUrl ?? preview,
       metrics: {
         pageCount: doc.numPages,
         widthPt: viewport.width,

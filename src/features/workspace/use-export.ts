@@ -22,6 +22,8 @@ export interface ExportOptions {
   readonly texts?: Readonly<Record<string, string>> | undefined
   /** Artwork framing keyed by page index. */
   readonly images?: Readonly<Record<string, ImageTransform>> | undefined
+  /** Text styles keyed `pageIndex|band`, as the preview stores them. */
+  readonly styles?: Readonly<Record<string, { color: string; highlight: string | null }>> | undefined
 }
 
 /** Writes the imposed sheets and hands the browser a download. Never blocks the UI. */
@@ -33,6 +35,7 @@ export function useExport({
   notify,
   texts,
   images,
+  styles,
 }: ExportOptions): ExportApi {
   const [busy, setBusy] = useState(false)
 
@@ -65,6 +68,7 @@ export function useExport({
         // once here so neither side has to know about the other's numbering.
         const cellTexts: Record<string, CellText> = {}
         const cellImages: Record<string, ImageTransform> = {}
+        const cellStyles: Record<string, { color: string; highlight: string | null }> = {}
         const plans = planSheets(pages, grid)
         for (const plan of plans) {
           for (const placement of plan.placements) {
@@ -86,6 +90,12 @@ export function useExport({
               cellImages[`${placement.cellIndex}|${placement.documentId}|${placement.pageNumber}`] =
                 image
             }
+            for (const band of ['header', 'footer'] as const) {
+              const style = styles?.[`${index}|${band}`]
+              if (style !== undefined) {
+                cellStyles[`${placement.cellIndex}|${band}`] = style
+              }
+            }
           }
         }
 
@@ -97,6 +107,7 @@ export function useExport({
           drawCutMarks,
           texts: cellTexts,
           images: cellImages,
+          styles: cellStyles,
         })
 
         if (result.bytes.byteLength === 0) {
@@ -126,7 +137,7 @@ export function useExport({
         setBusy(false)
       }
     })()
-  }, [settings, grid, pages, drawCutMarks, notify, texts, images])
+  }, [settings, grid, pages, drawCutMarks, notify, texts, images, styles])
 
   return { busy, exportAll }
 }
