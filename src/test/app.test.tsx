@@ -3,13 +3,13 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
 
-function mockViewport(width: number): void {
+function mockMatchMedia(width = 1440): void {
   Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: width })
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     writable: true,
     value: (query: string) => ({
-      matches: false,
+      matches: query.includes('min-width: 64rem') ? width >= 1024 : false,
       media: query,
       onchange: null,
       addEventListener: vi.fn(),
@@ -23,7 +23,7 @@ function mockViewport(width: number): void {
 
 beforeEach(() => {
   localStorage.clear()
-  mockViewport(1440)
+  mockMatchMedia(1440)
 })
 
 afterEach(() => {
@@ -36,10 +36,12 @@ describe('App shell', () => {
 
     expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
-    expect(screen.getByText('Batch queue')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Queue' })).toBeInTheDocument()
     expect(screen.getByText('Page setup')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /export current pdf/i })).toBeDisabled()
     expect(screen.getByText(/no PDFs yet/i)).toBeInTheDocument()
+    // The dead-button regression: these must be wired, not decorative.
+    expect(screen.getAllByRole('button', { name: /add pdfs/i }).length).toBeGreaterThan(0)
   })
 
   it('renders the reduced-motion switch in Settings and persists the choice', async () => {
@@ -57,7 +59,7 @@ describe('App shell', () => {
   })
 
   it('shows the desktop-only notice below 1024px', () => {
-    mockViewport(500)
+    mockMatchMedia(500)
     render(<App />)
     expect(screen.getByText('Designed for desktop')).toBeInTheDocument()
   })

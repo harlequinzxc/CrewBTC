@@ -1,4 +1,4 @@
-# Print Studio — Batch PDF Recreator
+# CrewBTC
 
 A PC-first, fully client-side PWA that batch-parses consistently formatted PDFs and
 recreates them as print-ready vector PDFs. No backend, no upload, no network calls.
@@ -105,13 +105,19 @@ Verified with a planted floating promise: plain run reported **0** warnings,
 - **No bundled print font yet.** Base-14 only until Phase 4 decides the font payload.
 - **Browser verification is manual.** Chromium downloads are blocked in the build
   sandbox, so breakpoint/installed-mode passes are reported as `not run` rather than
-  claimed.
+  claimed. Extraction is covered end-to-end by a Node test against a real PDF.
+- **PDF.js is loaded lazily** on the first import. The initial route is ~83 KB gzip;
+  the 132 KB PDF chunk is requested only when a PDF is added. `scripts/check-bundle.sh`
+  enforces both facts.
+- **Standard-14 font data and CMaps are shipped** under `public/pdfjs/` (2.5 MB served,
+  not in the JS bundle). Without `standardFontDataUrl`, PDF.js cannot substitute
+  Helvetica/Times/Courier and extraction of such text fails.
 
 ## Phase status
 
 | Phase | Scope | State |
 |---|---|---|
 | 1 | Shell, design system, geometry, storage skeleton, PWA | **done — v0.1.0** |
-| 2 | `pdfjs-dist` extraction engine + calibration modal | not started |
+| 2 | `pdfjs-dist` extraction engine + queue and preview | **in progress — v0.2.0** (calibration modal still to come) |
 | 3 | Interactive canvas, DPI readout, synced inspector | not started |
 | 4 | Vector PDF exporter, bleed/marks, single/merged/zip | not started |

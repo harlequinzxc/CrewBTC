@@ -1,7 +1,7 @@
 {
-  "name": "Print Studio — Batch PDF Recreator",
-  "short_name": "Print Studio",
-  "description": "Batch-parse PDFs and recreate print-ready vector PDFs entirely in your browser.",
+  "name": "CrewBTC",
+  "short_name": "CrewBTC",
+  "description": "Batch-parse consistently formatted PDFs and recreate them as print-ready vector PDFs, entirely in your browser.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

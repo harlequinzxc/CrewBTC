@@ -15,30 +15,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
-      // The static file in `public/` is the one index.html links and the §4.4 gate
-      // verifies; the plugin mirrors it for the service worker's precache list.
-      manifestFilename: 'manifest.json',
-      manifest: {
-        name: 'Print Studio — Batch PDF Recreator',
-        short_name: 'Print Studio',
-        description:
-          'Batch-parse PDFs and recreate print-ready vector PDFs entirely in your browser.',
-        start_url: '/',
-        display: 'standalone',
-        background_color: '#09090b',
-        theme_color: '#09090b',
-        icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          {
-            src: '/icons/icon-maskable-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-        ],
-      },
+      // `public/manifest.json` is the single source of truth and is precached as an
+      // asset; disabling generation here avoids a second, drift-prone copy.
+      manifest: false,
+      includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'manifest.json'],
     }),
   ],
 })

@@ -2,7 +2,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import type { TemplatePreset } from '../../types/template'
 import type { PageSettings } from '../../types/settings'
 
-export const DB_NAME = 'print-studio'
+export const DB_NAME = 'crewbtc'
 export const SCHEMA_VERSION = 1
 
 export interface SettingsRecord {
