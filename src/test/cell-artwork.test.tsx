@@ -10,15 +10,20 @@ import type { PageRef } from '../lib/imposition/sheet'
  * no canvas; the placement maths under test is the real implementation.
  */
 const renderThumbnail = vi.fn()
+// Mirrors doc-cache's monotonic version, so a simulated re-upload changes the key
+// exactly as the real code would.
+const versions = vi.hoisted(() => new Map<string, number>())
 
 vi.mock('../lib/pdf/thumbnails', () => ({
   THUMBNAIL_WIDTH_PX: 220,
-  thumbnailKey: (fileName: string, pageNumber: number) => `${fileName}#${pageNumber}`,
+  thumbnailKey: (fileName: string, pageNumber: number) =>
+    `${fileName}#${versions.get(fileName) ?? 1}#${pageNumber}`,
   renderThumbnail: (fileName: string, pageNumber: number) =>
     renderThumbnail(fileName, pageNumber) as Promise<string | null>,
 }))
 
 import { SheetPreview } from '../features/workspace/SheetPreview'
+import { keepSource, sourceVersion } from '../lib/export/doc-cache'
 
 const grid = computeGrid(DEFAULT_SHEET)
 
@@ -52,6 +57,7 @@ function refs(count: number): PageRef[] {
 }
 
 beforeEach(() => {
+  versions.clear()
   renderThumbnail.mockReset()
   renderThumbnail.mockImplementation(
     async (fileName: string, pageNumber: number) => `data:image/png;base64,${fileName}-${pageNumber}`,
@@ -107,5 +113,64 @@ describe('page content inside cells', () => {
   it('draws no image when there are no pages', () => {
     render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={[]} showCutMarks />)
     expect(document.querySelectorAll('img')).toHaveLength(0)
+  })
+
+  it('shows artwork again when returning to an already-rendered sheet', async () => {
+    const first = refs(12)
+    const { rerender } = render(
+      <SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={first} showCutMarks />,
+    )
+    await waitFor(() => expect(document.querySelectorAll('img')).toHaveLength(12))
+    const rendersAfterFirst = renderThumbnail.mock.calls.length
+
+    // Second sheet: a different, offset set of pages.
+    const second: PageRef[] = Array.from({ length: 12 }, (_unused, index) => ({
+      documentId: 'more.pdf',
+      fileName: 'more.pdf',
+      pageNumber: index + 1,
+      widthMm: 52,
+      heightMm: 67,
+    }))
+    rerender(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={second} showCutMarks />)
+    await waitFor(() =>
+      expect(document.querySelectorAll('img')[0]?.getAttribute('src')).toContain('more.pdf'),
+    )
+
+    // Back to the first sheet: fully cached, yet the cells must still show artwork.
+    rerender(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={first} showCutMarks />)
+    await waitFor(() =>
+      expect(document.querySelectorAll('img')[0]?.getAttribute('src')).toContain('cards.pdf'),
+    )
+    expect(document.querySelectorAll('img')).toHaveLength(12)
+    expect(renderThumbnail.mock.calls.length).toBe(rendersAfterFirst + 12)
+  })
+
+  it('discards cached artwork when the same file name is re-uploaded', async () => {
+    const { rerender } = render(
+      <SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(2)} showCutMarks />,
+    )
+    await waitFor(() => expect(document.querySelectorAll('img')).toHaveLength(2))
+    expect(renderThumbnail).toHaveBeenCalledTimes(2)
+
+    // Same names, new bytes: the old render must not survive.
+    versions.set('cards.pdf', 2)
+    rerender(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(2)} showCutMarks />)
+    await waitFor(() => expect(renderThumbnail).toHaveBeenCalledTimes(4))
+  })
+})
+
+describe('source versions', () => {
+  it('bumps the version only when bytes are actually kept', () => {
+    expect(sourceVersion('cards.pdf')).toBe(0)
+
+    keepSource('cards.pdf', new ArrayBuffer(8))
+    const first = sourceVersion('cards.pdf')
+    expect(first).toBeGreaterThan(0)
+
+    keepSource('cards.pdf', new ArrayBuffer(16))
+    expect(sourceVersion('cards.pdf')).toBeGreaterThan(first)
+
+    // A file that was never uploaded stays at 0, so nothing renders from nothing.
+    expect(sourceVersion('missing.pdf')).toBe(0)
   })
 })

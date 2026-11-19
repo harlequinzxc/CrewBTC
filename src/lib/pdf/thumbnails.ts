@@ -1,11 +1,15 @@
 import { getProxy } from './proxy-cache'
-import { getSource } from '../export/doc-cache'
+import { getSource, sourceVersion } from '../export/doc-cache'
 
 /** A4 at 220 px wide is ~0.75 px per mm — enough to read a card at preview size. */
 export const THUMBNAIL_WIDTH_PX = 220
 
+/**
+ * Includes the source version: the same file name can hold different bytes after a
+ * re-upload, and showing the previous render would be a lie about what will export.
+ */
 export const thumbnailKey = (fileName: string, pageNumber: number): string =>
-  `${fileName}#${pageNumber}`
+  `${fileName}#${sourceVersion(fileName)}#${pageNumber}`
 
 /**
  * Renders one source page to a PNG data URL for use inside a grid cell.
@@ -18,9 +22,10 @@ export async function renderThumbnail(
   widthPx: number = THUMBNAIL_WIDTH_PX,
 ): Promise<string | null> {
   const bytes = getSource(fileName)
-  if (bytes === null) return null
+  const version = sourceVersion(fileName)
+  if (bytes === null || version === 0) return null
 
-  const entry = await getProxy(fileName, bytes)
+  const entry = await getProxy(fileName, bytes, version)
   if (entry === null) return null
 
   try {

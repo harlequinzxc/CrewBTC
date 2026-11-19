@@ -13,11 +13,16 @@ interface Entry {
 const cache = new Map<string, Entry>()
 const pending = new Map<string, Promise<Entry | null>>()
 
-export async function getProxy(fileName: string, bytes: ArrayBuffer): Promise<Entry | null> {
-  const hit = cache.get(fileName)
+export async function getProxy(
+  fileName: string,
+  bytes: ArrayBuffer,
+  version: number,
+): Promise<Entry | null> {
+  const key = `${fileName}#${version}`
+  const hit = cache.get(key)
   if (hit !== undefined) return hit
 
-  const inFlight = pending.get(fileName)
+  const inFlight = pending.get(key)
   if (inFlight !== undefined) return inFlight
 
   const work = (async (): Promise<Entry | null> => {
@@ -25,12 +30,12 @@ export async function getProxy(fileName: string, bytes: ArrayBuffer): Promise<En
     const opened = await openPdf(bytes)
     if (!opened.ok) return null
     const entry: Entry = { doc: opened.doc, task: opened.task }
-    cache.set(fileName, entry)
-    pending.delete(fileName)
+    cache.set(key, entry)
+    pending.delete(key)
     return entry
   })()
 
-  pending.set(fileName, work)
+  pending.set(key, work)
   return work
 }
 

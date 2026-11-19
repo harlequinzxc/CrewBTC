@@ -22,7 +22,6 @@ export function useThumbnails(
     let cancelled = false
 
     void (async () => {
-      let changed = false
       const next: Record<string, string> = {}
 
       for (const request of requests) {
@@ -40,11 +39,13 @@ export function useThumbnails(
         if (url !== null) {
           cache.current.set(key, url)
           next[key] = url
-          changed = true
         }
       }
 
-      if (!cancelled && changed) setUrls(next)
+      // Publish on every settled run, not only when something was rendered: going
+      // back to an already-rendered sheet hits only the cache, and must still show
+      // its artwork instead of the previous sheet's keys.
+      if (!cancelled) setUrls(next)
     })()
 
     return () => {

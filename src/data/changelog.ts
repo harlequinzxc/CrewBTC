@@ -16,6 +16,8 @@ export const CHANGELOG: readonly ReleaseNote[] = [
       'Artwork sits exactly where it will print, so the preview matches the export',
       'Pages render once and are cached — switching sheets is instant',
       'Pages that cannot render fall back to the filename instead of breaking',
+      'Returning to a sheet you already viewed shows its artwork straight away',
+      'Re-uploading a file with the same name shows the new pages, never the old ones',
     ],
   },
   {
