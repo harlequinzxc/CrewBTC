@@ -41,7 +41,7 @@ export function Inspector({
     )?.id ?? 'custom'
 
   return (
-    <aside className="hidden w-[320px] shrink-0 flex-col overflow-y-auto border-l border-zinc-800 bg-zinc-950 xl:flex">
+    <aside className="hidden h-full w-[320px] shrink-0 flex-col overflow-y-auto border-l border-zinc-800 bg-zinc-950 xl:flex">
       {sheetPanel === undefined ? (
         <div className="border-b border-zinc-800 px-4 py-3">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">

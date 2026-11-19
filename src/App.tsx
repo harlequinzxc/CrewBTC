@@ -121,7 +121,7 @@ function Workspace() {
 
             <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-zinc-950">
               {batch.documents.length === 0 ? (
-                <div className="grid flex-1 place-items-center p-6">
+                <div className="grid min-h-0 flex-1 place-items-center overflow-hidden p-6">
                   <div className="w-full max-w-sm">
                     <DropZone onFiles={batch.addFiles} disabled={batch.busy} />
                     <Button
@@ -137,14 +137,16 @@ function Workspace() {
                   </div>
                 </div>
               ) : (
-                <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                  <div className="flex min-h-0 flex-[3] flex-col overflow-hidden">
                   <SheetPreview
                     settings={sheet.settings}
                     grid={sheet.grid}
                     pages={pageRefs}
                     showCutMarks={showCutMarks}
                   />
-                  <div className="max-h-[38%] shrink-0 overflow-y-auto border-t border-zinc-800">
+                  </div>
+                  <div className="min-h-0 flex-[2] shrink overflow-y-auto border-t border-zinc-800">
                     <DocumentPreview document={active} />
                   </div>
                 </div>
