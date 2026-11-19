@@ -1,5 +1,6 @@
 import type { PDFPageProxy } from 'pdfjs-dist'
 import { encodePng } from './png-canvas'
+import { paintedBoxOf } from './painted-box'
 
 /**
  * Pulls the *embedded image* out of a recipe page, rather than re-rendering the page.
@@ -23,7 +24,16 @@ export interface EmbeddedPhoto {
   readonly widthPx: number
   readonly heightPx: number
   /** Where the image was drawn, normalised 0–1 against the page, top-left origin. */
-  readonly box: { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
+  readonly box: ImageBox
+  /** The image object's id, so its placement can be found in the operator list. */
+  readonly id: string
+}
+
+export interface ImageBox {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
 }
 
 export interface DecodedImage {
@@ -121,12 +131,16 @@ export async function extractEmbeddedPhoto(page: PDFPageProxy): Promise<Embedded
     // browser: `objs.has()` is false and `objs.get()` throws at this point. Reading
     // synchronously works only against a fake worker, which is why this looked correct
     // in a Node probe and still showed page renders in the app.
-    const resolved = await Promise.all([...ids].map((objId) => resolveImage(page, objId)))
+    // The id travels with the decoded pixels: the winning image's placement on the page
+    // is found by looking for that same id in the operator list.
+    const resolved = await Promise.all(
+      [...ids].map(async (objId) => ({ id: objId, image: await resolveImage(page, objId) })),
+    )
 
-    let best: DecodedImage | null = null
+    let best: (DecodedImage & { id: string }) | null = null
     let bestArea = 0
 
-    for (const image of resolved) {
+    for (const { id, image } of resolved) {
       if (image === null) continue
       if (image.width < MIN_SIDE_PX || image.height < MIN_SIDE_PX) continue
       if (image.width > MAX_SIDE_PX || image.height > MAX_SIDE_PX) continue
@@ -134,7 +148,7 @@ export async function extractEmbeddedPhoto(page: PDFPageProxy): Promise<Embedded
 
       const areaPx = image.width * image.height
       if (areaPx > bestArea) {
-        best = image
+        best = { ...image, id }
         bestArea = areaPx
       }
     }
@@ -147,17 +161,12 @@ export async function extractEmbeddedPhoto(page: PDFPageProxy): Promise<Embedded
     const dataUrl = encodePng(converted.rgb, converted.width, converted.height)
     if (dataUrl === null) return null
 
-    // The drawn box is the image's own aspect, centred on the page. Exact placement is
-    // not needed: the card's picture band covers and clips whatever it is given.
-    const box = {
-      x: 0.1,
-      y: 0.15,
-      width: 0.8,
-      height: 0.6,
-    }
-    void viewport
+    // Where the image was actually painted, from the operator list. The text split
+    // needs this: the header is the words above the photo, not above the page's middle,
+    // and on a card whose title sits low those are different answers.
+    const box = await paintedBoxOf(page, best.id, viewport)
 
-    return { dataUrl, widthPx: converted.width, heightPx: converted.height, box }
+    return { dataUrl, widthPx: converted.width, heightPx: converted.height, box, id: best.id }
   } catch {
     return null
   }

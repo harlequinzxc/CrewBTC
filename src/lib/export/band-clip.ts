@@ -2,7 +2,7 @@ import { mmToPt } from '../units'
 import type { PDFOperator } from '@cantoo/pdf-lib'
 
 /** The slice of pdf-lib's operator API this needs; keeps the import lazy-friendly. */
-interface ClipOps {
+export interface ClipOps {
   readonly pushGraphicsState: () => PDFOperator
   readonly moveTo: (x: number, y: number) => PDFOperator
   readonly lineTo: (x: number, y: number) => PDFOperator

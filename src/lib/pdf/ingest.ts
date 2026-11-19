@@ -1,10 +1,14 @@
 import type { PDFDocumentProxy } from './engine'
+import type { PDFPageProxy } from 'pdfjs-dist'
 import type { IngestedDocument, RecipeCopy, TextRegion } from '../../types/document'
 import { closePdf, openPdf } from './client'
 import { extractPageText } from './extract'
 import { renderPagePreview } from './preview'
 import { photoMap, photosForDocument } from './page-photo'
 import { readRecipeText } from './recipe-text'
+import { photoMiddleOf } from './painted-box'
+import { extractEmbeddedPhoto } from './food-photo'
+import { ocrPage } from './ocr'
 
 export interface IngestOptions {
   /** Called as each document starts and finishes so the queue can show progress. */
@@ -77,9 +81,10 @@ export async function ingestFile(
     const pagePhotos = await photosForDocument(doc)
     const photos = photoMap(pagePhotos)
 
-    // Copy is still read here so the cards are not blank, but text is not this step's
-    // subject and none of it is required for the photo to appear.
-    const recipe = await readRecipeText(firstPage)
+    // Copy is read around the photo's real position, so a title that sits low on the
+    // page still lands in the header instead of being mistaken for an instruction.
+    const middle = await middleOf(firstPage, pagePhotos[1] ?? null)
+    const recipe = await readRecipeText(firstPage, middle)
     const copies = await readCopies(doc)
 
     const regions: readonly TextRegion[] = extracted.ok ? extracted.regions : []
@@ -122,6 +127,22 @@ function finish(
  * A page with nothing readable is simply absent: the sheet then leaves that card empty
  * rather than filling it with another dish's words.
  */
+/** Where the first page's photo sits vertically, as a 0–1 fraction from the top. */
+async function middleOf(
+  page: PDFPageProxy,
+  photo: { readonly widthPx: number; readonly heightPx: number } | null,
+): Promise<number> {
+  void photo
+  const viewport = page.getViewport({ scale: 1 })
+  return photoMiddleOf(page, await embeddedId(page), viewport)
+}
+
+/** The id of the page's chosen image, which is how its placement is looked up. */
+async function embeddedId(page: PDFPageProxy): Promise<string | null> {
+  const embedded = await extractEmbeddedPhoto(page).catch(() => null)
+  return embedded === null ? null : embedded.id
+}
+
 async function readCopies(
   doc: PDFDocumentProxy,
 ): Promise<Readonly<Record<number, RecipeCopy>>> {
@@ -132,9 +153,17 @@ async function readCopies(
       const pageNumber = index + 1
       try {
         const page = await doc.getPage(pageNumber)
-        const recipe = await readRecipeText(page)
+        const middle = await middleOf(page, null)
+        const recipe = await readRecipeText(page, middle)
         if (!recipe.empty) {
           out[pageNumber] = { header: recipe.header, footer: recipe.footer }
+          return
+        }
+        // No text layer at all: this page is a scan, so read it with OCR instead of
+        // leaving the card blank. Costs nothing for a PDF that already has its text.
+        const recognised = await ocrPage(page)
+        if (recognised.headerText !== '' || recognised.bodyText !== '') {
+          out[pageNumber] = { header: recognised.headerText, footer: recognised.bodyText }
         }
       } catch {
         // No readable copy on this page; leave its card blank rather than guessing.
