@@ -22,6 +22,8 @@ export interface ExportOptions {
   readonly texts?: Readonly<Record<string, string>> | undefined
   /** Artwork framing keyed by page index. */
   readonly images?: Readonly<Record<string, ImageTransform>> | undefined
+  /** Extracted dish photos keyed `documentId#pageNumber`. */
+  readonly photos?: Readonly<Record<string, string>> | undefined
   /** Text styles keyed `pageIndex|band`, as the preview stores them. */
   readonly styles?: Readonly<Record<string, { color: string; highlight: string | null }>> | undefined
 }
@@ -35,6 +37,7 @@ export function useExport({
   notify,
   texts,
   images,
+  photos,
   styles,
 }: ExportOptions): ExportApi {
   const [busy, setBusy] = useState(false)
@@ -69,6 +72,7 @@ export function useExport({
         const cellTexts: Record<string, CellText> = {}
         const cellImages: Record<string, ImageTransform> = {}
         const cellStyles: Record<string, { color: string; highlight: string | null }> = {}
+        const cellPhotos: Record<string, string> = {}
         const plans = planSheets(pages, grid)
         for (const plan of plans) {
           for (const placement of plan.placements) {
@@ -90,6 +94,13 @@ export function useExport({
               cellImages[`${placement.cellIndex}|${placement.documentId}|${placement.pageNumber}`] =
                 image
             }
+            // Keyed the way the exporter reads it, so the card gets its own dish photo.
+            const photo = photos?.[`${placement.documentId}#${placement.pageNumber}`]
+            if (photo !== undefined) {
+              cellPhotos[`${placement.cellIndex}|${placement.documentId}|${placement.pageNumber}`] =
+                photo
+            }
+
             for (const band of ['header', 'footer'] as const) {
               const style = styles?.[`${index}|${band}`]
               if (style !== undefined) {
@@ -107,6 +118,7 @@ export function useExport({
           drawCutMarks,
           texts: cellTexts,
           images: cellImages,
+          photos: cellPhotos,
           styles: cellStyles,
         })
 
@@ -137,7 +149,7 @@ export function useExport({
         setBusy(false)
       }
     })()
-  }, [settings, grid, pages, drawCutMarks, notify, texts, images, styles])
+  }, [settings, grid, pages, drawCutMarks, notify, texts, images, photos, styles])
 
   return { busy, exportAll }
 }

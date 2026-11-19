@@ -179,17 +179,16 @@ describe('cells show the dish photo, never the page render', () => {
     expect(sources).toContain('data:image/png;base64,DISH-TWO')
   })
 
-  it('gives each card its own page artwork, even when one page has no photo', async () => {
+  it('shows a photo where there is one, and nothing where there is not', async () => {
     renderSheet({ 2: 'data:image/png;base64,DISH-TWO' })
 
-    // Page 2 has a photo; page 1 has none, so page 1's band becomes the cropped render.
+    // Page 2 has a photo; page 1 has none. A page render in page 1's band was the old
+    // fallback and is exactly what the cards must never show, so the band stays empty.
     await waitFor(() => {
       expect(sourceOfCell(2)).toBe('data:image/png;base64,DISH-TWO')
-      expect(sourceOfCell(1)).toContain('PAGE-RENDER')
     })
-
-    // The rule that matters: a card never borrows another page's dish photo.
     expect(sourceOfCell(1)).not.toBe('data:image/png;base64,DISH-TWO')
+    expect(document.body.textContent).toContain('No photo found on this page')
   })
 })
 

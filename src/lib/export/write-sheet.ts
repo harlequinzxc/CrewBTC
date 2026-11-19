@@ -6,6 +6,8 @@ import type { GridLayout, SheetSettings } from '../../types/imposition'
 import { cellZones, coverRectMm, DEFAULT_IMAGE_TRANSFORM, textFor } from '../../types/edit'
 import type { CellText, ImageTransform } from '../../types/edit'
 import { drawCellText } from './cell-text'
+import { photoFor } from './photo-bytes'
+import { pushBandClip } from './band-clip'
 
 export interface ExportInput {
   readonly settings: SheetSettings
@@ -18,6 +20,12 @@ export interface ExportInput {
   readonly texts?: Readonly<Record<string, CellText>> | undefined
   /** Artwork transforms per cell. Absent means each page just covers its box. */
   readonly images?: Readonly<Record<string, ImageTransform>> | undefined
+  /**
+   * Extracted dish photo per cell key `cellIndex|documentId|pageNumber`, as a PNG data
+   * URL. When present the picture band holds only this photo; the source page is never
+   * drawn into a card.
+   */
+  readonly photos?: Readonly<Record<string, string>> | undefined
   /** Text colour and highlight per cell band. */
   readonly styles?:
     | Readonly<
@@ -48,6 +56,7 @@ export async function writeSheets(input: ExportInput): Promise<ExportResult> {
   const { settings, grid, pages, sources, drawCutMarks } = input
   const texts = input.texts ?? {}
   const images = input.images ?? {}
+  const photos = input.photos ?? {}
   const styles = input.styles ?? {}
   const plans = planSheets(pages, grid)
 
@@ -144,45 +153,37 @@ export async function writeSheets(input: ExportInput): Promise<ExportResult> {
 
       try {
         if (covered !== null) {
-          const embedded = await out.embedPage(sourcePage)
-          const xScale = mmToPt(covered.widthMm) / embedded.width
-          const yScale = mmToPt(covered.heightMm) / embedded.height
+          const x = mmToPt(covered.xMm)
+          const y = sheetHeightPt - mmToPt(covered.yMm) - mmToPt(covered.heightMm)
 
-          if (Number.isFinite(xScale) && Number.isFinite(yScale) && xScale > 0 && yScale > 0) {
-            const x = mmToPt(covered.xMm)
-            const y = sheetHeightPt - mmToPt(covered.yMm) - mmToPt(covered.heightMm)
+          const png = photoFor(photos, cell.index, placement.documentId, placement.pageNumber)
 
-            // Clip to the picture band so a zoomed page cannot bleed into the text or
-            // across the gutter. The clip is real PDF state, not a drawing trick.
-            const corners = [
-              [zones.picture.xMm, zones.picture.yMm],
-              [zones.picture.xMm + zones.picture.widthMm, zones.picture.yMm],
-              [zones.picture.xMm + zones.picture.widthMm, zones.picture.yMm + zones.picture.heightMm],
-              [zones.picture.xMm, zones.picture.yMm + zones.picture.heightMm],
-            ] as const
-
-            const clipOps = lib
-            const p0 = { x: mmToPt(corners[0][0]), y: sheetHeightPt - mmToPt(corners[0][1]) }
-            const p1 = { x: mmToPt(corners[1][0]), y: sheetHeightPt - mmToPt(corners[1][1]) }
-            const p2 = { x: mmToPt(corners[2][0]), y: sheetHeightPt - mmToPt(corners[2][1]) }
-            const p3 = { x: mmToPt(corners[3][0]), y: sheetHeightPt - mmToPt(corners[3][1]) }
-
-            outPage.pushOperators(
-              clipOps.pushGraphicsState(),
-              clipOps.moveTo(p0.x, p0.y),
-              clipOps.lineTo(p1.x, p1.y),
-              clipOps.lineTo(p2.x, p2.y),
-              clipOps.lineTo(p3.x, p3.y),
-              clipOps.closePath(),
-              clipOps.clip(),
-              clipOps.endPath(),
-            )
-            outPage.drawPage(embedded, { x, y, xScale, yScale })
-            outPage.pushOperators(clipOps.popGraphicsState())
-
-            pagesPlaced += 1
-          } else {
+          if (png === null) {
+            // No extractable photo on this page. Drawing the source page instead would
+            // put its printed title and border box straight back into the card, which is
+            // the thing this export exists to stop. An empty band is the honest result.
             pagesSkipped += 1
+          } else {
+            // The dish photo alone: no printed type, no box from the source page.
+            const image = await out.embedPng(png)
+            const xScale = mmToPt(covered.widthMm) / image.width
+            const yScale = mmToPt(covered.heightMm) / image.height
+
+            if (Number.isFinite(xScale) && Number.isFinite(yScale) && xScale > 0 && yScale > 0) {
+              // Clip to the picture band so a zoomed image cannot bleed into the text
+              // or across the gutter. The clip is real PDF state, not a drawing trick.
+              pushBandClip(lib, outPage, zones.picture, sheetHeightPt)
+              outPage.drawImage(image, {
+                x,
+                y,
+                width: mmToPt(covered.widthMm),
+                height: mmToPt(covered.heightMm),
+              })
+              outPage.pushOperators(lib.popGraphicsState())
+              pagesPlaced += 1
+            } else {
+              pagesSkipped += 1
+            }
           }
         } else {
           pagesSkipped += 1

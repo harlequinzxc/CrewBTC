@@ -106,32 +106,41 @@ export async function extractEmbeddedPhoto(page: PDFPageProxy): Promise<Embedded
     const operatorList = await page.getOperatorList()
     const viewport = page.getViewport({ scale: 1 })
 
-    let best: { readonly objId: string; readonly areaPx: number } | null = null
-
+    // Every image id on the page, in paint order. Synthetic ids (`g_d0_f2`, `#000000`)
+    // are fonts and colours, and are filtered out when they fail to resolve.
+    const ids = new Set<string>()
     for (let index = 0; index < operatorList.fnArray.length; index += 1) {
-      const fn = operatorList.fnArray[index]
-      // paintImageXObject (85) carries an id in argsArray; the mask variants do not.
-      if (typeof fn !== 'number') continue
       const args = operatorList.argsArray[index]
       if (!Array.isArray(args)) continue
       const objId = args[0]
-      if (typeof objId !== 'string') continue
+      if (typeof objId === 'string') ids.add(objId)
+    }
 
-      const image = safeGet(page, objId)
+    // The worker delivers image data *after* the operator list resolves in a real
+    // browser: `objs.has()` is false and `objs.get()` throws at this point. Reading
+    // synchronously works only against a fake worker, which is why this looked correct
+    // in a Node probe and still showed page renders in the app.
+    const resolved = await Promise.all([...ids].map((objId) => resolveImage(page, objId)))
+
+    let best: DecodedImage | null = null
+    let bestArea = 0
+
+    for (const image of resolved) {
       if (image === null) continue
       if (image.width < MIN_SIDE_PX || image.height < MIN_SIDE_PX) continue
       if (image.width > MAX_SIDE_PX || image.height > MAX_SIDE_PX) continue
       if (image.kind === GRAYSCALE_1BPP) continue
 
       const areaPx = image.width * image.height
-      if (best === null || areaPx > best.areaPx) best = { objId, areaPx }
+      if (areaPx > bestArea) {
+        best = image
+        bestArea = areaPx
+      }
     }
 
     if (best === null) return null
 
-    const image = safeGet(page, best.objId)
-    if (image === null) return null
-    const converted = toPlainRgb(image)
+    const converted = toPlainRgb(best)
     if (converted === null) return null
 
     const dataUrl = encodePng(converted.rgb, converted.width, converted.height)
@@ -153,7 +162,57 @@ export async function extractEmbeddedPhoto(page: PDFPageProxy): Promise<Embedded
   }
 }
 
-/** `page.objs.get` throws when an object has not resolved yet; DOM ops are fine to skip. */
+/**
+ * Waits for one image object, however the build chooses to hand it over.
+ *
+ * Three shapes exist in practice: already resolved (read it), delivered later (use the
+ * callback), or not an image at all (a font or colour name, so skip it). All are treated
+ * as normal rather than as errors.
+ */
+const IMAGE_WAIT_MS = 4000
+
+function resolveImage(page: PDFPageProxy, objId: string): Promise<DecodedImage | null> {
+  const immediate = safeGet(page, objId)
+  if (immediate !== null) return Promise.resolve(immediate)
+
+  if (!page.objs.has(objId) && !looksLikeImageName(objId)) {
+    // Not queued and not an image id: a font or colour, nothing will arrive.
+    return Promise.resolve(null)
+  }
+
+  return new Promise<DecodedImage | null>((resolve) => {
+    let settled = false
+    const done = (value: DecodedImage | null): void => {
+      if (settled) return
+      settled = true
+      resolve(value)
+    }
+
+    try {
+      page.objs.get(
+        objId,
+        (value: unknown) => {
+          if (isDecodedImage(value)) return done(value)
+          const wrapped = (value as { data?: unknown } | null)?.data
+          return done(isDecodedImage(wrapped) ? wrapped : null)
+        },
+        () => done(null),
+      )
+    } catch {
+      return done(null)
+    }
+
+    // A page that never delivers must not stall an upload forever.
+    setTimeout(() => done(null), IMAGE_WAIT_MS)
+  })
+}
+
+/** PDF.js names real image objects `img_p<page>_<n>`; fonts and colours do not. */
+function looksLikeImageName(objId: string): boolean {
+  return /^img_/.test(objId)
+}
+
+/** Reads an image object when it is already resolved. Never throws. */
 function safeGet(page: PDFPageProxy, objId: string): DecodedImage | null {
   try {
     if (!page.objs.has(objId)) return null

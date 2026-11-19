@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { PDFDocument, StandardFonts, rgb } from '@cantoo/pdf-lib'
+import { createCanvas } from '@napi-rs/canvas'
 import { writeSheets } from '../lib/export/write-sheet'
 import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
@@ -35,6 +36,31 @@ function refsFor(fileName: string, documentId: string, count: number): PageRef[]
   }))
 }
 
+/** One 8x8 PNG, reused wherever a card needs a dish photo. */
+function tinyPng(): string {
+  const canvas = createCanvas(8, 8)
+  const context = canvas.getContext('2d')
+  context.fillStyle = '#8e44ad'
+  context.fillRect(0, 0, 8, 8)
+  return `data:image/png;base64,${canvas.toBuffer('image/png').toString('base64')}`
+}
+
+/**
+ * A photo for every placed page, keyed `cellIndex|documentId|pageNumber`.
+ *
+ * Cell indexes restart on each sheet (0-8, then 0-8 again), which is the shape the
+ * exporter actually asks for. Keying by flat page index happened to work for one sheet
+ * and silently dropped the picture for every page after the ninth.
+ */
+function photosForPages(pages: readonly PageRef[], perSheet = 9): Record<string, string> {
+  const png = tinyPng()
+  const out: Record<string, string> = {}
+  pages.forEach((page, index) => {
+    out[`${index % perSheet}|${page.documentId}|${page.pageNumber}`] = png
+  })
+  return out
+}
+
 const grid = computeGrid(DEFAULT_SHEET)
 
 describe('sheet writer', () => {
@@ -47,6 +73,7 @@ describe('sheet writer', () => {
       grid,
       pages,
       sources,
+      photos: photosForPages(pages),
       drawCutMarks: true,
     })
 
@@ -73,6 +100,7 @@ describe('sheet writer', () => {
       grid,
       pages,
       sources,
+      photos: photosForPages(pages),
       drawCutMarks: false,
     })
 
@@ -103,6 +131,7 @@ describe('sheet writer', () => {
       grid: customGrid,
       pages: refsFor('c.pdf', 'doc-c', 4),
       sources,
+      photos: photosForPages(refsFor('c.pdf', 'doc-c', 4), customGrid.cellCount),
       drawCutMarks: true,
     })
 
@@ -126,6 +155,7 @@ describe('sheet writer', () => {
       grid,
       pages,
       sources,
+      photos: photosForPages(pages),
       drawCutMarks: false,
     })
 
@@ -147,30 +177,37 @@ describe('sheet writer', () => {
     expect(result.bytes.byteLength).toBe(0)
   })
 
-  it('keeps source content vector: text is still extractable from the output', async () => {
-    const sources = new Map([['doc-e', await makeSourcePdf(1, 'VECTOR')]])
+  it('does not carry the source page’s printed text into the output', async () => {
+    // Cards used to embed the whole page, so its printed title arrived with it. The
+    // picture band now holds the extracted photo only, so source text must be absent.
+    const pages = refsFor('e.pdf', 'doc-e', 1)
     const result = await writeSheets({
       settings: DEFAULT_SHEET,
       grid,
-      pages: refsFor('e.pdf', 'doc-e', 1),
-      sources,
+      pages: [{ documentId: 'doc-e', fileName: 'e.pdf', pageNumber: 1, widthMm: 64, heightMm: 90 }],
+      sources: new Map([['doc-e', await makeSourcePdf(1, 'VECTOR')]]),
+      photos: photosForPages(pages),
       drawCutMarks: false,
+      texts: {
+        '0|doc-e|1': { documentId: 'doc-e', pageNumber: 1, text: 'Dish name\n• Step' },
+      },
     })
 
-    // If we had rasterised, there would be no text operators left to find.
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
     const task = pdfjs.getDocument({
       data: new Uint8Array(result.bytes),
-      standardFontDataUrl: './node_modules/pdfjs-dist/standard_fonts/',
       useWorkerFetch: false,
+      standardFontDataUrl: 'public/pdfjs/standard_fonts/',
     })
     const doc = await task.promise
     const page = await doc.getPage(1)
     const content = await page.getTextContent()
-    const text = content.items
-      .map((item) => ('str' in item ? String(item.str) : ''))
-      .join(' ')
-    expect(text).toContain('VECTOR')
+    const text = content.items.map((item) => ('str' in item ? String(item.str) : '')).join(' ')
+
+    // Our own card copy is live text...
+    expect(text).toContain('Dish name')
+    // ...and the source page's printed label is not carried along with it.
+    expect(text).not.toContain('VECTOR')
     await task.destroy()
   })
 })

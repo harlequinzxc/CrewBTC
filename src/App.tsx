@@ -13,7 +13,7 @@ import { SheetSettings } from './features/workspace/SheetSettings'
 import { useBatch } from './features/workspace/use-batch'
 import { useCellText } from './features/workspace/use-cell-text'
 import { useAutoCopyFor } from './features/workspace/use-auto-copy'
-import { photosByPage, textsByPageIndex } from './features/workspace/photos'
+import { photosByDocumentPage, photosByPage, textsByPageIndex } from './features/workspace/photos'
 import { CentrePane } from './features/workspace/CentrePane'
 import { LeftPane } from './features/workspace/LeftPane'
 import type { LeftTab } from './features/workspace/LeftPane'
@@ -64,6 +64,9 @@ function Workspace() {
   // The real embedded dish photo per page, where the upload found one.
   const photos = useMemo(() => photosByPage(batch.documents), [batch.documents])
 
+  // The same photos keyed by source page, for the exporter.
+  const photosByPageKey = useMemo(() => photosByDocumentPage(batch.documents), [batch.documents])
+
   // One preview per page, for the sketch beside the copy box.
   const previews = useMemo(() => {
     const out: Record<string, string> = {}
@@ -87,6 +90,7 @@ function Workspace() {
     drawCutMarks: showCutMarks,
     texts: textsByPage,
     images: cellText.images,
+    photos: photosByPageKey,
     styles: cellText.styles,
     notify,
   })

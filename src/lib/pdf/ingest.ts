@@ -93,7 +93,9 @@ export async function ingestFile(
       status: 'parsed',
       copy: copies[1] ?? { header: recipe.header, footer: recipe.footer },
       copies,
-      photoUrl: photo?.dataUrl ?? preview,
+      // No fallback to `preview` here: a page render in the picture band is the exact
+      // thing the cards are meant never to show. No photo means an empty band.
+      photoUrl: photo?.dataUrl ?? null,
       photos,
       metrics: {
         pageCount: doc.numPages,

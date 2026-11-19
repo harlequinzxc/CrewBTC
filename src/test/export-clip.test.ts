@@ -14,6 +14,7 @@ import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { writeSheets } from '../lib/export/write-sheet'
 import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
+import { photosFor } from './photo-fixture'
 import type { PageRef } from '../lib/imposition/sheet'
 
 interface RenderedPage {
@@ -96,6 +97,7 @@ describe('a framed picture stays inside its band', () => {
       grid: computeGrid(DEFAULT_SHEET),
       pages,
       sources: new Map([['cards.pdf', source]]),
+      photos: photosFor(1, 'cards.pdf'),
       drawCutMarks: false,
       // Cover-fit at 100% puts the stripe across the image's top 10%, which sits at
       // the very top of the 44 mm picture band. Lifting the image 6 mm moves the
