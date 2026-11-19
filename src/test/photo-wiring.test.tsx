@@ -188,7 +188,7 @@ describe('cells show the dish photo, never the page render', () => {
       expect(sourceOfCell(2)).toBe('data:image/png;base64,DISH-TWO')
     })
     expect(sourceOfCell(1)).not.toBe('data:image/png;base64,DISH-TWO')
-    expect(document.body.textContent).toContain('No photo found on this page')
+    expect(document.body.textContent).toContain('No image on this page')
   })
 })
 

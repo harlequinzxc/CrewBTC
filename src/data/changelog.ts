@@ -8,6 +8,19 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '0.8.0',
+    date: '2026-11-19',
+    title: 'Step 1: every cell gets its dish photo',
+    highlights: [
+      'Each uploaded PDF places its own dish photo into its own cell',
+      'The embedded image is used when there is one, at full resolution and its own shape',
+      'When there is no embedded image — or the only one is the whole page — the page is rendered offscreen and the dish cropped out of the middle',
+      'A flattened card is recognised by its page-shaped image and cropped rather than shown whole',
+      'Fixed: the crop looked up the page in a cache the preview never filled, so it always came back empty',
+      'Oversized photos are scaled down, so a large scan cannot bloat the document',
+    ],
+  },
+  {
     version: '0.7.2',
     date: '2026-11-19',
     title: 'Three boxes on the card: type, photo, type',
