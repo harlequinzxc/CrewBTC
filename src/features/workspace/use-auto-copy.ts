@@ -39,9 +39,16 @@ export function useAutoCopy(options: AutoCopyOptions): void {
 
       const document = documents.find((candidate) => candidate.fileName === page.fileName)
       if (document === undefined || document.status !== 'parsed') return
-      if (document.copy === null) return
 
-      const { header, footer } = document.copy
+      // The page's own copy, and nothing else. `document.copy` is only the first page's
+      // wording, so falling back to it put one dish's name on every card in a multi-card
+      // file. Single-page files still work: `copies[1]` is exactly that copy.
+      const copy =
+        document.copies[page.pageNumber] ??
+        (page.pageNumber === 1 ? document.copy : null)
+      if (copy === null) return
+
+      const { header, footer } = copy
       if (header.trim() === '' && footer.trim() === '') {
         // Nothing readable on the page: leave it empty rather than inventing copy.
         filled.current.add(index)

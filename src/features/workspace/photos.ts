@@ -1,21 +1,30 @@
 import type { IngestedDocument } from '../../types/document'
 import type { CellText } from '../../types/edit'
+import { thumbnailKey } from '../../lib/pdf/thumbnails'
 
 /**
- * Extracted dish photos, keyed `file#page` so the preview can look one up per cell.
+ * Extracted dish photos, keyed exactly as the sheet looks them up.
  *
- * Only page 1 is read today: upload lifts one photo per file, from the first page, which
- * matches a batch of single-card recipe PDFs. Pages beyond the first fall back to their
- * cropped render rather than showing a photo that belongs to a different dish.
+ * The key is built with `thumbnailKey`, not by hand. These two keys drifted once — the map
+ * used `file#page` while the lookup used `file#version#page` — and the only symptom was
+ * every cell quietly showing a page render instead of the dish photo. Sharing the helper
+ * makes that impossible to reintroduce.
  */
 export function photosByPage(
   documents: readonly IngestedDocument[],
 ): Readonly<Record<string, string>> {
   const out: Record<string, string> = {}
+
   for (const document of documents) {
-    if (document.photoUrl === null) continue
-    out[`${document.fileName}#1`] = document.photoUrl
+    for (const [pageNumber, dataUrl] of Object.entries(document.photos)) {
+      out[thumbnailKey(document.fileName, Number(pageNumber))] = dataUrl
+    }
+    // A file read before per-page photos existed still shows its first-page photo.
+    if (document.photoUrl !== null && Object.keys(document.photos).length === 0) {
+      out[thumbnailKey(document.fileName, 1)] = document.photoUrl
+    }
   }
+
   return out
 }
 

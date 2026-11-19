@@ -64,6 +64,9 @@ export function SheetCell(props: SheetCellProps) {
 
   return (
     <div
+      // A stable handle for tests and for anything that needs to reach one card.
+      data-cell={cell.index}
+      data-page={`${props.fileName}#${props.pageNumber}`}
       className={cn(
         'absolute overflow-hidden border border-dashed bg-white',
         selected ? 'border-sky-500 ring-1 ring-sky-400' : 'border-red-400/70',

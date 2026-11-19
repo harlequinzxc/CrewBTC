@@ -39,7 +39,9 @@ function makeDocument(header: string, footer: string): IngestedDocument {
     regions: [],
     pagePreviewUrl: null,
     copy: { header, footer },
+    copies: { 1: { header, footer } },
     photoUrl: null,
+      photos: {},
     error: null,
   }
 }
