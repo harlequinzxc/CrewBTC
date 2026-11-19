@@ -3,8 +3,14 @@ import { mmToPt } from '../units'
 import { cutMarksFor, planSheets } from './placement'
 import type { PageRef } from '../imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
-import { cellZones, coverRectMm, DEFAULT_IMAGE_TRANSFORM, textFor } from '../../types/edit'
-import type { CellText, ImageTransform } from '../../types/edit'
+import {
+  cellZones,
+  containRectMm,
+  DEFAULT_IMAGE_TRANSFORM,
+  fitInsideMm,
+  textFor,
+} from '../../types/edit'
+import type { CellText, ImageTransform, PhotoSource } from '../../types/edit'
 import { drawCellText } from './cell-text'
 import { photoFor } from './photo-bytes'
 import { pushBandClip } from './band-clip'
@@ -25,7 +31,7 @@ export interface ExportInput {
    * URL. When present the picture band holds only this photo; the source page is never
    * drawn into a card.
    */
-  readonly photos?: Readonly<Record<string, string>> | undefined
+  readonly photos?: Readonly<Record<string, PhotoSource>> | undefined
   /** Text colour and highlight per cell band. */
   readonly styles?:
     | Readonly<
@@ -144,12 +150,21 @@ export async function writeSheets(input: ExportInput): Promise<ExportResult> {
         images[`${cell.index}|${placement.documentId}|${placement.pageNumber}`] ??
         DEFAULT_IMAGE_TRANSFORM
 
-      const covered = coverRectMm(
-        zones.picture,
-        placement.sourceWidthMm,
-        placement.sourceHeightMm,
-        transform,
-      )
+      const photo = photos[`${cell.index}|${placement.documentId}|${placement.pageNumber}`]
+      // An unmeasured photo still prints, fitted to its own aspect rather than the band.
+      const shapeKnown = photo !== undefined && photo.widthPx > 0 && photo.heightPx > 0
+      const covered =
+        photo === undefined
+          ? null
+          : shapeKnown
+            ? containRectMm(zones.picture, photo.widthPx, photo.heightPx, transform)
+            : {
+                // Centred and offset like any other photo; only the size is left to the image.
+                xMm: zones.picture.xMm + transform.offsetXMm,
+                yMm: zones.picture.yMm + transform.offsetYMm,
+                widthMm: zones.picture.widthMm,
+                heightMm: zones.picture.heightMm,
+              }
 
       try {
         if (covered !== null) {
@@ -166,18 +181,25 @@ export async function writeSheets(input: ExportInput): Promise<ExportResult> {
           } else {
             // The dish photo alone: no printed type, no box from the source page.
             const image = await out.embedPng(png)
-            const xScale = mmToPt(covered.widthMm) / image.width
-            const yScale = mmToPt(covered.heightMm) / image.height
+            // Known shape: `covered` already carries it. Unknown: fit the image's own
+            // aspect inside the band — never the other way round.
+            const fitted = shapeKnown
+              ? covered
+              : fitInsideMm(zones.picture.widthMm, zones.picture.heightMm, image.width, image.height)
+            const drawWidthMm = mmToPt(fitted.widthMm)
+            const drawHeightMm = mmToPt(fitted.heightMm)
 
-            if (Number.isFinite(xScale) && Number.isFinite(yScale) && xScale > 0 && yScale > 0) {
+            if (Number.isFinite(drawWidthMm) && Number.isFinite(drawHeightMm) && drawWidthMm > 0 && drawHeightMm > 0) {
               // Clip to the picture band so a zoomed image cannot bleed into the text
               // or across the gutter. The clip is real PDF state, not a drawing trick.
               pushBandClip(lib, outPage, zones.picture, sheetHeightPt)
+              // `covered` already carries the photo's aspect ratio, so these two
+              // dimensions cannot disagree — the dish is never stretched.
               outPage.drawImage(image, {
                 x,
                 y,
-                width: mmToPt(covered.widthMm),
-                height: mmToPt(covered.heightMm),
+                width: drawWidthMm,
+                height: drawHeightMm,
               })
               outPage.pushOperators(lib.popGraphicsState())
               pagesPlaced += 1

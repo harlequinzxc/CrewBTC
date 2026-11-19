@@ -1,3 +1,5 @@
+import type { PhotoSource } from '../../types/edit'
+
 /**
  * Turns a stored dish photo into bytes the PDF writer can embed.
  *
@@ -21,11 +23,11 @@ export function toPngBytes(dataUrl: string): Uint8Array | null {
 
 /** The photo for one placed page, keyed `cellIndex|documentId|pageNumber`. */
 export function photoFor(
-  photos: Readonly<Record<string, string>>,
+  photos: Readonly<Record<string, PhotoSource>>,
   cellIndex: number,
   documentId: string,
   pageNumber: number,
 ): Uint8Array | null {
-  const url = photos[`${cellIndex}|${documentId}|${pageNumber}`]
-  return url === undefined ? null : toPngBytes(url)
+  const photo = photos[`${cellIndex}|${documentId}|${pageNumber}`]
+  return photo === undefined ? null : toPngBytes(photo.dataUrl)
 }

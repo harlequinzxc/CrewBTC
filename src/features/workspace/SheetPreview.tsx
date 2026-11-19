@@ -6,7 +6,7 @@ import type { GridLayout, SheetSettings } from '../../types/imposition'
 import { useElementSize } from '../../lib/use-element-size'
 import { thumbnailKey } from '../../lib/pdf/thumbnails'
 import { DEFAULT_IMAGE_TRANSFORM, DEFAULT_TEXT_STYLE } from '../../types/edit'
-import type { ImageTransform, TextStyle } from '../../types/edit'
+import type { ImageTransform, PhotoSource, TextStyle } from '../../types/edit'
 import { SheetCell } from './SheetCell'
 import { CellTools } from './CellTools'
 
@@ -15,8 +15,8 @@ export interface SheetPreviewProps {
   readonly grid: GridLayout
   readonly pages: readonly PageRef[]
   readonly showCutMarks: boolean
-  /** Extracted dish photos, keyed `file#page`. Preferred over a page render. */
-  readonly photos?: Readonly<Record<string, string>> | undefined
+  /** Extracted dish photos, keyed `file#page`, with their own pixel dimensions. */
+  readonly photos?: Readonly<Record<string, PhotoSource>> | undefined
   /** Pasted copy, keyed by page index in the batch. */
   readonly texts: Readonly<Record<string, string>>
   /** Artwork framing, keyed by page index in the batch. */
@@ -42,6 +42,8 @@ const BREATHING_ROOM = 24
 export function SheetPreview(props: SheetPreviewProps) {
   const { settings, grid, pages, showCutMarks, texts, images, selectedCell, styles } = props
   const [editing, setEditing] = useState<{ cellIndex: number; band: 'header' | 'footer' } | null>(null)
+  // Which page's photo is in move/zoom mode. Keyed by page index, like the framing.
+  const [pictureEditing, setPictureEditing] = useState<number | null>(null)
   const [containerRef, size] = useElementSize<HTMLDivElement>()
   const sheets = planSheets(pages, grid)
   const first = sheets[0]
@@ -147,11 +149,8 @@ export function SheetPreview(props: SheetPreviewProps) {
                 pageNumber={placement.pageNumber}
                 sourceWidthMm={placement.sourceWidthMm}
                 sourceHeightMm={placement.sourceHeightMm}
-                // The extracted dish photo and nothing else. A page render used to fall
-                // back here, which is why cards looked like screenshots of the PDF.
-                thumbnailUrl={
-                  props.photos?.[thumbnailKey(placement.documentId, placement.pageNumber)]
-                }
+                // The extracted dish photo and nothing else, with its own pixel shape.
+                photo={props.photos?.[thumbnailKey(placement.documentId, placement.pageNumber)]}
                 headerMm={settings.headerMm}
                 footerMm={settings.footerMm}
                 transform={images[key] ?? DEFAULT_IMAGE_TRANSFORM}
@@ -167,6 +166,13 @@ export function SheetPreview(props: SheetPreviewProps) {
                 }}
                 onEndEdit={() => setEditing(null)}
                 onTextChange={props.onTextChange}
+                pictureEditing={pictureEditing === pageIndex}
+                onBeginPictureEdit={(cellIndex) => {
+                  setPictureEditing(pageIndex)
+                  props.onSelectCell(cellIndex)
+                }}
+                onEndPictureEdit={() => setPictureEditing(null)}
+                onImageChange={(next) => props.onImageChange(pageIndex, next)}
               />
             )
           })}

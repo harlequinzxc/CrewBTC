@@ -1,9 +1,10 @@
 import { cn } from '../../lib/cn'
 import type { CellSlot } from '../../types/imposition'
 import type { ImageTransform } from '../../types/edit'
-import { cellZones, coverRectMm, splitCellText } from '../../types/edit'
-import type { TextStyle } from '../../types/edit'
+import { cellZones, splitCellText } from '../../types/edit'
+import type { PhotoSource, TextStyle } from '../../types/edit'
 import { CardText } from './CardText'
+import { CellPicture } from './CellPicture'
 
 export interface SheetCellProps {
   readonly cell: CellSlot
@@ -14,7 +15,8 @@ export interface SheetCellProps {
   readonly pageNumber: number
   readonly sourceWidthMm: number
   readonly sourceHeightMm: number
-  readonly thumbnailUrl: string | undefined
+  /** The extracted photo and its own pixel shape, or undefined when the page had none. */
+  readonly photo: PhotoSource | undefined
   /** Band heights come from the sheet settings so every cell matches. */
   readonly headerMm: number
   readonly footerMm: number
@@ -30,6 +32,11 @@ export interface SheetCellProps {
   readonly onBeginEdit: (cellIndex: number, band: 'header' | 'footer') => void
   readonly onEndEdit: () => void
   readonly onTextChange: (cellIndex: number, band: 'header' | 'footer', text: string) => void
+  /** True while this cell's photo is in move/zoom mode. */
+  readonly pictureEditing: boolean
+  readonly onBeginPictureEdit: (cellIndex: number) => void
+  readonly onEndPictureEdit: () => void
+  readonly onImageChange: (transform: ImageTransform) => void
 }
 
 const LABEL = (fileName: string): string => fileName.replace(/\.pdf$/i, '')
@@ -54,12 +61,6 @@ export function SheetCell(props: SheetCellProps) {
     pictureMm: Math.max(0, cell.rect.heightMm - headerMm - footerMm),
     footerMm,
   })
-  const covered = coverRectMm(
-    zones.picture,
-    props.sourceWidthMm,
-    props.sourceHeightMm,
-    transform,
-  )
   const px = (mm: number): string => `${mm * scale}px`
 
   return (
@@ -100,38 +101,18 @@ export function SheetCell(props: SheetCellProps) {
         />
       </div>
 
-      {/* Picture band — clipped so overflow never reaches the text or the cut line. */}
-      <div
-        className="absolute overflow-hidden bg-zinc-100"
-        style={{
-          left: 0,
-          top: px(zones.headerMm),
-          width: '100%',
-          height: px(zones.pictureMm),
-        }}
-      >
-        {/* Guard on the URL, not just the geometry: an <img> with no src renders as a
-            broken-image glyph, which looks like a real picture to a test and a user. */}
-        {covered === null || props.thumbnailUrl === undefined ? null : (
-          <img
-            src={props.thumbnailUrl}
-            alt=""
-            draggable={false}
-            className="pointer-events-none absolute select-none"
-            style={{
-              left: px(covered.xMm - cell.rect.xMm),
-              top: px(covered.yMm - cell.rect.yMm),
-              width: px(covered.widthMm),
-              height: px(covered.heightMm),
-            }}
-          />
-        )}
-        {props.thumbnailUrl === undefined ? (
-          <span className="absolute inset-0 grid place-items-center px-1 text-center text-[8px] leading-tight text-zinc-500">
-            No image on this page
-          </span>
-        ) : null}
-      </div>
+      {/* Picture band: the photo at its own shape, clipped to this box, with its own
+          move/zoom mode on double-click. */}
+      <CellPicture
+        box={zones.picture}
+        photo={props.photo}
+        transform={transform}
+        onChange={props.onImageChange}
+        scale={scale}
+        editing={props.pictureEditing}
+        onBeginEdit={() => props.onBeginPictureEdit(cell.index)}
+        onEndEdit={props.onEndPictureEdit}
+      />
 
       {/* Footer band */}
       <div

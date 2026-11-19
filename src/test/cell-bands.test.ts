@@ -3,7 +3,7 @@ import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
 import {
   cellZones,
-  coverRectMm,
+  containRectMm,
   DEFAULT_IMAGE_TRANSFORM,
   splitCellText,
 } from '../types/edit'
@@ -53,25 +53,28 @@ describe('the three bands fill the card', () => {
   })
 })
 
-describe('the picture covers its box', () => {
+describe('the picture fits inside its box', () => {
   const box = { xMm: 0, yMm: 10, widthMm: 52, heightMm: 44 }
 
-  it('fills the box completely for a portrait source', () => {
-    const rect = coverRectMm(box, 52, 67, DEFAULT_IMAGE_TRANSFORM)
+  it('fits a portrait photo inside the box, never covering it', () => {
+    const rect = containRectMm(box, 52, 67, DEFAULT_IMAGE_TRANSFORM)
     expect(rect).not.toBeNull()
-    // Cover means at least as large as the box on both axes.
-    expect(rect!.widthMm).toBeGreaterThanOrEqual(box.widthMm - 1e-9)
-    expect(rect!.heightMm).toBeGreaterThanOrEqual(box.heightMm - 1e-9)
+    // Fit means no larger than the box on either axis, so nothing is cropped at 1x.
+    expect(rect!.widthMm).toBeLessThanOrEqual(box.widthMm + 1e-9)
+    expect(rect!.heightMm).toBeLessThanOrEqual(box.heightMm + 1e-9)
+    // And it keeps the photo's own shape (52:67 = 0.776).
+    expect(rect!.widthMm / rect!.heightMm).toBeCloseTo(52 / 67, 6)
   })
 
-  it('fills the box for a wide source too', () => {
-    const rect = coverRectMm(box, 200, 40, DEFAULT_IMAGE_TRANSFORM)
-    expect(rect!.widthMm).toBeGreaterThanOrEqual(box.widthMm - 1e-9)
-    expect(rect!.heightMm).toBeGreaterThanOrEqual(box.heightMm - 1e-9)
+  it('fits a wide photo inside the box too, without squashing it', () => {
+    const rect = containRectMm(box, 200, 40, DEFAULT_IMAGE_TRANSFORM)
+    expect(rect!.widthMm).toBeLessThanOrEqual(box.widthMm + 1e-9)
+    expect(rect!.heightMm).toBeLessThanOrEqual(box.heightMm + 1e-9)
+    expect(rect!.widthMm / rect!.heightMm).toBeCloseTo(200 / 40, 6)
   })
 
   it('is centred before any offset is applied', () => {
-    const rect = coverRectMm(box, 52, 67, DEFAULT_IMAGE_TRANSFORM)!
+    const rect = containRectMm(box, 52, 67, DEFAULT_IMAGE_TRANSFORM)!
     const centreX = rect.xMm + rect.widthMm / 2
     const centreY = rect.yMm + rect.heightMm / 2
     expect(centreX).toBeCloseTo(box.xMm + box.widthMm / 2, 6)
@@ -79,22 +82,22 @@ describe('the picture covers its box', () => {
   })
 
   it('moves exactly as far as it is told', () => {
-    const base = coverRectMm(box, 52, 67, DEFAULT_IMAGE_TRANSFORM)!
-    const moved = coverRectMm(box, 52, 67, { offsetXMm: 5, offsetYMm: -3, scale: 1 })!
+    const base = containRectMm(box, 52, 67, DEFAULT_IMAGE_TRANSFORM)!
+    const moved = containRectMm(box, 52, 67, { offsetXMm: 5, offsetYMm: -3, scale: 1 })!
     expect(moved.xMm - base.xMm).toBeCloseTo(5, 6)
     expect(moved.yMm - base.yMm).toBeCloseTo(-3, 6)
   })
 
   it('scales about the centre, so zooming does not drift', () => {
-    const base = coverRectMm(box, 52, 67, DEFAULT_IMAGE_TRANSFORM)!
-    const zoomed = coverRectMm(box, 52, 67, { offsetXMm: 0, offsetYMm: 0, scale: 2 })!
+    const base = containRectMm(box, 52, 67, DEFAULT_IMAGE_TRANSFORM)!
+    const zoomed = containRectMm(box, 52, 67, { offsetXMm: 0, offsetYMm: 0, scale: 2 })!
     expect(zoomed.widthMm).toBeCloseTo(base.widthMm * 2, 6)
     expect(zoomed.xMm + zoomed.widthMm / 2).toBeCloseTo(base.xMm + base.widthMm / 2, 6)
   })
 
   it('refuses a source with no measurable size instead of guessing', () => {
-    expect(coverRectMm(box, 0, 67, DEFAULT_IMAGE_TRANSFORM)).toBeNull()
-    expect(coverRectMm(box, 52, Number.NaN, DEFAULT_IMAGE_TRANSFORM)).toBeNull()
+    expect(containRectMm(box, 0, 67, DEFAULT_IMAGE_TRANSFORM)).toBeNull()
+    expect(containRectMm(box, 52, Number.NaN, DEFAULT_IMAGE_TRANSFORM)).toBeNull()
   })
 })
 

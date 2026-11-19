@@ -1,5 +1,5 @@
 import type { IngestedDocument } from '../../types/document'
-import type { CellText } from '../../types/edit'
+import type { CellText, PhotoSource } from '../../types/edit'
 import { thumbnailKey } from '../../lib/pdf/thumbnails'
 
 /**
@@ -12,12 +12,12 @@ import { thumbnailKey } from '../../lib/pdf/thumbnails'
  */
 export function photosByPage(
   documents: readonly IngestedDocument[],
-): Readonly<Record<string, string>> {
-  const out: Record<string, string> = {}
+): Readonly<Record<string, PhotoSource>> {
+  const out: Record<string, PhotoSource> = {}
 
   for (const document of documents) {
-    for (const [pageNumber, dataUrl] of Object.entries(document.photos)) {
-      out[thumbnailKey(document.fileName, Number(pageNumber))] = dataUrl
+    for (const [pageNumber, photo] of Object.entries(document.photos)) {
+      out[thumbnailKey(document.fileName, Number(pageNumber))] = photo
     }
     // A file read before per-page photos existed still shows its first-page photo.
     if (document.photoUrl !== null && Object.keys(document.photos).length === 0) {
@@ -54,11 +54,11 @@ export function textsByPageIndex(
  */
 export function photosByDocumentPage(
   documents: readonly IngestedDocument[],
-): Readonly<Record<string, string>> {
-  const out: Record<string, string> = {}
+): Readonly<Record<string, PhotoSource>> {
+  const out: Record<string, PhotoSource> = {}
   for (const document of documents) {
-    for (const [pageNumber, dataUrl] of Object.entries(document.photos)) {
-      out[`${document.fileName}#${pageNumber}`] = dataUrl
+    for (const [pageNumber, photo] of Object.entries(document.photos)) {
+      out[`${document.fileName}#${pageNumber}`] = photo
     }
   }
   return out

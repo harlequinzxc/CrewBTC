@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/Button'
 import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import { DEFAULT_TEXT_STYLE } from '../../types/edit'
-import type { ImageTransform, TextStyle } from '../../types/edit'
+import type { ImageTransform, PhotoSource, TextStyle } from '../../types/edit'
 
 export interface CentrePaneProps {
   readonly documentsLoaded: boolean
@@ -16,7 +16,7 @@ export interface CentrePaneProps {
   readonly grid: GridLayout
   readonly pages: readonly PageRef[]
   readonly showCutMarks: boolean
-  readonly photos?: Readonly<Record<string, string>> | undefined
+  readonly photos?: Readonly<Record<string, PhotoSource>> | undefined
   readonly texts: Readonly<Record<string, string>>
   readonly images: Readonly<Record<string, ImageTransform>>
   readonly selectedCell: number | null

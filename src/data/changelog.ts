@@ -8,6 +8,19 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '0.9.0',
+    date: '2026-11-19',
+    title: 'Dish photos keep their shape, and can be moved and zoomed',
+    highlights: [
+      'Photos are no longer stretched: a dish keeps its own proportions however wide or tall the card is',
+      'Each photo sits in a defined picture box with a small inset, centred, leaving clear room for the text above and below',
+      'Anything zoomed past the box is clipped to it, so a picture can never sit on the text or cross a cut line',
+      'Double-click a photo to move and zoom it: drag to pan, scroll or pinch to zoom, or use the corner slider',
+      'Framing is kept per cell, so a dish stays where it was put — in the preview and in the printed sheet',
+      'Escape or Enter leaves the mode, and a reset button puts the photo back where it started',
+    ],
+  },
+  {
     version: '0.8.0',
     date: '2026-11-19',
     title: 'Step 1: every cell gets its dish photo',

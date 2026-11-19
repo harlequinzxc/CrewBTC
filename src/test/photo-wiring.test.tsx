@@ -9,6 +9,7 @@ import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
 import type { PageRef } from '../lib/imposition/sheet'
 import type { IngestedDocument } from '../types/document'
+import type { PhotoSource } from '../types/edit'
 
 vi.mock('../lib/pdf/thumbnails', async () => {
   const actual = await vi.importActual<typeof import('../lib/pdf/thumbnails')>(
@@ -38,7 +39,7 @@ vi.mock('../lib/export/doc-cache', () => ({
  */
 const grid = computeGrid(DEFAULT_SHEET)
 
-function makeDocument(photos: Record<number, string>): IngestedDocument {
+function makeDocument(photos: Record<number, PhotoSource>): IngestedDocument {
   return {
     id: 'doc-1',
     fileName: 'cards.pdf',
@@ -56,12 +57,19 @@ function makeDocument(photos: Record<number, string>): IngestedDocument {
   }
 }
 
+/** A distinct photo per page, matched to the label the assertions use. */
+const dish = (label: string | number): PhotoSource => ({
+  dataUrl: `data:image/png;base64,DISH-${label}`,
+  widthPx: 360,
+  heightPx: 300,
+})
+
 const pages: readonly PageRef[] = [
   { documentId: 'cards.pdf', fileName: 'cards.pdf', pageNumber: 1, widthMm: 64, heightMm: 90 },
   { documentId: 'cards.pdf', fileName: 'cards.pdf', pageNumber: 2, widthMm: 64, heightMm: 90 },
 ]
 
-function renderSheet(photos: Record<number, string>) {
+function renderSheet(photos: Record<number, PhotoSource>) {
   const photoMap = photosByPage([makeDocument(photos)])
 
   render(
@@ -148,12 +156,12 @@ function renderSheetWithCopies(options: {
 
 describe('the photo map is keyed the way the sheet looks it up', () => {
   it('produces exactly the key the sheet reads', () => {
-    const photoMap = photosByPage([makeDocument({ 1: 'data:image/png;base64,DISH' })])
+    const photoMap = photosByPage([makeDocument({ 1: dish('ONE') })])
     expect(Object.keys(photoMap)).toEqual([thumbnailKey('cards.pdf', 1)])
   })
 
   it('keys every page, not just the first', () => {
-    const photoMap = photosByPage([makeDocument({ 1: 'A', 2: 'B' })])
+    const photoMap = photosByPage([makeDocument({ 1: dish('ONE'), 2: dish('TWO') })])
     expect(Object.keys(photoMap).sort()).toEqual([
       thumbnailKey('cards.pdf', 1),
       thumbnailKey('cards.pdf', 2),
@@ -163,8 +171,10 @@ describe('the photo map is keyed the way the sheet looks it up', () => {
 
 describe('cells show the dish photo, never the page render', () => {
   it('uses the extracted photo on page 1 instead of the page render', () => {
-    const photoMap = renderSheet({ 1: 'data:image/png;base64,DISH-ONE' })
-    expect(Object.values(photoMap)).toContain('data:image/png;base64,DISH-ONE')
+    const photoMap = renderSheet({ 1: dish('ONE') })
+    expect(Object.values(photoMap).map((photo) => photo.dataUrl)).toContain(
+      'data:image/png;base64,DISH-ONE',
+    )
 
     const sources = sourcesOf()
     expect(sources).toContain('data:image/png;base64,DISH-ONE')
@@ -173,14 +183,14 @@ describe('cells show the dish photo, never the page render', () => {
   })
 
   it('uses each page’s own photo, not the first page’s photo repeated', () => {
-    renderSheet({ 1: 'data:image/png;base64,DISH-ONE', 2: 'data:image/png;base64,DISH-TWO' })
+    renderSheet({ 1: dish('ONE'), 2: dish('TWO') })
     const sources = sourcesOf()
     expect(sources).toContain('data:image/png;base64,DISH-ONE')
     expect(sources).toContain('data:image/png;base64,DISH-TWO')
   })
 
   it('shows a photo where there is one, and nothing where there is not', async () => {
-    renderSheet({ 2: 'data:image/png;base64,DISH-TWO' })
+    renderSheet({ 2: dish('TWO') })
 
     // Page 2 has a photo; page 1 has none. A page render in page 1's band was the old
     // fallback and is exactly what the cards must never show, so the band stays empty.

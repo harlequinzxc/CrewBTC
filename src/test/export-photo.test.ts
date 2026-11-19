@@ -1,5 +1,7 @@
 import {
+  PDFArray,
   PDFDocument,
+  PDFDocument as PDFLibDocument,
   PDFName,
   PDFRawStream,
   StandardFonts,
@@ -48,7 +50,11 @@ function pngDataUrl(): string {
   return `data:image/png;base64,${png.toString('base64')}`
 }
 
-async function exportWith(photos?: Record<string, string>): Promise<Uint8Array> {
+async function exportWith(
+  photos?: Record<string, string>,
+  /** Pixel shape per photo key. The exporter needs it to avoid stretching. */
+  sizes: Record<string, { widthPx: number; heightPx: number }> = {},
+): Promise<Uint8Array> {
   const result = await writeSheets({
     settings: DEFAULT_SHEET,
     grid,
@@ -58,7 +64,16 @@ async function exportWith(photos?: Record<string, string>): Promise<Uint8Array> 
     texts: {
       '0|doc-a|1': { documentId: 'doc-a', pageNumber: 1, text: 'Dish name\n• Step one' },
     },
-    ...(photos === undefined ? {} : { photos }),
+    ...(photos === undefined
+      ? {}
+      : {
+          photos: Object.fromEntries(
+            Object.entries(photos).map(([key, dataUrl]) => [
+              key,
+              { dataUrl, ...(sizes[key] ?? { widthPx: 40, heightPx: 30 }) },
+            ]),
+          ),
+        }),
   })
   return result.bytes
 }
@@ -94,6 +109,69 @@ async function xobjectSubtypes(bytes: Uint8Array): Promise<string[]> {
   walk(xobjects)
   return found
 }
+
+describe('the printed photo keeps its shape', () => {
+  /** The placement rectangle of the photo, read from the page's own draw operators. */
+  async function printedRect(bytes: Uint8Array): Promise<{ width: number; height: number }> {
+    const doc = await PDFLibDocument.load(bytes)
+    const contents = doc.getPages()[0]?.node.Contents() as unknown as PDFArray
+    const parts: string[] = []
+
+    for (let index = 0; index < contents.size(); index += 1) {
+      const item = doc.context.lookup(contents.get(index) as never) as { contents?: Uint8Array }
+      if (item.contents !== undefined) {
+        // The content stream is Flate-compressed; `deflate` is its inverse.
+        const stream = new DecompressionStream('deflate')
+        const writer = stream.writable.getWriter()
+        void writer.write(new Uint8Array(item.contents))
+        void writer.close()
+        parts.push(await new Response(stream.readable).text())
+      }
+    }
+
+    // pdf-lib draws an image as `w 0 0 h 0 0 cm`; identity matrices sit beside it.
+    const placed = [...parts.join('\n').matchAll(/([\d.]+) 0 0 ([\d.]+) 0 0 cm/g)]
+      .map((match) => ({ width: Number(match[1]), height: Number(match[2]) }))
+      .filter((rect) => rect.width > 1 && rect.height > 1)
+      .at(-1)
+
+    return placed ?? { width: 0, height: 0 }
+  }
+
+  async function exportShape(width: number, height: number): Promise<{ width: number; height: number }> {
+    const canvas = createCanvas(width, height)
+    canvas.getContext('2d').fillRect(0, 0, width, height)
+    const bytes = await exportWith(
+      { '0|doc-a|1': `data:image/png;base64,${canvas.toBuffer('image/png').toString('base64')}` },
+      { '0|doc-a|1': { widthPx: width, heightPx: height } },
+    )
+    return printedRect(bytes)
+  }
+
+  it('prints a landscape photo at its own ratio, not the band’s', async () => {
+    const rect = await exportShape(400, 300)
+    expect(rect.width / rect.height).toBeCloseTo(4 / 3, 2)
+  })
+
+  it('prints a portrait photo at its own ratio too', async () => {
+    const rect = await exportShape(300, 500)
+    expect(rect.width / rect.height).toBeCloseTo(3 / 5, 2)
+  })
+
+  it('leaves the inset as padding, so the photo is fitted not stretched', async () => {
+    const rect = await exportShape(400, 300)
+    // The band is 64 mm wide; the photo takes 62.4 mm, leaving 0.8 mm each side.
+    const bandPt = (64 * 72) / 25.4
+    const insetPt = (0.8 * 72) / 25.4
+    expect(rect.width).toBeCloseTo(bandPt - 2 * insetPt, 1)
+    expect(rect.width).toBeLessThan(bandPt)
+  })
+
+  it('is no wider than the band, so nothing crosses the cut line', async () => {
+    const rect = await exportShape(400, 300)
+    expect(rect.width).toBeLessThan((64 * 72) / 25.4)
+  })
+})
 
 describe('the picture band holds the photo, not the page', () => {
   it('embeds an image XObject for the dish photo', async () => {

@@ -1,4 +1,5 @@
 import type { NormalisedBox } from './template'
+import type { PhotoSource } from './edit'
 
 /** One extracted text region, positioned in normalised page space. */
 export interface TextRegion {
@@ -38,13 +39,13 @@ export interface IngestedDocument {
    * reading only the first would put one dish's name on all of them.
    */
   readonly copies: Readonly<Record<number, RecipeCopy>>
-  /** The first page's embedded photo. Kept for the queue's single-thumbnail view. */
-  readonly photoUrl: string | null
+  /** The first page's photo, slightly larger for the queue's thumbnail. */
+  readonly photoUrl: PhotoSource | null
   /**
    * Embedded photo per page, `1`-based. A page with no extractable image is absent, and
    * the sheet falls back to that page's cropped render rather than an empty band.
    */
-  readonly photos: Readonly<Record<number, string>>
+  readonly photos: Readonly<Record<number, PhotoSource>>
   readonly error: string | null
 }
 
