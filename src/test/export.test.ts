@@ -38,9 +38,9 @@ function refsFor(fileName: string, documentId: string, count: number): PageRef[]
 const grid = computeGrid(DEFAULT_SHEET)
 
 describe('sheet writer', () => {
-  it('produces one A4 output page per sheet of 12', async () => {
-    const sources = new Map([['doc-a', await makeSourcePdf(12, 'A')]])
-    const pages = refsFor('a.pdf', 'doc-a', 12)
+  it('produces one A4 output page per sheet of 9', async () => {
+    const sources = new Map([['doc-a', await makeSourcePdf(9, 'A')]])
+    const pages = refsFor('a.pdf', 'doc-a', 9)
 
     const result = await writeSheets({
       settings: DEFAULT_SHEET,
@@ -51,7 +51,7 @@ describe('sheet writer', () => {
     })
 
     expect(result.sheetCount).toBe(1)
-    expect(result.pagesPlaced).toBe(12)
+    expect(result.pagesPlaced).toBe(9)
     expect(result.pagesSkipped).toBe(0)
     expect(result.bytes.byteLength).toBeGreaterThan(0)
 

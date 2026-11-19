@@ -8,10 +8,10 @@ const base: SheetSettings = { ...DEFAULT_SHEET }
 describe('A4 default grid (the user’s numbers)', () => {
   const grid = computeGrid(base)
 
-  it('fits 3 x 4 = 12 cells of 52 x 67 mm', () => {
+  it('fits 3 x 3 = 9 cells of 64 x 90 mm', () => {
     expect(grid.columns).toBe(3)
-    expect(grid.rows).toBe(4)
-    expect(grid.cellCount).toBe(12)
+    expect(grid.rows).toBe(3)
+    expect(grid.cellCount).toBe(9)
     expect(grid.isEmpty).toBe(false)
   })
 
@@ -60,10 +60,10 @@ describe('A4 default grid (the user’s numbers)', () => {
 describe('rotation', () => {
   it('swaps the cell footprint and yields fewer cells for this ratio', () => {
     const rotated = computeGrid({ ...base, rotateCells: true })
-    expect(rotated.cellWidthMm).toBe(67)
-    expect(rotated.cellHeightMm).toBe(52)
-    // Measured, not assumed: rotating 52x67 on A4 gives 2x5 = 10, not 12.
-    expect(rotated.cellCount).toBe(10)
+    expect(rotated.cellWidthMm).toBe(90)
+    expect(rotated.cellHeightMm).toBe(64)
+    // Measured, not assumed: rotating 64x90 on A4 gives 2x4 = 8, not 9.
+    expect(rotated.cellCount).toBe(8)
   })
 })
 
@@ -76,7 +76,7 @@ describe('gutter trade-off', () => {
 
   it('a large gutter eventually costs a row', () => {
     const roomy = computeGrid({ ...base, gutterMm: 12 })
-    expect(roomy.cellCount).toBeLessThan(12)
+    expect(roomy.cellCount).toBeLessThan(9)
   })
 })
 

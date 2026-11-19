@@ -65,6 +65,9 @@ const idle = {
   onSelectCell: () => undefined,
   onImageChange: () => undefined,
   onResetImage: () => undefined,
+  styles: {} as Readonly<Record<string, never>>,
+  onTextChange: () => undefined,
+  onStyleChange: () => undefined,
 }
 
 beforeEach(() => {
@@ -78,29 +81,29 @@ beforeEach(() => {
 
 describe('page content inside cells', () => {
   it('renders one image per placed cell', async () => {
-    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(12)} showCutMarks {...idle} />)
+    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(9)} showCutMarks {...idle} />)
 
     await waitFor(() => {
-      expect(document.querySelectorAll('img')).toHaveLength(12)
+      expect(document.querySelectorAll('img')).toHaveLength(9)
     })
   })
 
   it('shows the right page in the right cell', async () => {
-    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(12)} showCutMarks {...idle} />)
+    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(9)} showCutMarks {...idle} />)
 
     await waitFor(() => {
-      expect(document.querySelectorAll('img')).toHaveLength(12)
+      expect(document.querySelectorAll('img')).toHaveLength(9)
     })
     const sources = [...document.querySelectorAll('img')].map((img) => img.getAttribute('src'))
     expect(sources).toContain('data:image/png;base64,cards.pdf-1')
-    expect(sources).toContain('data:image/png;base64,cards.pdf-12')
+    expect(sources).toContain('data:image/png;base64,cards.pdf-9')
   })
 
   it('renders each page only once, however many cells reference it', async () => {
     // A single-page PDF repeated is not the case here: instead assert no duplicate
-    // renders for a normal 12-up sheet.
-    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(12)} showCutMarks {...idle} />)
-    await waitFor(() => expect(document.querySelectorAll('img')).toHaveLength(12))
+    // renders for a normal 9-up sheet.
+    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(9)} showCutMarks {...idle} />)
+    await waitFor(() => expect(document.querySelectorAll('img')).toHaveLength(9))
 
     const keys = renderThumbnail.mock.calls.map((call) => call.join('#'))
     expect(new Set(keys).size).toBe(keys.length)
@@ -127,15 +130,15 @@ describe('page content inside cells', () => {
   })
 
   it('shows artwork again when returning to an already-rendered sheet', async () => {
-    const first = refs(12)
+    const first = refs(9)
     const { rerender } = render(
       <SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={first} showCutMarks {...idle} />,
     )
-    await waitFor(() => expect(document.querySelectorAll('img')).toHaveLength(12))
+    await waitFor(() => expect(document.querySelectorAll('img')).toHaveLength(9))
     const rendersAfterFirst = renderThumbnail.mock.calls.length
 
     // Second sheet: a different, offset set of pages.
-    const second: PageRef[] = Array.from({ length: 12 }, (_unused, index) => ({
+    const second: PageRef[] = Array.from({ length: 9 }, (_unused, index) => ({
       documentId: 'more.pdf',
       fileName: 'more.pdf',
       pageNumber: index + 1,
@@ -152,8 +155,8 @@ describe('page content inside cells', () => {
     await waitFor(() =>
       expect(document.querySelectorAll('img')[0]?.getAttribute('src')).toContain('cards.pdf'),
     )
-    expect(document.querySelectorAll('img')).toHaveLength(12)
-    expect(renderThumbnail.mock.calls.length).toBe(rendersAfterFirst + 12)
+    expect(document.querySelectorAll('img')).toHaveLength(9)
+    expect(renderThumbnail.mock.calls.length).toBe(rendersAfterFirst + 9)
   })
 
   it('discards cached artwork when the same file name is re-uploaded', async () => {

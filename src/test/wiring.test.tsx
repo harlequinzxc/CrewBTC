@@ -35,6 +35,8 @@ vi.mock('../lib/pdf/ingest-batch', () => ({
         },
       ],
       pagePreviewUrl: null,
+      copy: null,
+      photoUrl: null,
       error: null,
     })).map((document) => {
       options?.onUpdate?.(document)

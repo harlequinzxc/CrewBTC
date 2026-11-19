@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ScanLine } from 'lucide-react'
 import { cutMarksFor, planSheets } from '../../lib/imposition/sheet'
 import type { PageRef, Placement } from '../../lib/imposition/sheet'
@@ -5,8 +6,8 @@ import type { GridLayout, SheetSettings } from '../../types/imposition'
 import { useElementSize } from '../../lib/use-element-size'
 import { useThumbnails } from './use-thumbnails'
 import { thumbnailKey } from '../../lib/pdf/thumbnails'
-import { DEFAULT_IMAGE_TRANSFORM } from '../../types/edit'
-import type { ImageTransform } from '../../types/edit'
+import { DEFAULT_IMAGE_TRANSFORM, DEFAULT_TEXT_STYLE } from '../../types/edit'
+import type { ImageTransform, TextStyle } from '../../types/edit'
 import { SheetCell } from './SheetCell'
 import { CellTools } from './CellTools'
 
@@ -15,6 +16,8 @@ export interface SheetPreviewProps {
   readonly grid: GridLayout
   readonly pages: readonly PageRef[]
   readonly showCutMarks: boolean
+  /** Extracted dish photos, keyed `file#page`. Preferred over a page render. */
+  readonly photos?: Readonly<Record<string, string>> | undefined
   /** Pasted copy, keyed by page index in the batch. */
   readonly texts: Readonly<Record<string, string>>
   /** Artwork framing, keyed by page index in the batch. */
@@ -23,6 +26,10 @@ export interface SheetPreviewProps {
   readonly onSelectCell: (cellIndex: number | null) => void
   readonly onImageChange: (index: number, image: ImageTransform) => void
   readonly onResetImage: (index: number) => void
+  /** Text styles per `index|band`. */
+  readonly styles: Readonly<Record<string, TextStyle>>
+  readonly onTextChange: (index: number, band: 'header' | 'footer', text: string) => void
+  readonly onStyleChange: (index: number, band: 'header' | 'footer', style: TextStyle) => void
 }
 
 /** Padding kept around the sheet so it never touches the pane edges. */
@@ -34,7 +41,8 @@ const BREATHING_ROOM = 24
  * hardcoded, so resizing the window re-fits the preview immediately.
  */
 export function SheetPreview(props: SheetPreviewProps) {
-  const { settings, grid, pages, showCutMarks, texts, images, selectedCell } = props
+  const { settings, grid, pages, showCutMarks, texts, images, selectedCell, styles } = props
+  const [editing, setEditing] = useState<{ cellIndex: number; band: 'header' | 'footer' } | null>(null)
   const [containerRef, size] = useElementSize<HTMLDivElement>()
   const sheets = planSheets(pages, grid)
   const first = sheets[0]
@@ -149,13 +157,25 @@ export function SheetPreview(props: SheetPreviewProps) {
                 pageNumber={placement.pageNumber}
                 sourceWidthMm={placement.sourceWidthMm}
                 sourceHeightMm={placement.sourceHeightMm}
-                thumbnailUrl={thumbnails[thumbnailKey(placement.documentId, placement.pageNumber)]}
+                thumbnailUrl={
+                  props.photos?.[thumbnailKey(placement.documentId, placement.pageNumber)] ??
+                  thumbnails[thumbnailKey(placement.documentId, placement.pageNumber)]
+                }
                 headerMm={settings.headerMm}
                 footerMm={settings.footerMm}
                 transform={images[key] ?? DEFAULT_IMAGE_TRANSFORM}
                 text={texts[key] ?? ''}
                 selected={selectedCell === cell.index}
                 onSelect={props.onSelectCell}
+                headerStyle={styles[`${pageIndex}|header`] ?? DEFAULT_TEXT_STYLE}
+                footerStyle={styles[`${pageIndex}|footer`] ?? DEFAULT_TEXT_STYLE}
+                editing={editing}
+                onBeginEdit={(cellIndex, band) => {
+                  setEditing({ cellIndex, band })
+                  props.onSelectCell(cellIndex)
+                }}
+                onEndEdit={() => setEditing(null)}
+                onTextChange={props.onTextChange}
               />
             )
           })}

@@ -8,6 +8,12 @@ export interface TextRegion {
   readonly fontSizeRatio: number
 }
 
+/** Header and footer copy read off the page at upload time. Never empty if avoidable. */
+export interface RecipeCopy {
+  readonly header: string
+  readonly footer: string
+}
+
 export interface DocumentMetrics {
   readonly pageCount: number
   readonly widthPt: number
@@ -25,6 +31,10 @@ export interface IngestedDocument {
   readonly metrics: DocumentMetrics | null
   readonly regions: readonly TextRegion[]
   readonly pagePreviewUrl: string | null
+  /** Copy lifted from the page's first page, ready to fill a card's bands. */
+  readonly copy: RecipeCopy | null
+  /** The page's embedded photo, extracted rather than re-rendered. */
+  readonly photoUrl: string | null
   readonly error: string | null
 }
 

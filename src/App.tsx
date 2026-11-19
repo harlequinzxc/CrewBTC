@@ -12,6 +12,8 @@ import { Inspector } from './features/workspace/Inspector'
 import { SheetSettings } from './features/workspace/SheetSettings'
 import { useBatch } from './features/workspace/use-batch'
 import { useCellText } from './features/workspace/use-cell-text'
+import { useAutoCopyFor } from './features/workspace/use-auto-copy'
+import { photosByPage, textsByPageIndex } from './features/workspace/photos'
 import { CentrePane } from './features/workspace/CentrePane'
 import { LeftPane } from './features/workspace/LeftPane'
 import type { LeftTab } from './features/workspace/LeftPane'
@@ -57,15 +59,10 @@ function Workspace() {
   const cellText = useCellText()
 
   // Copy and framing are keyed by page index, which is the order the sheet places them.
-  const textsByPage = useMemo(() => {
-    const out: Record<string, string> = {}
-    for (const [key, value] of Object.entries(cellText.texts)) {
-      const match = /^(\d+)\|/.exec(key)
-      if (match === null) continue
-      out[match[1] ?? '0'] = value.text
-    }
-    return out
-  }, [cellText.texts])
+  const textsByPage = useMemo(() => textsByPageIndex(cellText.texts), [cellText.texts])
+
+  // The real embedded dish photo per page, where the upload found one.
+  const photos = useMemo(() => photosByPage(batch.documents), [batch.documents])
 
   // One preview per page, for the sketch beside the copy box.
   const previews = useMemo(() => {
@@ -79,6 +76,10 @@ function Workspace() {
 
   // A page beyond the end of a shrinking batch must not strand the copy editor.
   const safePage = Math.min(selectedPage, Math.max(0, pageRefs.length - 1))
+
+  // Fill every card's bands from its page as soon as the page is parsed, so an upload
+  // never lands in an empty editor. Edits are never overwritten.
+  useAutoCopyFor({ documents: batch.documents, pages: pageRefs, texts: textsByPage, cellText })
   const exporter = useExport({
     settings: sheet.settings,
     grid: sheet.grid,
@@ -86,6 +87,7 @@ function Workspace() {
     drawCutMarks: showCutMarks,
     texts: textsByPage,
     images: cellText.images,
+    styles: cellText.styles,
     notify,
   })
 
@@ -193,10 +195,14 @@ function Workspace() {
               grid={sheet.grid}
               pages={pageRefs}
               showCutMarks={showCutMarks}
+              photos={photos}
               texts={textsByPage}
               images={cellText.images}
               selectedCell={selectedCell}
               onSelectCell={setSelectedCell}
+              styles={cellText.styles}
+              onStyleChange={cellText.setStyle}
+              onTextChange={handleTextChange}
               onImageChange={(index, image) => {
                 const page = pageRefs[index]
                 if (page === undefined) return

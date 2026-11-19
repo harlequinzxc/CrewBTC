@@ -8,6 +8,21 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '0.7.0',
+    date: '2026-11-19',
+    title: 'The card fills itself, and the photo is the photo',
+    highlights: [
+      'A card arrives already written: the dish code, the dish name, and the plating steps are read off the page on upload',
+      'Steps come out as clean bullets, not a copy of the box they were printed in',
+      'The picture band shows the dish photo itself, pulled out of the PDF — not a re-render of the whole page',
+      'Click the words on any card to type into them; Escape or Enter puts them back',
+      'Colour and highlight for each card’s header and footer, on screen and in the exported PDF',
+      'Three across and three down: nine 64 × 90 mm cards on A4, 83% of the paper used',
+      'A page with no readable text leaves its card empty rather than inventing copy',
+      'Fixed: photo bytes handed back as a Uint8ClampedArray were rejected, so no photo ever appeared',
+    ],
+  },
+  {
     version: '0.6.1',
     date: '2026-11-19',
     title: 'The picture box holds picture, and the type is the right size',

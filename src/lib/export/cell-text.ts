@@ -19,6 +19,13 @@ export interface DrawTextInput {
   /** Page height in points, for the top-left to bottom-left flip. */
   readonly sheetHeightPt: number
   readonly ink: { readonly header: RGB; readonly footer: RGB }
+  /** Chosen per band in the preview; the export must match what was seen. */
+  readonly styles?:
+    | {
+        readonly header?: { readonly color: string; readonly highlight: string | null } | undefined
+        readonly footer?: { readonly color: string; readonly highlight: string | null } | undefined
+      }
+    | undefined
 }
 
 /**
@@ -35,6 +42,36 @@ export function drawCellText(input: DrawTextInput): void {
   const measure = (candidate: string, sizePt: number): number =>
     ptWidthToMm(font.widthOfTextAtSize(candidate, sizePt))
 
+  const paint = (
+    band: 'header' | 'footer',
+    fallback: RGB,
+    line: { text: string; yMm: number; sizePt: number },
+    zone: CellZones['header'],
+  ): void => {
+    const style = input.styles?.[band]
+    const colour = style === undefined ? fallback : hexToRgb(style.color, fallback)
+
+    if (style?.highlight != null) {
+      const widthPt = font.widthOfTextAtSize(line.text, line.sizePt)
+      page.drawRectangle({
+        x: mmToPt(zone.xMm),
+        // The highlight sits behind the glyphs, one line high.
+        y: sheetHeightPt - mmToPt(line.yMm) - line.sizePt * 0.25,
+        width: Math.min(mmToPt(zone.widthMm), widthPt + mmToPt(1)),
+        height: line.sizePt * 1.15,
+        color: hexToRgb(style.highlight, fallback),
+      })
+    }
+
+    page.drawText(line.text, {
+      x: mmToPt(zone.xMm + PADDING_MM),
+      y: sheetHeightPt - mmToPt(line.yMm),
+      size: line.sizePt,
+      font,
+      color: colour,
+    })
+  }
+
   if (header !== '') {
     const layout = layoutBand(
       header,
@@ -46,15 +83,7 @@ export function drawCellText(input: DrawTextInput): void {
       measure,
       { paddingMm: PADDING_MM },
     )
-    for (const line of layout.lines) {
-      page.drawText(line.text, {
-        x: mmToPt(zones.header.xMm + PADDING_MM),
-        y: sheetHeightPt - mmToPt(line.yMm),
-        size: line.sizePt,
-        font,
-        color: ink.header,
-      })
-    }
+    for (const line of layout.lines) paint('header', ink.header, line, zones.header)
   }
 
   if (footer !== '') {
@@ -68,14 +97,21 @@ export function drawCellText(input: DrawTextInput): void {
       measure,
       { paddingMm: PADDING_MM },
     )
-    for (const line of layout.lines) {
-      page.drawText(line.text, {
-        x: mmToPt(zones.footer.xMm + PADDING_MM),
-        y: sheetHeightPt - mmToPt(line.yMm),
-        size: line.sizePt,
-        font,
-        color: ink.footer,
-      })
-    }
+    for (const line of layout.lines) paint('footer', ink.footer, line, zones.footer)
   }
+}
+
+/** `#rrggbb` to a PDF colour, falling back rather than throwing on a bad value. */
+function hexToRgb(hex: string, fallback: RGB): RGB {
+  const match = /^#([0-9a-f]{6})$/i.exec(hex.trim())
+  if (match === null) return fallback
+
+  const value = Number.parseInt(match[1] ?? '', 16)
+  if (!Number.isFinite(value)) return fallback
+  return {
+    type: 'RGB',
+    red: ((value >> 16) & 0xff) / 255,
+    green: ((value >> 8) & 0xff) / 255,
+    blue: (value & 0xff) / 255,
+  } as RGB
 }

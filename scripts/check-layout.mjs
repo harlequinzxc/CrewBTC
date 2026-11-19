@@ -24,10 +24,15 @@ function scan(file) {
     if (/<input\b/.test(t) && /\btext-(sm|xs|\[1[0-5]px\])/.test(t)) hit('§2 input must be text-base (16px)+')
     const tgt = t.match(/\b(?:min-h|h|size)-\[(\d+)px\]/)
     if (/<(button|a|input|select)\b/.test(t) && tgt && Number(tgt[1]) < 24) hit(`§4.1 target ${tgt[1]}px is below the 24px floor`)
-    const okTarget = /min-h-(\[44px\]|11|8)(?![\w[])/.test(t) || /(?:^|[\s"'{])h-(11|8)(?![\w[])/.test(t)  // §4.1 ladder
+    // Look at the whole opening tag, not just the line it starts on: JSX routinely puts
+    // an element's attributes on their own lines, and a rule that reads one line reports
+    // correctly-marked buttons as violations.
+    const tag = /<button\b[\s\S]*?>/.exec(lines.slice(i, i + 40).join('\n'))?.[0] ?? ''
+    const okTarget =
+      /min-h-(\[44px\]|11|8)(?![\w[])/.test(tag) || /(?:^|[\s"'{])h-(11|8)(?![\w[])/.test(tag)  // §4.1 ladder
     // Satisfied structurally by the CSS target ladder in index.css:
     // `button[data-target='dense']`, and the global 44px floor for all other buttons.
-    const structural = /data-target/.test(t) || /<button\b[^>]*data-target/.test(t)
+    const structural = /data-target/.test(tag)
     if (/<button\b/.test(t) && !okTarget && !structural) hit('§4.1 button needs min-h-[44px] (default) or min-h-8 (dense desktop)')
     if (/transition-\[?(height|width|top|left|box-shadow)\b/.test(t)) hit('§3 animate transform/opacity/clip-path only')
     if (/scrollbar-width:\s*none|scrollbarWidth:\s*['"]none['"]/.test(t)) hit('§4.1 keep scrollbars visible')

@@ -18,6 +18,15 @@ export interface ExportInput {
   readonly texts?: Readonly<Record<string, CellText>> | undefined
   /** Artwork transforms per cell. Absent means each page just covers its box. */
   readonly images?: Readonly<Record<string, ImageTransform>> | undefined
+  /** Text colour and highlight per cell band. */
+  readonly styles?:
+    | Readonly<
+        Record<
+          string,
+          { readonly color: string; readonly highlight: string | null } | undefined
+        >
+      >
+    | undefined
 }
 
 export interface ExportResult {
@@ -39,6 +48,7 @@ export async function writeSheets(input: ExportInput): Promise<ExportResult> {
   const { settings, grid, pages, sources, drawCutMarks } = input
   const texts = input.texts ?? {}
   const images = input.images ?? {}
+  const styles = input.styles ?? {}
   const plans = planSheets(pages, grid)
 
   // pdf-lib is ~130 KB gzip. Importing it lazily keeps it out of the app shell, which
@@ -186,6 +196,8 @@ export async function writeSheets(input: ExportInput): Promise<ExportResult> {
       // inside the clip, so a framed picture cannot cover the words.
       const raw = textFor(texts, cell.index, placement.documentId, placement.pageNumber)
       if (raw.trim() !== '') {
+        const styleFor = (band: 'header' | 'footer') =>
+          styles?.[`${cell.index}|${band}`] ?? styles?.[`${placement.cellIndex}|${band}`]
         drawCellText({
           page: outPage,
           font: await getFont(),
@@ -193,6 +205,7 @@ export async function writeSheets(input: ExportInput): Promise<ExportResult> {
           text: raw,
           sheetHeightPt,
           ink: { header: rgb(0.07, 0.07, 0.09), footer: rgb(0.35, 0.35, 0.38) },
+          styles: { header: styleFor('header'), footer: styleFor('footer') },
         })
       }
     }
