@@ -10,6 +10,7 @@ import { PDFDocument, StandardFonts, rgb } from '@cantoo/pdf-lib'
 import { writeSheets } from '../lib/export/write-sheet'
 import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
+import { photosFor } from './photo-fixture'
 import type { PageRef } from '../lib/imposition/sheet'
 
 async function makeSourcePdf(pages: number, label: string): Promise<ArrayBuffer> {
@@ -51,6 +52,7 @@ describe('cards carry the copy that was typed', () => {
       settings: DEFAULT_SHEET,
       grid: computeGrid(DEFAULT_SHEET),
       pages: pagesFor(1),
+      photos: photosFor(1, 'cards.pdf'),
       sources: new Map([['cards.pdf', source]]),
       drawCutMarks: false,
       texts: textFor(0, 'Limited Edition\nHand-numbered 2026'),
@@ -72,6 +74,7 @@ describe('cards carry the copy that was typed', () => {
       settings: DEFAULT_SHEET,
       grid: computeGrid(DEFAULT_SHEET),
       pages: pagesFor(1),
+      photos: photosFor(1, 'cards.pdf'),
       sources: new Map([['cards.pdf', source]]),
       drawCutMarks: true,
     })
@@ -89,6 +92,7 @@ describe('cards carry the copy that was typed', () => {
       settings: DEFAULT_SHEET,
       grid: computeGrid(DEFAULT_SHEET),
       pages: pagesFor(1),
+      photos: photosFor(1, 'cards.pdf'),
       sources: new Map([['cards.pdf', source]]),
       drawCutMarks: false,
       images: { '0|cards.pdf|1': { offsetXMm: 40, offsetYMm: -30, scale: 3 } },
@@ -103,6 +107,7 @@ describe('cards carry the copy that was typed', () => {
       settings: DEFAULT_SHEET,
       grid: computeGrid(DEFAULT_SHEET),
       pages: pagesFor(2),
+      photos: photosFor(2, 'cards.pdf'),
       sources: new Map(),
       drawCutMarks: false,
     })
@@ -119,6 +124,7 @@ describe('cards carry the copy that was typed', () => {
       settings: DEFAULT_SHEET,
       grid,
       pages: pagesFor(3),
+      photos: photosFor(3, 'cards.pdf'),
       sources: new Map([['cards.pdf', source]]),
       drawCutMarks: false,
     })

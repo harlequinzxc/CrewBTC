@@ -45,3 +45,21 @@ export function textsByPageIndex(
   }
   return out
 }
+
+/**
+ * Photos keyed `documentId#pageNumber`, which is how the exporter asks for them.
+ *
+ * The preview wants versioned keys (a re-upload changes them); the exporter has the
+ * source bytes in hand and only needs the page. Two shapes, one source of truth.
+ */
+export function photosByDocumentPage(
+  documents: readonly IngestedDocument[],
+): Readonly<Record<string, string>> {
+  const out: Record<string, string> = {}
+  for (const document of documents) {
+    for (const [pageNumber, dataUrl] of Object.entries(document.photos)) {
+      out[`${document.fileName}#${pageNumber}`] = dataUrl
+    }
+  }
+  return out
+}

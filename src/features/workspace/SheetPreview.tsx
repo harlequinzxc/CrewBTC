@@ -4,7 +4,6 @@ import { cutMarksFor, planSheets } from '../../lib/imposition/sheet'
 import type { PageRef, Placement } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import { useElementSize } from '../../lib/use-element-size'
-import { useThumbnails } from './use-thumbnails'
 import { thumbnailKey } from '../../lib/pdf/thumbnails'
 import { DEFAULT_IMAGE_TRANSFORM, DEFAULT_TEXT_STYLE } from '../../types/edit'
 import type { ImageTransform, TextStyle } from '../../types/edit'
@@ -48,15 +47,6 @@ export function SheetPreview(props: SheetPreviewProps) {
   const first = sheets[0]
   const marks = showCutMarks ? cutMarksFor(grid) : []
 
-  // Only the cells on the visible sheet need artwork.
-  const sheetRequests = (first?.placements ?? []).map((placement) => ({
-    fileName: placement.documentId,
-    pageNumber: placement.pageNumber,
-  }))
-  const signature = sheetRequests
-    .map((request) => thumbnailKey(request.fileName, request.pageNumber))
-    .join('|')
-  const thumbnails = useThumbnails(sheetRequests, signature)
 
   if (grid.isEmpty) {
     return (
@@ -157,9 +147,10 @@ export function SheetPreview(props: SheetPreviewProps) {
                 pageNumber={placement.pageNumber}
                 sourceWidthMm={placement.sourceWidthMm}
                 sourceHeightMm={placement.sourceHeightMm}
+                // The extracted dish photo and nothing else. A page render used to fall
+                // back here, which is why cards looked like screenshots of the PDF.
                 thumbnailUrl={
-                  props.photos?.[thumbnailKey(placement.documentId, placement.pageNumber)] ??
-                  thumbnails[thumbnailKey(placement.documentId, placement.pageNumber)]
+                  props.photos?.[thumbnailKey(placement.documentId, placement.pageNumber)]
                 }
                 headerMm={settings.headerMm}
                 footerMm={settings.footerMm}

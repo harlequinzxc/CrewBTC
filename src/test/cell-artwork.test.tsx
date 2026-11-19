@@ -1,23 +1,23 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
 import type { PageRef } from '../lib/imposition/sheet'
+import { thumbnailKey } from '../lib/pdf/thumbnails'
 
 /**
- * Cell artwork: each grid cell must show the rendered source page, positioned at
- * exactly the rect the exporter will use. The renderer is mocked because jsdom has
- * no canvas; the placement maths under test is the real implementation.
+ * Artwork inside cells: each card shows its own page's extracted dish photo, at the rect
+ * the exporter will use.
+ *
+ * Whole-page renders used to fill this role. They are gone — a card must never show a
+ * screenshot of the source page — so the case worth guarding is that a missing photo
+ * leaves the band empty rather than falling back to one.
  */
 const renderThumbnail = vi.fn()
-// Mirrors doc-cache's monotonic version, so a simulated re-upload changes the key
-// exactly as the real code would.
-const versions = vi.hoisted(() => new Map<string, number>())
 
 vi.mock('../lib/pdf/thumbnails', () => ({
   THUMBNAIL_WIDTH_PX: 220,
-  thumbnailKey: (fileName: string, pageNumber: number) =>
-    `${fileName}#${versions.get(fileName) ?? 1}#${pageNumber}`,
+  thumbnailKey: (fileName: string, pageNumber: number) => `${fileName}#0#${pageNumber}`,
   renderThumbnail: (fileName: string, pageNumber: number) =>
     renderThumbnail(fileName, pageNumber) as Promise<string | null>,
 }))
@@ -51,13 +51,12 @@ function refs(count: number): PageRef[] {
     documentId: 'cards.pdf',
     fileName: 'cards.pdf',
     pageNumber: index + 1,
-    widthMm: 52,
-    heightMm: 67,
+    widthMm: 64,
+    heightMm: 90,
   }))
 }
 
-
-/** These suites test sheet geometry, not copy; the new model has no text props. */
+/** Squares with copy are not the subject here; the geometry and artwork are. */
 const idle = {
   texts: {} as Readonly<Record<string, string>>,
   images: {} as Readonly<Record<string, never>>,
@@ -70,106 +69,113 @@ const idle = {
   onStyleChange: () => undefined,
 }
 
+/** A photo map for pages 1..count, keyed exactly as the sheet reads it. */
+function photosFor(count: number): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (let page = 1; page <= count; page += 1) {
+    out[thumbnailKey('cards.pdf', page)] = `data:image/png;base64,DISH-${page}`
+  }
+  return out
+}
+
+const imageSources = (): string[] =>
+  Array.from(document.querySelectorAll('img')).map((img) => img.getAttribute('src') ?? '')
+
 beforeEach(() => {
-  versions.clear()
   renderThumbnail.mockReset()
-  renderThumbnail.mockImplementation(
-    async (fileName: string, pageNumber: number) => `data:image/png;base64,${fileName}-${pageNumber}`,
-  )
   stubSize(800, 600)
 })
 
-describe('page content inside cells', () => {
-  it('renders one image per placed cell', async () => {
-    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(9)} showCutMarks {...idle} />)
-
+describe('dish photos inside cells', () => {
+  it('renders one photo per placed cell', async () => {
+    render(
+      <SheetPreview
+        settings={DEFAULT_SHEET}
+        grid={grid}
+        pages={refs(4)}
+        showCutMarks
+        {...idle}
+        photos={photosFor(4)}
+      />,
+    )
     await waitFor(() => {
-      expect(document.querySelectorAll('img')).toHaveLength(9)
+      expect(imageSources()).toHaveLength(4)
     })
   })
 
-  it('shows the right page in the right cell', async () => {
-    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(9)} showCutMarks {...idle} />)
-
+  it('shows the right photo in the right cell', async () => {
+    render(
+      <SheetPreview
+        settings={DEFAULT_SHEET}
+        grid={grid}
+        pages={refs(3)}
+        showCutMarks
+        {...idle}
+        photos={photosFor(3)}
+      />,
+    )
     await waitFor(() => {
-      expect(document.querySelectorAll('img')).toHaveLength(9)
+      const sources = imageSources()
+      expect(sources).toContain('data:image/png;base64,DISH-1')
+      expect(sources).toContain('data:image/png;base64,DISH-2')
+      expect(sources).toContain('data:image/png;base64,DISH-3')
     })
-    const sources = [...document.querySelectorAll('img')].map((img) => img.getAttribute('src'))
-    expect(sources).toContain('data:image/png;base64,cards.pdf-1')
-    expect(sources).toContain('data:image/png;base64,cards.pdf-9')
   })
 
-  it('renders each page only once, however many cells reference it', async () => {
-    // A single-page PDF repeated is not the case here: instead assert no duplicate
-    // renders for a normal 9-up sheet.
-    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(9)} showCutMarks {...idle} />)
-    await waitFor(() => expect(document.querySelectorAll('img')).toHaveLength(9))
-
-    const keys = renderThumbnail.mock.calls.map((call) => call.join('#'))
-    expect(new Set(keys).size).toBe(keys.length)
-  })
-
-  it('leaves the last cells empty when the batch is short', async () => {
-    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(5)} showCutMarks {...idle} />)
-    await waitFor(() => expect(document.querySelectorAll('img')).toHaveLength(5))
-  })
-
-  it('falls back to the filename when a page cannot be rendered', async () => {
-    renderThumbnail.mockResolvedValue(null)
-    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(2)} showCutMarks {...idle} />)
-
+  it('never renders a page while a photo is available', async () => {
+    render(
+      <SheetPreview
+        settings={DEFAULT_SHEET}
+        grid={grid}
+        pages={refs(2)}
+        showCutMarks
+        {...idle}
+        photos={photosFor(2)}
+      />,
+    )
     await waitFor(() => {
-      expect(screen.getAllByText('cards').length).toBeGreaterThan(0)
+      expect(imageSources()).toHaveLength(2)
     })
-    expect(document.querySelectorAll('img')).toHaveLength(0)
+    // The old behaviour rendered pages through this path; nothing may call it.
+    expect(renderThumbnail).not.toHaveBeenCalled()
+  })
+
+  it('leaves the band empty when a page has no photo, rather than rendering it', async () => {
+    const photos = photosFor(2)
+    delete photos[thumbnailKey('cards.pdf', 2)]
+
+    render(
+      <SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(2)} showCutMarks {...idle} photos={photos} />,
+    )
+    await waitFor(() => {
+      expect(imageSources()).toHaveLength(1)
+    })
+    expect(renderThumbnail).not.toHaveBeenCalled()
   })
 
   it('draws no image when there are no pages', () => {
-    render(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={[]} showCutMarks {...idle} />)
-    expect(document.querySelectorAll('img')).toHaveLength(0)
+    render(
+      <SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={[]} showCutMarks {...idle} photos={{}} />,
+    )
+    expect(imageSources()).toHaveLength(0)
   })
 
-  it('shows artwork again when returning to an already-rendered sheet', async () => {
-    const first = refs(9)
-    const { rerender } = render(
-      <SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={first} showCutMarks {...idle} />,
+  it('leaves the last cells empty when the batch is short', async () => {
+    render(
+      <SheetPreview
+        settings={DEFAULT_SHEET}
+        grid={grid}
+        pages={refs(2)}
+        showCutMarks
+        {...idle}
+        photos={photosFor(2)}
+      />,
     )
-    await waitFor(() => expect(document.querySelectorAll('img')).toHaveLength(9))
-    const rendersAfterFirst = renderThumbnail.mock.calls.length
-
-    // Second sheet: a different, offset set of pages.
-    const second: PageRef[] = Array.from({ length: 9 }, (_unused, index) => ({
-      documentId: 'more.pdf',
-      fileName: 'more.pdf',
-      pageNumber: index + 1,
-      widthMm: 52,
-      heightMm: 67,
-    }))
-    rerender(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={second} showCutMarks {...idle} />)
-    await waitFor(() =>
-      expect(document.querySelectorAll('img')[0]?.getAttribute('src')).toContain('more.pdf'),
-    )
-
-    // Back to the first sheet: fully cached, yet the cells must still show artwork.
-    rerender(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={first} showCutMarks {...idle} />)
-    await waitFor(() =>
-      expect(document.querySelectorAll('img')[0]?.getAttribute('src')).toContain('cards.pdf'),
-    )
-    expect(document.querySelectorAll('img')).toHaveLength(9)
-    expect(renderThumbnail.mock.calls.length).toBe(rendersAfterFirst + 9)
-  })
-
-  it('discards cached artwork when the same file name is re-uploaded', async () => {
-    const { rerender } = render(
-      <SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(2)} showCutMarks {...idle} />,
-    )
-    await waitFor(() => expect(document.querySelectorAll('img')).toHaveLength(2))
-    expect(renderThumbnail).toHaveBeenCalledTimes(2)
-
-    // Same names, new bytes: the old render must not survive.
-    versions.set('cards.pdf', 2)
-    rerender(<SheetPreview settings={DEFAULT_SHEET} grid={grid} pages={refs(2)} showCutMarks {...idle} />)
-    await waitFor(() => expect(renderThumbnail).toHaveBeenCalledTimes(4))
+    await waitFor(() => {
+      expect(imageSources()).toHaveLength(2)
+    })
+    // Nine cells fit; two pages means seven empty.
+    expect(grid.cellCount).toBe(9)
   })
 })
 

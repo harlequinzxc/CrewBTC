@@ -8,6 +8,18 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '0.7.2',
+    date: '2026-11-19',
+    title: 'Three boxes on the card: type, photo, type',
+    highlights: [
+      'The exported card now holds the cropped dish photo only — the source page is never embedded, so its printed title and border box cannot come along',
+      'Fixed: image data arrives from the PDF worker after the page is read, so extraction was quietly failing and cards fell back to a page render',
+      'Page renders are gone from the card picture band entirely; a page with no photo says so instead of showing a screenshot',
+      'Header and footer stay live, editable text on the sheet and in the exported PDF',
+      'Layout, cell size and grid are unchanged',
+    ],
+  },
+  {
     version: '0.7.1',
     date: '2026-11-19',
     title: 'The dish photo is the photo, on every page',
