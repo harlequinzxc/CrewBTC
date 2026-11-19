@@ -1,203 +1,142 @@
-import { useState } from 'react'
 import { cn } from '../../lib/cn'
 import type { CellSlot } from '../../types/imposition'
-import type { EditTarget, ImageTransform, PageEdit } from '../../types/edit'
-import { DEFAULT_IMAGE_TRANSFORM, fittedRectMm, blockToCellMm, isEdited } from '../../types/edit'
-import type { TextRegion } from '../../types/document'
-import { TextOverlay } from './TextOverlay'
+import type { ImageTransform } from '../../types/edit'
+import { cellZones, coverRectMm, splitCellText } from '../../types/edit'
 
 export interface SheetCellProps {
   readonly cell: CellSlot
   /** Pixels per millimetre — the measured preview scale. */
   readonly scale: number
+  readonly documentId: string
   readonly fileName: string
   readonly pageNumber: number
-  readonly documentId: string
   readonly sourceWidthMm: number
   readonly sourceHeightMm: number
   readonly thumbnailUrl: string | undefined
-  readonly blocks: readonly TextRegion[]
-  readonly edit: PageEdit
+  /** Band heights come from the sheet settings so every cell matches. */
+  readonly headerMm: number
+  readonly footerMm: number
+  readonly transform: ImageTransform
+  /** Pasted copy for this cell. First line is the header, the rest the footer. */
+  readonly text: string
   readonly selected: boolean
   readonly onSelect: (cellIndex: number) => void
-  readonly onTextChange: (target: EditTarget, text: string) => void
-  readonly onImageChange: (target: EditTarget, image: ImageTransform) => void
 }
 
 const LABEL = (fileName: string): string => fileName.replace(/\.pdf$/i, '')
 
-/** Small square control that keeps the 24 px floor without a cramped hit area. */
-function Nudge({
-  label,
-  onClick,
-  children,
-}: {
-  readonly label: string
-  readonly onClick: () => void
-  readonly children: React.ReactNode
-}) {
-  return (
-    <button type="button" data-target="dense"
-      aria-label={label}
-      onClick={onClick}
-      className="grid min-h-8 min-w-8 place-items-center rounded border border-zinc-600 bg-zinc-900/95 text-xs leading-none text-zinc-100 hover:bg-zinc-700 focus-visible:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400"
-    >
-      {children}
-    </button>
-  )
-}
-
 /**
- * One grid cell: the page artwork, every text block on it (editable in place), and —
- * when selected — the artwork transform controls.
+ * One card on the sheet: header band, picture band, footer band.
  *
- * Text is always shown when blocks are known, not only while selected: a printed card
- * shows its text whether or not you are editing it, and hiding it would misrepresent
- * the sheet.
+ * The picture *covers* its band and is clipped to it, so a card never shows white bars
+ * and a zoomed image never creeps into the text or across a cut line. What is drawn
+ * here is the same geometry the exporter uses, because both call `cellZones` and
+ * `coverRectMm` rather than each doing the arithmetic.
  */
 export function SheetCell(props: SheetCellProps) {
-  const { cell, scale, blocks, edit, selected, thumbnailUrl, fileName, pageNumber } = props
-  const [editingBlock, setEditingBlock] = useState<string | null>(null)
+  const { cell, scale, headerMm, footerMm, transform, text, selected } = props
 
-  const target: EditTarget = {
-    kind: 'text',
-    cellIndex: cell.index,
-    blockId: editingBlock ?? '',
-    documentId: props.documentId,
-    pageNumber,
-  }
-  const imageTarget: EditTarget = {
-    kind: 'image',
-    cellIndex: cell.index,
-    documentId: props.documentId,
-    pageNumber,
-  }
+  const zones = cellZones(cell.rect, {
+    headerMm,
+    pictureMm: Math.max(0, cell.rect.heightMm - headerMm - footerMm),
+    footerMm,
+  })
+  const covered = coverRectMm(
+    zones.picture,
+    props.sourceWidthMm,
+    props.sourceHeightMm,
+    transform,
+  )
+  const { header, footer } = splitCellText(text)
 
-  const artwork = fittedRectMm(cell, props.sourceWidthMm, props.sourceHeightMm, edit.image)
-  const edited = isEdited(edit)
+  const px = (mm: number): string => `${mm * scale}px`
 
   return (
     <div
       className={cn(
-        'absolute border border-dashed',
-        selected ? 'border-sky-400' : 'border-red-400/70',
+        'absolute overflow-hidden border border-dashed bg-white',
+        selected ? 'border-sky-500 ring-1 ring-sky-400' : 'border-red-400/70',
       )}
       style={{
-        left: `${cell.rect.xMm * scale}px`,
-        top: `${cell.rect.yMm * scale}px`,
-        width: `${cell.rect.widthMm * scale}px`,
-        height: `${cell.rect.heightMm * scale}px`,
+        left: px(cell.rect.xMm),
+        top: px(cell.rect.yMm),
+        width: px(cell.rect.widthMm),
+        height: px(cell.rect.heightMm),
       }}
     >
-      <span className="absolute left-0.5 top-0.5 z-20 text-[9px] leading-none text-zinc-400">
-        {cell.index + 1}
-      </span>
+      {/* Header band */}
+      <div
+        className="absolute overflow-hidden px-1"
+        style={{ left: 0, top: 0, width: '100%', height: px(zones.headerMm) }}
+      >
+        {header === '' ? null : (
+          <p className="whitespace-pre-wrap break-words text-[8px] font-medium leading-tight text-zinc-900">
+            {header}
+          </p>
+        )}
+      </div>
 
-      {/* The cell itself is the picker; artwork below is inert so clicks reach it. */}
+      {/* Picture band — clipped so overflow never reaches the text or the cut line. */}
+      <div
+        className="absolute overflow-hidden bg-zinc-100"
+        style={{
+          left: 0,
+          top: px(zones.headerMm),
+          width: '100%',
+          height: px(zones.pictureMm),
+        }}
+      >
+        {/* Guard on the URL, not just the geometry: an <img> with no src renders as a
+            broken-image glyph, which looks like a real picture to a test and a user. */}
+        {covered === null || props.thumbnailUrl === undefined ? null : (
+          <img
+            src={props.thumbnailUrl}
+            alt=""
+            draggable={false}
+            className="pointer-events-none absolute select-none"
+            style={{
+              left: px(covered.xMm - cell.rect.xMm),
+              top: px(covered.yMm - cell.rect.yMm),
+              width: px(covered.widthMm),
+              height: px(covered.heightMm),
+            }}
+          />
+        )}
+        {props.thumbnailUrl === undefined ? (
+          <span className="absolute inset-0 grid place-items-center px-1 text-center text-[8px] leading-tight text-zinc-400">
+            {LABEL(props.fileName)}
+          </span>
+        ) : null}
+      </div>
+
+      {/* Footer band */}
+      <div
+        className="absolute overflow-hidden px-1"
+        style={{
+          left: 0,
+          top: px(zones.headerMm + zones.pictureMm),
+          width: '100%',
+          height: px(zones.footerMm),
+        }}
+      >
+        {footer === '' ? null : (
+          <p className="whitespace-pre-wrap break-words text-[7px] leading-tight text-zinc-600">
+            {footer}
+          </p>
+        )}
+      </div>
+
+      {/* Selection target: the whole card, above the artwork but below nothing else,
+          because nothing on a card is interactive. */}
       <button type="button" data-target="dense"
         onClick={() => props.onSelect(cell.index)}
         aria-pressed={selected}
-        aria-label={`Cell ${cell.index + 1}: ${LABEL(fileName)} page ${pageNumber}`}
-        className="absolute inset-0 z-10 min-h-8 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400"
+        aria-label={`Cell ${cell.index + 1}: ${LABEL(props.fileName)} page ${props.pageNumber}`}
+        className="absolute inset-0 z-10 min-h-8 cursor-pointer bg-transparent hover:bg-sky-300/10 hover:outline-sky-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
       />
-
-      {/* No artwork yet: fall back to the filename rather than an <img> with no src,
-          which renders as a broken image and reports itself as a real one. */}
-      {artwork !== null && thumbnailUrl !== undefined ? (
-        <img
-          src={thumbnailUrl}
-          alt=""
-          draggable={false}
-          className="pointer-events-none absolute select-none"
-          style={{
-            left: `${artwork.xMm * scale}px`,
-            top: `${artwork.yMm * scale}px`,
-            width: `${artwork.widthMm * scale}px`,
-            height: `${artwork.heightMm * scale}px`,
-          }}
-        />
-      ) : null}
-
-      {thumbnailUrl === undefined ? (
-        <span className="pointer-events-none absolute inset-1 flex items-center justify-center overflow-hidden text-center text-[9px] leading-tight text-zinc-400">
-          {LABEL(fileName)}
-        </span>
-      ) : null}
-
-      {/* Text overlays: positioned from the same rect the artwork is drawn at. */}
-      {artwork === null
-        ? null
-        : blocks.map((block) => (
-            <TextOverlay
-              key={block.id}
-              box={blockToCellMm(block.box, artwork)}
-              value={edit.text[block.id] ?? block.text}
-              edited={edit.text[block.id] !== undefined}
-              scale={scale}
-              sizePt={block.fontSizeRatio * artwork.heightMm * (72 / 25.4)}
-              editing={editingBlock === block.id}
-              zoomed={scale * 25.4 / 72 >= 12}
-              onBegin={() => {
-                setEditingBlock(block.id)
-                props.onSelect(cell.index)
-              }}
-              onChange={(text) => props.onTextChange({ ...target, blockId: block.id }, text)}
-              onEnd={() => setEditingBlock(null)}
-            />
-          ))}
-
-      {selected && artwork !== null ? (
-        <div className="absolute bottom-0.5 right-0.5 z-20 flex items-center gap-0.5">
-          <Nudge
-            label={`Move page ${pageNumber} left`}
-            onClick={() =>
-              props.onImageChange(imageTarget, {
-                ...edit.image,
-                offsetXMm: edit.image.offsetXMm - 1,
-              })
-            }
-          >
-            ←
-          </Nudge>
-          <Nudge
-            label={`Move page ${pageNumber} right`}
-            onClick={() =>
-              props.onImageChange(imageTarget, {
-                ...edit.image,
-                offsetXMm: edit.image.offsetXMm + 1,
-              })
-            }
-          >
-            →
-          </Nudge>
-          <Nudge
-            label={`Zoom page ${pageNumber} out`}
-            onClick={() =>
-              props.onImageChange(imageTarget, { ...edit.image, scale: edit.image.scale / 1.1 })
-            }
-          >
-            −
-          </Nudge>
-          <Nudge
-            label={`Zoom page ${pageNumber} in`}
-            onClick={() =>
-              props.onImageChange(imageTarget, { ...edit.image, scale: edit.image.scale * 1.1 })
-            }
-          >
-            +
-          </Nudge>
-          {edited ? (
-            <button type="button" data-target="dense"
-              onClick={() =>
-                props.onImageChange(imageTarget, { ...DEFAULT_IMAGE_TRANSFORM, scale: 1 })
-              }
-              className="min-h-8 rounded border border-zinc-600 bg-zinc-900/95 px-1.5 text-[10px] text-zinc-200 hover:bg-zinc-700 focus-visible:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400"
-            >
-              Reset art
-            </button>
-          ) : null}
-        </div>
-      ) : null}
+      <span className="absolute right-0.5 top-0.5 z-20 text-[8px] leading-none text-zinc-400">
+        {cell.index + 1}
+      </span>
     </div>
   )
 }

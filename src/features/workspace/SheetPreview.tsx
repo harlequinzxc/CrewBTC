@@ -1,32 +1,28 @@
 import { ScanLine } from 'lucide-react'
 import { cutMarksFor, planSheets } from '../../lib/imposition/sheet'
-import type { Placement } from '../../lib/imposition/sheet'
+import type { PageRef, Placement } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import { useElementSize } from '../../lib/use-element-size'
 import { useThumbnails } from './use-thumbnails'
 import { thumbnailKey } from '../../lib/pdf/thumbnails'
-import { pageKey } from '../../lib/pdf/page-text-key'
-import { sourceVersion } from '../../lib/export/doc-cache'
-import { editFor } from '../../types/edit'
-import type { EditTarget, ImageTransform, PageEdit } from '../../types/edit'
-import type { TextRegion } from '../../types/document'
+import { DEFAULT_IMAGE_TRANSFORM } from '../../types/edit'
+import type { ImageTransform } from '../../types/edit'
 import { SheetCell } from './SheetCell'
-import { EditStrip } from './EditStrip'
+import { CellTools } from './CellTools'
 
 export interface SheetPreviewProps {
   readonly settings: SheetSettings
   readonly grid: GridLayout
-  readonly pages: readonly import('../../lib/imposition/sheet').PageRef[]
+  readonly pages: readonly PageRef[]
   readonly showCutMarks: boolean
-  /** Per-cell edits, keyed by cell + page. */
-  readonly edits: Readonly<Record<string, PageEdit>>
-  /** Extracted text blocks, keyed `file#version#page`. */
-  readonly blocksByPage: Readonly<Record<string, readonly TextRegion[]>>
+  /** Pasted copy, keyed by page index in the batch. */
+  readonly texts: Readonly<Record<string, string>>
+  /** Artwork framing, keyed by page index in the batch. */
+  readonly images: Readonly<Record<string, ImageTransform>>
   readonly selectedCell: number | null
   readonly onSelectCell: (cellIndex: number | null) => void
-  readonly onTextChange: (target: EditTarget, text: string) => void
-  readonly onImageChange: (target: EditTarget, image: ImageTransform) => void
-  readonly onResetCell: (cellIndex: number) => void
+  readonly onImageChange: (index: number, image: ImageTransform) => void
+  readonly onResetImage: (index: number) => void
 }
 
 /** Padding kept around the sheet so it never touches the pane edges. */
@@ -38,13 +34,13 @@ const BREATHING_ROOM = 24
  * hardcoded, so resizing the window re-fits the preview immediately.
  */
 export function SheetPreview(props: SheetPreviewProps) {
-  const { settings, grid, pages, showCutMarks, edits, blocksByPage, selectedCell } = props
+  const { settings, grid, pages, showCutMarks, texts, images, selectedCell } = props
   const [containerRef, size] = useElementSize<HTMLDivElement>()
   const sheets = planSheets(pages, grid)
   const first = sheets[0]
   const marks = showCutMarks ? cutMarksFor(grid) : []
 
-  // Only the cells on the visible sheet need artwork or text.
+  // Only the cells on the visible sheet need artwork.
   const sheetRequests = (first?.placements ?? []).map((placement) => ({
     fileName: placement.documentId,
     pageNumber: placement.pageNumber,
@@ -76,16 +72,18 @@ export function SheetPreview(props: SheetPreviewProps) {
   const scaledWidth = settings.sheetWidthMm * safeScale
   const scaledHeight = settings.sheetHeightMm * safeScale
 
+  // Cells are keyed by page index so copy and framing follow the page, not the slot:
+  // changing the grid must not silently move someone's words to another card.
+  const pageIndexFor = (placement: Placement): number =>
+    pages.findIndex(
+      (page) =>
+        page.documentId === placement.documentId && page.pageNumber === placement.pageNumber,
+    )
+
   const selectedPlacement =
     selectedCell === null
       ? undefined
       : first?.placements.find((item) => item.cellIndex === selectedCell)
-
-  const blocksFor = (placement: Placement | undefined): readonly TextRegion[] => {
-    if (placement === undefined) return []
-    const version = sourceVersion(placement.documentId)
-    return blocksByPage[pageKey(placement.documentId, placement.pageNumber, version)] ?? []
-  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -108,8 +106,6 @@ export function SheetPreview(props: SheetPreviewProps) {
       </div>
 
       <div ref={containerRef} className="grid min-h-0 flex-1 place-items-center overflow-hidden p-3">
-        {/* Clicking the paper (not a cell) clears the selection. A real button so the
-            same escape is reachable by keyboard, which a bare div click handler is not. */}
         <div
           className="relative shrink-0 bg-white shadow-xl shadow-black/50 ring-1 ring-black/20"
           style={{ width: `${scaledWidth}px`, height: `${scaledHeight}px` }}
@@ -140,6 +136,9 @@ export function SheetPreview(props: SheetPreviewProps) {
               )
             }
 
+            const pageIndex = pageIndexFor(placement)
+            const key = `${pageIndex}`
+
             return (
               <SheetCell
                 key={cell.index}
@@ -151,12 +150,12 @@ export function SheetPreview(props: SheetPreviewProps) {
                 sourceWidthMm={placement.sourceWidthMm}
                 sourceHeightMm={placement.sourceHeightMm}
                 thumbnailUrl={thumbnails[thumbnailKey(placement.documentId, placement.pageNumber)]}
-                blocks={blocksFor(placement)}
-                edit={editFor(edits, cell.index, placement.documentId, placement.pageNumber)}
+                headerMm={settings.headerMm}
+                footerMm={settings.footerMm}
+                transform={images[key] ?? DEFAULT_IMAGE_TRANSFORM}
+                text={texts[key] ?? ''}
                 selected={selectedCell === cell.index}
                 onSelect={props.onSelectCell}
-                onTextChange={props.onTextChange}
-                onImageChange={props.onImageChange}
               />
             )
           })}
@@ -182,25 +181,24 @@ export function SheetPreview(props: SheetPreviewProps) {
           <ScanLine aria-hidden="true" strokeWidth={2} className="size-3.5 shrink-0" />
           <span className="truncate">
             {grid.gutterMm > 0
-              ? `${grid.gutterMm} mm channels between cells — cut along the centres. Select a cell to edit its text and artwork.`
+              ? `${grid.gutterMm} mm channels between cells — cut along the centres. Select a cell to frame its picture.`
               : 'No gutter set — cells touch, leaving no room for a blade.'}
           </span>
         </div>
       ) : (
-        <EditStrip
+        <CellTools
           placement={selectedPlacement}
-          blocks={blocksFor(selectedPlacement)}
-          edit={editFor(
-            edits,
-            selectedPlacement.cellIndex,
-            selectedPlacement.documentId,
-            selectedPlacement.pageNumber,
-          )}
-          onTextChange={props.onTextChange}
-          onResetCell={() => props.onResetCell(selectedPlacement.cellIndex)}
+          transform={images[`${pageIndexFor(selectedPlacement)}`] ?? DEFAULT_IMAGE_TRANSFORM}
+          hasText={textForIndex(texts, pageIndexFor(selectedPlacement))}
+          onImageChange={(image) => props.onImageChange(pageIndexFor(selectedPlacement), image)}
+          onResetImage={() => props.onResetImage(pageIndexFor(selectedPlacement))}
           onClose={() => props.onSelectCell(null)}
         />
       )}
     </div>
   )
 }
+
+const textForIndex = (texts: Readonly<Record<string, string>>, index: number): boolean =>
+  (texts[`${index}`] ?? '').trim() !== ''
+

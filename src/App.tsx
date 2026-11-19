@@ -8,20 +8,16 @@ import { ToastHub } from './components/ui/ToastHub'
 import { useToasts } from './components/ui/use-toasts'
 import { MotionProvider } from './features/settings/MotionProvider'
 import { SettingsView } from './features/settings/SettingsView'
-import { BatchQueue } from './features/workspace/BatchQueue'
-import { DropZone } from './features/workspace/DropZone'
 import { Inspector } from './features/workspace/Inspector'
-import { SheetPreview } from './features/workspace/SheetPreview'
 import { SheetSettings } from './features/workspace/SheetSettings'
 import { useBatch } from './features/workspace/use-batch'
-import { useEdits } from './features/workspace/use-edits'
-import { usePageText } from './features/workspace/use-page-text'
-import { pageKey } from './lib/pdf/page-text-key'
-import { sourceVersion } from './lib/export/doc-cache'
+import { useCellText } from './features/workspace/use-cell-text'
+import { CentrePane } from './features/workspace/CentrePane'
+import { LeftPane } from './features/workspace/LeftPane'
+import type { LeftTab } from './features/workspace/LeftPane'
 import { useExport } from './features/workspace/use-export'
 import { useSheet } from './features/workspace/use-sheet'
 import { toPageRefs } from './lib/pdf/page-refs'
-import { planSheets } from './lib/imposition/sheet'
 import { pickFiles } from './lib/files/open-picker'
 import { DESKTOP_QUERY, useMediaQuery } from './lib/use-media-query'
 import { readSettings, requestPersistence, writeSettings } from './lib/storage/db'
@@ -55,30 +51,41 @@ function Workspace() {
   const sheet = useSheet()
   const [showCutMarks, setShowCutMarks] = useState(true)
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
+  const [leftTab, setLeftTab] = useState<LeftTab>('files')
+  const [selectedPage, setSelectedPage] = useState(0)
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
-  const editsApi = useEdits()
+  const cellText = useCellText()
 
-  // Extract text for the pages actually on screen; that is what makes them editable.
-  const sheetPlans = useMemo(() => planSheets(pageRefs, sheet.grid), [pageRefs, sheet.grid])
-  const visiblePages = useMemo(
-    () =>
-      (sheetPlans[0]?.placements ?? []).map((placement) => ({
-        fileName: placement.documentId,
-        pageNumber: placement.pageNumber,
-      })),
-    [sheetPlans],
-  )
-  const textSignature = visiblePages
-    .map((page) => pageKey(page.fileName, page.pageNumber, sourceVersion(page.fileName)))
-    .join('|')
-  const blocksByPage = usePageText(visiblePages, textSignature)
+  // Copy and framing are keyed by page index, which is the order the sheet places them.
+  const textsByPage = useMemo(() => {
+    const out: Record<string, string> = {}
+    for (const [key, value] of Object.entries(cellText.texts)) {
+      const match = /^(\d+)\|/.exec(key)
+      if (match === null) continue
+      out[match[1] ?? '0'] = value.text
+    }
+    return out
+  }, [cellText.texts])
+
+  // One preview per page, for the sketch beside the copy box.
+  const previews = useMemo(() => {
+    const out: Record<string, string> = {}
+    for (const document of batch.documents) {
+      if (document.pagePreviewUrl === null) continue
+      out[`${document.fileName}#1`] = document.pagePreviewUrl
+    }
+    return out
+  }, [batch.documents])
+
+  // A page beyond the end of a shrinking batch must not strand the copy editor.
+  const safePage = Math.min(selectedPage, Math.max(0, pageRefs.length - 1))
   const exporter = useExport({
     settings: sheet.settings,
     grid: sheet.grid,
     pages: pageRefs,
     drawCutMarks: showCutMarks,
-    edits: editsApi.edits,
-    blocks: blocksByPage,
+    texts: textsByPage,
+    images: cellText.images,
     notify,
   })
 
@@ -99,9 +106,29 @@ function Workspace() {
   // that no longer exist, so the reset happens with the clear rather than after it.
   const clearAll = useCallback(() => {
     batch.clear()
-    editsApi.clear()
+    cellText.clear()
     setSelectedCell(null)
-  }, [batch, editsApi])
+    setSelectedPage(0)
+  }, [batch, cellText])
+
+  const handleTextChange = useCallback(
+    (index: number, text: string) => {
+      const page = pageRefs[index]
+      if (page === undefined) return
+      cellText.setText(index, page.documentId, page.pageNumber, text)
+    },
+    [cellText, pageRefs],
+  )
+
+  const handlePageSelect = useCallback(
+    (index: number) => {
+      setSelectedPage(index)
+      // Selecting a page should show that page's card, not whichever cell was last
+      // touched: one page maps to one cell index on the first sheet.
+      setSelectedCell(index)
+    },
+    [],
+  )
 
   const handleAdd = useCallback(() => {
     void (async () => {
@@ -136,58 +163,51 @@ function Workspace() {
           <SettingsView settings={settings} onSettingsChange={updateSettings} />
         ) : (
           <div className="flex min-h-0 flex-1">
-            <div className="hidden w-[260px] shrink-0 border-r border-zinc-800 lg:block">
-              {batch.documents.length === 0 ? (
-                <div className="p-2">
-                  <DropZone onFiles={batch.addFiles} disabled={batch.busy} />
-                </div>
-              ) : null}
-              <BatchQueue
+            <div className="hidden w-[300px] shrink-0 border-r border-zinc-800 lg:block">
+              <LeftPane
+                tab={leftTab}
+                onTabChange={setLeftTab}
                 documents={batch.documents}
                 activeId={batch.activeId}
-                onSelect={batch.select}
+                onSelectDocument={batch.select}
                 onAdd={handleAdd}
+                onFiles={batch.addFiles}
                 onReRun={batch.reRun}
                 onClear={clearAll}
                 busy={batch.busy}
+                pages={pageRefs}
+                previews={previews}
+                texts={textsByPage}
+                selectedPage={safePage}
+                onSelectPage={handlePageSelect}
+                onTextChange={handleTextChange}
               />
             </div>
 
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-zinc-950">
-              {batch.documents.length === 0 ? (
-                <div className="grid min-h-0 flex-1 place-items-center overflow-hidden p-6">
-                  <div className="w-full max-w-sm">
-                    <DropZone onFiles={batch.addFiles} disabled={batch.busy} />
-                    <Button
-                      variant="primary"
-                      fullWidth
-                      className="mt-3"
-                      onClick={handleAdd}
-                      disabled={batch.busy}
-                      loading={batch.busy}
-                    >
-                      Add PDFs
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                  <SheetPreview
-                    settings={sheet.settings}
-                    grid={sheet.grid}
-                    pages={pageRefs}
-                    showCutMarks={showCutMarks}
-                    edits={editsApi.edits}
-                    blocksByPage={blocksByPage}
-                    selectedCell={selectedCell}
-                    onSelectCell={setSelectedCell}
-                    onTextChange={editsApi.setText}
-                    onImageChange={editsApi.setImage}
-                    onResetCell={editsApi.resetCell}
-                  />
-                </div>
-              )}
-            </div>
+            <CentrePane
+              documentsLoaded={batch.documents.length > 0}
+              busy={batch.busy}
+              onFiles={batch.addFiles}
+              onAdd={handleAdd}
+              sheet={sheet.settings}
+              grid={sheet.grid}
+              pages={pageRefs}
+              showCutMarks={showCutMarks}
+              texts={textsByPage}
+              images={cellText.images}
+              selectedCell={selectedCell}
+              onSelectCell={setSelectedCell}
+              onImageChange={(index, image) => {
+                const page = pageRefs[index]
+                if (page === undefined) return
+                cellText.setImage(index, page.documentId, page.pageNumber, image)
+              }}
+              onResetImage={(index) => {
+                const page = pageRefs[index]
+                if (page === undefined) return
+                cellText.resetImage(index, page.documentId, page.pageNumber)
+              }}
+            />
 
             <Inspector
               settings={settings}

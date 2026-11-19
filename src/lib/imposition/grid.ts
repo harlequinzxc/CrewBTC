@@ -1,5 +1,5 @@
 import type { CellSlot, GridLayout, SheetSettings } from '../../types/imposition'
-import { SHEET_LIMITS } from '../../types/imposition'
+import { SHEET_LIMITS, BAND_LIMITS_MM } from '../../types/imposition'
 
 const finite = (value: number, fallback = 0): number =>
   Number.isFinite(value) ? value : fallback
@@ -126,6 +126,21 @@ export function validateSheet(settings: SheetSettings): GridValidation {
   }
   if (!within(settings.marginMm, 0, maxMarginMm)) {
     errors.marginMm = `Margin must be 0–${maxMarginMm} mm`
+  }
+  if (!within(settings.headerMm, BAND_LIMITS_MM.min, BAND_LIMITS_MM.max)) {
+    errors.headerMm = `Header must be ${BAND_LIMITS_MM.min}–${BAND_LIMITS_MM.max} mm`
+  }
+  if (!within(settings.footerMm, BAND_LIMITS_MM.min, BAND_LIMITS_MM.max)) {
+    errors.footerMm = `Footer must be ${BAND_LIMITS_MM.min}–${BAND_LIMITS_MM.max} mm`
+  }
+  // The picture has to keep a usable share of the cell; two fat bands would leave a
+  // strip so thin that the "picture box" is a lie.
+  if (
+    errors.headerMm === undefined &&
+    errors.footerMm === undefined &&
+    settings.headerMm + settings.footerMm > settings.cellHeightMm * 0.7
+  ) {
+    errors.footerMm = 'Header and footer leave less than 30% of the cell for the picture'
   }
 
   if (

@@ -36,7 +36,15 @@ export function SheetSettings({
     )?.id ?? 'custom'
 
   const number = (
-    key: 'sheetWidthMm' | 'sheetHeightMm' | 'cellWidthMm' | 'cellHeightMm' | 'gutterMm' | 'marginMm',
+    key:
+      | 'sheetWidthMm'
+      | 'sheetHeightMm'
+      | 'cellWidthMm'
+      | 'cellHeightMm'
+      | 'gutterMm'
+      | 'marginMm'
+      | 'headerMm'
+      | 'footerMm',
     label: string,
     suffix = 'mm',
   ): React.ReactNode => (
@@ -73,6 +81,24 @@ export function SheetSettings({
         {number('cellHeightMm', 'Cell height')}
         {number('gutterMm', 'Gutter')}
         {number('marginMm', 'Margin')}
+      </div>
+
+      <div>
+        <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+          Card bands
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          {number('headerMm', 'Header')}
+          {number('footerMm', 'Footer')}
+        </div>
+        <p className="tabular mt-2 text-[11px] text-zinc-500">
+          Picture gets{' '}
+          {Math.max(0, settings.cellHeightMm - settings.headerMm - settings.footerMm).toFixed(1)} mm
+          of {settings.cellHeightMm} mm — the three bands always fill the card.
+        </p>
+        {errors.footerMm === undefined ? null : (
+          <p className="mt-1 text-[11px] text-red-300">{errors.footerMm}</p>
+        )}
       </div>
 
       <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-2.5">
