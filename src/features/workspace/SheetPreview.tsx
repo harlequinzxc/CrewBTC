@@ -3,6 +3,8 @@ import { cutMarksFor, planSheets } from '../../lib/imposition/sheet'
 import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import { useElementSize } from '../../lib/use-element-size'
+import { useThumbnails } from './use-thumbnails'
+import { thumbnailKey } from '../../lib/pdf/thumbnails'
 import { cn } from '../../lib/cn'
 
 export interface SheetPreviewProps {
@@ -25,6 +27,17 @@ export function SheetPreview({ settings, grid, pages, showCutMarks }: SheetPrevi
   const sheets = planSheets(pages, grid)
   const first = sheets[0]
   const marks = showCutMarks ? cutMarksFor(grid) : []
+
+  // Only the cells on the visible sheet need artwork.
+  const sheetRequests =
+    first?.placements.map((placement) => ({
+      fileName: placement.documentId,
+      pageNumber: placement.pageNumber,
+    })) ?? []
+  const signature = sheetRequests
+    .map((request) => thumbnailKey(request.fileName, request.pageNumber))
+    .join('|')
+  const thumbnails = useThumbnails(sheetRequests, signature)
 
   if (grid.isEmpty) {
     return (
@@ -90,9 +103,15 @@ export function SheetPreview({ settings, grid, pages, showCutMarks }: SheetPrevi
                   {cell.index + 1}
                 </span>
                 {placement === undefined ? null : (
-                  <span className="absolute inset-1 flex items-center justify-center overflow-hidden text-center text-[9px] leading-tight text-zinc-500">
-                    {placement.fileName.replace(/\.pdf$/i, '')}
-                  </span>
+                  <CellArtwork
+                    url={thumbnails[thumbnailKey(placement.documentId, placement.pageNumber)]}
+                    label={placement.fileName.replace(/\.pdf$/i, '')}
+                    widthMm={placement.rect.widthMm}
+                    heightMm={placement.rect.heightMm}
+                    scale={safeScale}
+                    offsetXmm={placement.rect.xMm - cell.rect.xMm}
+                    offsetYmm={placement.rect.yMm - cell.rect.yMm}
+                  />
                 )}
               </div>
             )
@@ -123,5 +142,41 @@ export function SheetPreview({ settings, grid, pages, showCutMarks }: SheetPrevi
         </span>
       </div>
     </div>
+  )
+}
+
+interface CellArtworkProps {
+  readonly url: string | undefined
+  readonly label: string
+  readonly widthMm: number
+  readonly heightMm: number
+  readonly scale: number
+  readonly offsetXmm: number
+  readonly offsetYmm: number
+}
+
+/** The rendered page, placed exactly where the exporter will place it. */
+function CellArtwork({ url, label, widthMm, heightMm, scale, offsetXmm, offsetYmm }: CellArtworkProps) {
+  if (url === undefined) {
+    return (
+      <span className="absolute inset-1 flex items-center justify-center overflow-hidden text-center text-[9px] leading-tight text-zinc-400">
+        {label}
+      </span>
+    )
+  }
+
+  return (
+    <img
+      src={url}
+      alt=""
+      draggable={false}
+      className="pointer-events-none absolute select-none"
+      style={{
+        left: `${offsetXmm * scale}px`,
+        top: `${offsetYmm * scale}px`,
+        width: `${widthMm * scale}px`,
+        height: `${heightMm * scale}px`,
+      }}
+    />
   )
 }

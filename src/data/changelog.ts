@@ -8,6 +8,17 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '0.4.1',
+    date: '2026-11-19',
+    title: 'See your pages in the cells',
+    highlights: [
+      'Every grid cell now shows the real page artwork, not just a filename',
+      'Artwork sits exactly where it will print, so the preview matches the export',
+      'Pages render once and are cached — switching sheets is instant',
+      'Pages that cannot render fall back to the filename instead of breaking',
+    ],
+  },
+  {
     version: '0.4.0',
     date: '2026-11-19',
     title: 'Print-ready sheet export',

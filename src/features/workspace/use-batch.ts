@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import type { IngestedDocument } from '../../types/document'
 import { ingestBatch } from '../../lib/pdf/ingest-batch'
 import { keepSource, releaseAll } from '../../lib/export/doc-cache'
+import { releaseProxies } from '../../lib/pdf/proxy-cache'
 import type { ToastInput } from '../../components/ui/use-toasts'
 
 export interface BatchApi {
@@ -128,6 +129,7 @@ export function useBatch({ notify, storeBytes }: BatchOptions): BatchApi {
     setActiveId(null)
     sources.current.clear()
     releaseAll()
+    releaseProxies()
     if (removed > 0) {
       notify({ variant: 'info', title: `Cleared ${removed} ${removed === 1 ? 'PDF' : 'PDFs'}` })
     }
