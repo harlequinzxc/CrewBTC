@@ -3,7 +3,7 @@ import type { IngestedDocument, RecipeCopy, TextRegion } from '../../types/docum
 import { closePdf, openPdf } from './client'
 import { extractPageText } from './extract'
 import { renderPagePreview } from './preview'
-import { extractEmbeddedPhoto } from './food-photo'
+import { photoMap, photosForDocument } from './page-photo'
 import { readRecipeText } from './recipe-text'
 
 export interface IngestOptions {
@@ -72,18 +72,14 @@ export async function ingestFile(
     const extracted = await extractPageText(firstPage)
     const preview = await renderPagePreview(firstPage)
 
-    // Fill the card from the page itself, so upload never lands the user in an empty
-    // editor. The photo is the real embedded image, not a crop of the rendered page.
+    // Step 1: one dish photo per page, always. The embedded image is preferred; a crop
+    // of the rendered page is the fallback, so a cell is never left without a photo.
+    const pagePhotos = await photosForDocument(doc)
+    const photos = photoMap(pagePhotos)
+
+    // Copy is still read here so the cards are not blank, but text is not this step's
+    // subject and none of it is required for the photo to appear.
     const recipe = await readRecipeText(firstPage)
-    const photo = await extractEmbeddedPhoto(firstPage)
-
-    // Every page with an embedded photo gets one, so a multi-page batch never falls back
-    // to a page render on pages 2+. Pages are read in parallel; a failure on one page is
-    // that page's fallback, not the whole file's.
-    const photos = await extractPhotos(doc)
-
-    // Copy per page, for the same reason as photos: each page of a multi-card PDF is a
-    // different dish. Pages are read in parallel.
     const copies = await readCopies(doc)
 
     const regions: readonly TextRegion[] = extracted.ok ? extracted.regions : []
@@ -93,9 +89,8 @@ export async function ingestFile(
       status: 'parsed',
       copy: copies[1] ?? { header: recipe.header, footer: recipe.footer },
       copies,
-      // No fallback to `preview` here: a page render in the picture band is the exact
-      // thing the cards are meant never to show. No photo means an empty band.
-      photoUrl: photo?.dataUrl ?? null,
+      // The first page's photo. Every page has its own entry in `photos`.
+      photoUrl: photos[1] ?? null,
       photos,
       metrics: {
         pageCount: doc.numPages,
@@ -119,34 +114,6 @@ function finish(
 ): IngestedDocument {
   const document: IngestedDocument = { ...base, ...patch, status: patch.status ?? base.status }
   return document
-}
-
-/**
- * The embedded photo for each page, `1`-based.
- *
- * A recipe batch is usually one card per PDF, but a file can hold several; reading only
- * page 1 is what left later cells showing a page render. Each page is independent, so one
- * awkward page cannot stop the rest.
- */
-async function extractPhotos(
-  doc: PDFDocumentProxy,
-): Promise<Readonly<Record<number, string>>> {
-  const out: Record<number, string> = {}
-
-  await Promise.all(
-    Array.from({ length: doc.numPages }, async (_unused, index) => {
-      const pageNumber = index + 1
-      try {
-        const page = await doc.getPage(pageNumber)
-        const photo = await extractEmbeddedPhoto(page)
-        if (photo !== null) out[pageNumber] = photo.dataUrl
-      } catch {
-        // No photo on this page; the sheet falls back to its cropped render.
-      }
-    }),
-  )
-
-  return out
 }
 
 /**

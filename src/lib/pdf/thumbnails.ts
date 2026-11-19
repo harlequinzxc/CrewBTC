@@ -1,7 +1,17 @@
-import { getProxy } from './proxy-cache'
-import { getSource, sourceVersion } from '../export/doc-cache'
+import type { PDFPageProxy } from 'pdfjs-dist'
 import { pagePictureBounds, WHOLE_PAGE } from './picture-bounds'
 import type { PictureBounds } from './picture-bounds'
+import { getSource, sourceVersion } from '../export/doc-cache'
+
+/**
+ * Where the dish photo sits on a flattened recipe card.
+ *
+ * A card is a title on top, the dish in the middle, and a step box at the bottom; the
+ * middle 55% is the photo. Measured against the cards in the batch rather than guessed
+ * from one example: the title block ends around 15-20% down and the step box starts
+ * around 70-75%, so 0.16 to 0.71 clears both.
+ */
+const FLATTENED_BAND: PictureBounds = { x: 0.04, y: 0.16, width: 0.92, height: 0.55, cropped: true }
 
 /** A4 at 220 px wide is ~0.75 px per mm — enough to read a card at preview size. */
 export const THUMBNAIL_WIDTH_PX = 220
@@ -14,34 +24,42 @@ export const thumbnailKey = (fileName: string, pageNumber: number): string =>
   `${fileName}#${sourceVersion(fileName)}#${pageNumber}`
 
 /**
- * Renders one source page to a PNG data URL for use inside a grid cell.
- * Returns null rather than throwing: a missing thumbnail must degrade to the
- * filename, never break the sheet preview (§6 error state).
+ * Crops a page's picture band out of a render of that page.
+ *
+ * Takes the page itself rather than a file name and page number. The old signature looked
+ * the page up in the export cache, which is only populated after a file has been kept for
+ * export — so every call from the preview found nothing and returned null. Passing the page
+ * in means the crop works with the page the caller is already holding.
+ *
+ * At 300 dpi for a typical card, the cropped band is roughly 640 x 600 px, which reads
+ * cleanly in a 64 mm cell.
  */
+export interface CropOptions {
+  /**
+   * The page is one picture — a scan, or a design exported flat. Its text is pixels, so
+   * there is no text layer to measure against and the band is taken geometrically.
+   */
+  readonly flattened?: boolean
+  /** Keep the whole page instead of cropping to the picture band. */
+  readonly whole?: boolean
+}
+
 export async function renderThumbnail(
-  fileName: string,
-  pageNumber: number,
+  page: PDFPageProxy,
   widthPx: number = THUMBNAIL_WIDTH_PX,
-  crop: boolean = true,
+  options: CropOptions = {},
 ): Promise<string | null> {
-  const bytes = getSource(fileName)
-  const version = sourceVersion(fileName)
-  if (bytes === null || version === 0) return null
-
-  const entry = await getProxy(fileName, bytes, version)
-  if (entry === null) return null
-
   try {
-    const page = await entry.doc.getPage(pageNumber)
-    const base = page.getViewport({ scale: 1 })
-    if (base.width <= 0) return null
-
-    // The card's picture band wants artwork, not the page's own printed text. Crop to
-    // the part of the page that is not type; the whole page is kept when there is no
-    // text to avoid, which is the honest answer for a photographed card.
-    const bounds: PictureBounds = crop ? await pagePictureBounds(page) : WHOLE_PAGE
+    const bounds: PictureBounds =
+      options.whole === true
+        ? WHOLE_PAGE
+        : options.flattened === true
+          ? FLATTENED_BAND
+          : await pagePictureBounds(page)
 
     const full = page.getViewport({ scale: 1 })
+    if (full.width <= 0 || full.height <= 0) return null
+
     const cropX = bounds.x * full.width
     const cropY = bounds.y * full.height
     const cropWidth = Math.max(1, bounds.width * full.width)
@@ -65,8 +83,14 @@ export async function renderThumbnail(
       viewport,
       ...(transform === undefined ? {} : { transform }),
     }).promise
+
     return canvas.toDataURL('image/png')
   } catch {
     return null
   }
+}
+
+/** True when the file's bytes are still held, so a render could be produced. */
+export function hasSource(fileName: string): boolean {
+  return getSource(fileName) !== null && sourceVersion(fileName) > 0
 }

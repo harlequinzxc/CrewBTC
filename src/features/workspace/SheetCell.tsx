@@ -128,7 +128,7 @@ export function SheetCell(props: SheetCellProps) {
         )}
         {props.thumbnailUrl === undefined ? (
           <span className="absolute inset-0 grid place-items-center px-1 text-center text-[8px] leading-tight text-zinc-500">
-            No photo found on this page
+            No image on this page
           </span>
         ) : null}
       </div>

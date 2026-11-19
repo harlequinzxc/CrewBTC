@@ -1,4 +1,5 @@
 import type { PDFPageProxy } from 'pdfjs-dist'
+import { encodePng } from './png-canvas'
 
 /**
  * Pulls the *embedded image* out of a recipe page, rather than re-rendering the page.
@@ -222,25 +223,6 @@ function safeGet(page: PDFPageProxy, objId: string): DecodedImage | null {
     const asRecord = value as { data?: unknown } | null
     if (asRecord !== null && isDecodedImage(asRecord?.data)) return asRecord.data
     return null
-  } catch {
-    return null
-  }
-}
-
-/** Paints RGB bytes into a canvas and reads back a PNG data URL. jsdom returns null. */
-function encodePng(rgb: Uint8ClampedArray, width: number, height: number): string | null {
-  try {
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const context = canvas.getContext('2d')
-    if (context === null) return null
-
-    const imageData = context.createImageData(width, height)
-    imageData.data.set(rgb)
-    context.putImageData(imageData, 0, 0)
-
-    return canvas.toDataURL('image/png')
   } catch {
     return null
   }
