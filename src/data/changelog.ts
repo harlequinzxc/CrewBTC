@@ -8,6 +8,17 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '0.6.1',
+    date: '2026-11-19',
+    title: 'The picture box holds picture, and the type is the right size',
+    highlights: [
+      'The picture band now shows the artwork only — the source page’s own printed text is cropped away',
+      'Text at both ends of a page: the artwork between them is kept, instead of the whole page',
+      'Header and footer are set at their real size and wrap where the printed card breaks',
+      'Fixed: card text was measured in points against a width in millimetres, so every word wrapped',
+    ],
+  },
+  {
     version: '0.6.0',
     date: '2026-11-19',
     title: 'A card with three bands, and one box to type in',

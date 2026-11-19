@@ -123,34 +123,36 @@ describe('splitting pasted copy', () => {
 })
 
 describe('band text shrinks to fit', () => {
-  // 6 pt per character at size 10: crude but monotonic, which is all the wrapper needs.
-  const measure = (text: string, sizePt: number): number => text.length * sizePt * 0.6
+  /** A font that renders 0.5 em per character, reporting MILLIMETRES like the exporter. */
+  const measureMm = (text: string, sizePt: number): number =>
+    text.length * 0.5 * sizePt * (25.4 / 72)
 
   it('keeps type at its maximum when there is room', () => {
-    const layout = layoutBand('Hi', 0, 52, 11, 11, 1.18, measure)
+    const layout = layoutBand('Hi', 0, 52, 11, 11, 1.18, measureMm)
     expect(layout.lines).toHaveLength(1)
     expect(layout.lines[0]?.sizePt).toBeCloseTo(11, 6)
     expect(layout.overflow).toBe(false)
   })
 
-  it('wraps a long line instead of running past the card edge', () => {
-    const layout = layoutBand(
-      'a much longer header than fits on one short line',
-      0,
-      52,
-      11,
-      11,
-      1.18,
-      measure,
-    )
+  it('does not wrap a line that fits in the band', () => {
+    // 20 chars at 11 pt is ~38.8 mm — comfortably inside a 52 mm card.
+    const layout = layoutBand('LIMITED EDITION 2026', 0, 52, 11, 11, 1.18, measureMm)
+    expect(layout.lines).toHaveLength(1)
+    expect(layout.lines[0]?.text).toBe('LIMITED EDITION 2026')
+  })
+
+  it('wraps only when the text is genuinely too wide', () => {
+    const long = 'a much longer header than fits on one short line'
+    const layout = layoutBand(long, 0, 52, 40, 11, 1.18, measureMm)
     expect(layout.lines.length).toBeGreaterThan(1)
     for (const line of layout.lines) {
-      expect(measure(line.text, line.sizePt)).toBeLessThanOrEqual(52 + 1e-6)
+      // 1e-6 mm tolerance: the wrapper splits on a space, never mid-word.
+      expect(measureMm(line.text, line.sizePt)).toBeLessThanOrEqual(52 - 1.6 + 1e-6)
     }
   })
 
   it('shrinks rather than overflowing a short band', () => {
-    const layout = layoutBand('Three\nshort\nlines', 0, 52, 5, 11, 1.18, measure)
+    const layout = layoutBand('Three\nshort\nlines', 0, 52, 5, 11, 1.18, measureMm)
     expect(layout.lines.every((line) => line.sizePt >= MIN_BAND_TEXT_PT - 1e-9)).toBe(true)
     const bottom = Math.max(...layout.lines.map((line) => line.yMm))
     expect(bottom).toBeLessThanOrEqual(5 + 1e-6)
@@ -158,14 +160,23 @@ describe('band text shrinks to fit', () => {
 
   it('reports overflow instead of printing over the picture', () => {
     const many = Array.from({ length: 40 }, (_unused, index) => `line ${index}`).join('\n')
-    const layout = layoutBand(many, 0, 52, 4, 8, 1.18, measure)
+    const layout = layoutBand(many, 0, 52, 4, 8, 1.18, measureMm)
     expect(layout.overflow).toBe(true)
     expect(layout.lines.length).toBeGreaterThan(0)
   })
 
   it('draws nothing for empty copy', () => {
-    const layout = layoutBand('   ', 0, 52, 11, 11, 1.18, measure)
+    const layout = layoutBand('   ', 0, 52, 11, 11, 1.18, measureMm)
     expect(layout.lines).toHaveLength(0)
     expect(layout.overflow).toBe(false)
+  })
+
+  it('would have wrapped every word if the measurement were in points', () => {
+    // Regression guard for the unit bug: points are 2.83x millimetres, so a
+    // points-measured string appears far wider than it is and wraps at every space.
+    const asPoints = (text: string, sizePt: number): number =>
+      text.length * 0.5 * sizePt
+    const layout = layoutBand('LIMITED EDITION 2026', 0, 52, 11, 11, 1.18, asPoints)
+    expect(layout.lines.length).toBeGreaterThan(1)
   })
 })
