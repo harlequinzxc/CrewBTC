@@ -1,0 +1,83 @@
+@import 'tailwindcss';
+
+/* Dark is the default surface. The `.dark` class is set on <html> before paint. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+
+  /* Motion tokens (§3) — the only durations used anywhere in the app. */
+  --ease-micro: cubic-bezier(0, 0, 0.2, 1);
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-micro: 150ms;
+  --duration-sheet-enter: 260ms;
+  --duration-sheet-exit: 200ms;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-zinc-950 text-zinc-50 antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variant-ligatures: contextual;
+  }
+
+  /* §4.1 — every numeric readout aligns. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* §3A — never remove a focus ring without a replacement. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-red-500 ring-offset-2 ring-offset-zinc-950;
+  }
+
+  /* §4.1 — scrollbars stay visible on every scrollable region. */
+  * {
+    scrollbar-color: var(--color-zinc-700) transparent;
+  }
+
+  /* §4.1 target ladder — defined once, here, so it cannot drift per call site.
+     44px is the default for every interactive element; 32px is the dense desktop
+     rung for chrome, table rows, and icon clusters; 24px is the absolute floor. */
+  button,
+  [role='button'],
+  a[href],
+  select,
+  input:not([type='checkbox']):not([type='radio']) {
+    min-height: 44px;
+  }
+
+  button[data-target='dense'],
+  [data-target='dense'] {
+    min-height: 32px;
+    height: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-reduced-motion='false']) * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* §3 — user-controlled override. Transforms are suppressed, opacity cross-fades remain
+   so lifecycle hooks still fire (unmount is driven by a timer, never transitionend). */
+[data-reduced-motion='true'] *,
+[data-reduced-motion='true'] *::before,
+[data-reduced-motion='true'] *::after {
+  transform: none !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 80ms !important;
+  transition-property: opacity !important;
+  scroll-behavior: auto !important;
+}
