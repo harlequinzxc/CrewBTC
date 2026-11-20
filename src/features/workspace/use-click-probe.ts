@@ -23,10 +23,15 @@ export function describeTarget(target: Element | null): string {
 }
 
 /**
- * On `Shift+?` this arms, and the next pointer press anywhere is described in a panel at
- * the bottom of the window. Attaches its own listener, so the shell needs one line.
+ * On `Shift+?`, this arms and the next pointer press anywhere is described in a panel at
+ * the bottom of the window.
+ *
+ * It can also be *started* from a button in the top bar, which is not a convenience: the
+ * person reporting the bug could not be sure a keyboard shortcut was reaching the app, and
+ * a diagnostic that depends on a keystroke it cannot confirm is not a working diagnostic.
+ * If the button produces a report and the shortcut does not, that alone is the answer.
  */
-export function useClickProbe(version: string): void {
+export function useClickProbe(version: string): { readonly arm: () => void } {
   const onKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (!(event.shiftKey && event.key === '?')) return
@@ -114,8 +119,19 @@ export function useClickProbe(version: string): void {
     [version],
   )
 
+  const arm = useCallback(() => {
+    // A synthetic keydown keeps one implementation of the report. Guarded because a
+    // `KeyboardEvent` has no meaning outside a document, and this hook is mounted in
+    // tests that render the shell without one.
+    if (typeof window === 'undefined' || typeof KeyboardEvent === 'undefined') return
+    const synthetic = new KeyboardEvent('keydown', { key: '?', shiftKey: true, bubbles: true })
+    window.dispatchEvent(synthetic)
+  }, [])
+
   useEffect(() => {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [onKeyDown])
+
+  return { arm }
 }
