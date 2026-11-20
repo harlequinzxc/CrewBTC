@@ -8,6 +8,18 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '1.0.3',
+    date: '2026-11-19',
+    title: 'A deploy must reach a running client — now an engineering rule',
+    highlights: [
+      '§7 now requires all three parts of a working update path: a self-updating service worker, a controllerchange listener, and a visible reload affordance',
+      'The rule names the trap directly: a page keeps running the JavaScript it loaded at first paint, so an installed worker alone leaves the user on the old build',
+      'Auto-reload is allowed only where the app provably holds no unsaved state; otherwise the update is announced and the user chooses',
+      'The three conditions worth testing — not on first install, not during startup, once per worker — are written down with the code',
+      '§4.4 now notes that an installed PWA has no address bar, so the update notice is the only route to a new build',
+    ],
+  },
+  {
     version: '1.0.2',
     date: '2026-11-19',
     title: 'New versions now tell you they are ready',

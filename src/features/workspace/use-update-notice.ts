@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { reloadPage } from './reload-page'
 
 /**
  * Noticing that a newer build has taken over, and offering to reload.
@@ -20,7 +21,10 @@ import { useEffect, useRef } from 'react'
  */
 
 export interface UpdateNotice {
-  /** Reloads into the new version. Safe to call more than once. */
+  /**
+   * Reloads into the new version. The caller decides *when* — this hook never does it
+   * on its own, because a reload discards whatever the user has not saved.
+   */
   readonly reload: () => void
 }
 
@@ -76,11 +80,6 @@ export function useUpdateNotice(onAvailable: () => void): UpdateNotice {
     }
   }, [])
 
-  return {
-    reload: () => {
-      // A reload while the new worker is still activating serves the old cache, so the
-      // wait is deliberate rather than a race.
-      window.setTimeout(() => window.location.reload(), 0)
-    },
-  }
+  // One implementation of "reload safely", shared with the app's toast.
+  return { reload: reloadPage }
 }
