@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.9.3",
+    "date": "2026-11-19",
+    "title": "Numbered corners, sheet-wide type and adjustable photo cut-outs",
+    "highlights": [
+      "The inspector now focuses on sheet and print settings. A single Text size control changes all card text on screen and in the PDF; card band dividers remain draggable on the sheet.",
+      "Two equal light-grey corner fields sit over each populated card. Pick a number from 1 to 40; following cards count up across sheets and wrap after 40. The other field accepts a short label, and both fields print.",
+      "Background removal now has a sensitivity slider. Higher values remove a broader range of colours; change it and cut again to try the original photo at a different setting. Undo restores the original while the photo controls remain open."
+    ]
+  },
+  {
     "version": "1.9.2",
     "date": "2026-11-19",
     "title": "Cut the background off a dish, adjust a photo in one click, and text that stays put",

@@ -1,3 +1,4 @@
+import { drawCornerLabels } from './corner-labels'
 import { mmToPt } from '../units'
 import { cutMarksFor, planSheets } from './placement'
 import type { PageRef } from '../imposition/sheet'
@@ -142,6 +143,7 @@ export async function writeCards(input: CardExportInput): Promise<CardExportResu
             }
           },
         })
+        drawCornerLabels(canvas, cell.rect, card, rgb)
         if (placed || card.photo === null) cardsDrawn += 1
       } catch {
         cardsSkipped += 1

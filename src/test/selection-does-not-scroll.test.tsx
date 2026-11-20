@@ -104,7 +104,7 @@ describe('selecting a card', () => {
     fireEvent.pointerDown(cardOn(1, 3))
 
     // The selection happened …
-    expect(await screen.findByLabelText('Top')).toBeInTheDocument()
+    await waitFor(() => expect(document.querySelector('[data-cell].outline-accent')).not.toBeNull())
     // … and the paper did not move under the pointer.
     expect(pane().scrollTop).toBe(900)
   })
@@ -117,7 +117,7 @@ describe('selecting a card', () => {
 
     fireEvent.pointerDown(cardOn(2, 1))
 
-    expect(await screen.findByLabelText('Top')).toBeInTheDocument()
+    await waitFor(() => expect(document.querySelector('[data-cell].outline-accent')).not.toBeNull())
     expect(pane().scrollTop).toBe(720)
   })
 
@@ -127,7 +127,7 @@ describe('selecting a card', () => {
 
     fireEvent.pointerDown(cardOn(2, 0))
     fireEvent.pointerDown(cardOn(1, 7))
-    await screen.findByLabelText('Top')
+    await waitFor(() => expect(cardOn(1, 7).className).toContain('outline-accent'))
 
     expect(pane().scrollTop).toBe(1500)
   })

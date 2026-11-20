@@ -132,11 +132,11 @@ export async function inkShift(page: Page, index: number): Promise<{ drawn: numb
   await page.keyboard.type('HAMBURGER')
   await page.keyboard.press('Escape')
   await page.waitForTimeout(350)
-  const drawn = await firstInkRow(await page.screenshot({ clip }))
+  const drawn = await firstInkRow(await page.screenshot({ clip, style: '[data-corner-label] { visibility: hidden !important; }' }))
 
   await zones.nth(index).click()
   await page.waitForTimeout(350)
-  const editing = await firstInkRow(await page.screenshot({ clip }))
+  const editing = await firstInkRow(await page.screenshot({ clip, style: '[data-corner-label] { visibility: hidden !important; }' }))
   await page.keyboard.press('Escape')
   await page.waitForTimeout(300)
   return { drawn, editing }

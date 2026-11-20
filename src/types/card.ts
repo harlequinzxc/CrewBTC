@@ -18,7 +18,6 @@ export interface TextStyle {
   /** `left` (default) or `centre`d within the box's width. Absent means left. */
   readonly align?: 'left' | 'center'
 }
-
 /**
  * The look every card's text starts with: **bold black**, top text **centred**.
  *
@@ -50,7 +49,6 @@ export const DEFAULT_HEADER_STYLE: TextStyle = {
 
 export const TEXT_COLORS = ['#111827', '#b91c1c', '#15803d', '#1d4ed8'] as const
 export const HIGHLIGHT_COLORS = ['#fde68a', '#bbf7d0', '#bfdbfe', '#fecaca'] as const
-
 /** Extra highlight inks that read as pen marks on a printed card. */
 export const REFERENCE_HIGHLIGHTS = {
   red: '#fca5a5',
@@ -63,7 +61,6 @@ export { containRectMm, fitInsideMm } from './photo-rect'
 export { MAX_TEXT_SCALE, MIN_TEXT_SCALE, clampTextScale } from './text-runs'
 
 export type { TextRun } from './text-runs'
-
 
 /** An extracted dish photo with the pixel shape it must be drawn at. */
 export interface PhotoSource {
@@ -198,9 +195,13 @@ export function cardZones(cell: RectMm, bands: CardBands): CardZones {
     },
   }
 }
-
 /** Everything one cell shows. */
 export interface Card {
+  /** Optional numbering restart and editable corner label. */
+  readonly numberStart?: number
+  readonly cornerLabel?: string
+  /** Resolved in sheet order; not a numbering restart. */
+  readonly displayNumber?: number
   readonly headerText: string
   readonly bodyText: string
   /** Selection-level styling, empty when the whole box shares one style. */
@@ -238,7 +239,6 @@ export function cardFromPage(
   }
 }
 
-/** Cards are keyed by position, document and page, so a re-upload finds its own card. */
 /**
  * A card's identity: the cell it sits in, the file, and the page of that file.
  *

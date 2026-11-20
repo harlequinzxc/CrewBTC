@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { clampTextScale } from '../../types/card'
 import { DEFAULT_SHEET } from '../../types/imposition'
 import type { SheetSettings } from '../../types/imposition'
 import { computeGrid, validateSheet } from '../../lib/imposition/grid'
 import type { GridLayout } from '../../types/imposition'
 
-const STORAGE_KEY = 'crewbtc.sheet'
+const STORAGE_KEY = 'crewbtc.sheet.v2'
+const LEGACY_STORAGE_KEY = 'crewbtc.sheet'
 
 function readStored(): SheetSettings | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
+    const raw = window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_STORAGE_KEY)
     if (raw === null) return null
     const parsed: unknown = JSON.parse(raw)
     if (typeof parsed !== 'object' || parsed === null) return null
     const candidate = parsed as Partial<SheetSettings>
-    const merged: SheetSettings = { ...DEFAULT_SHEET, ...candidate }
+    const merged: SheetSettings = { ...DEFAULT_SHEET, ...candidate, textScale: clampTextScale(typeof candidate.textScale === 'number' ? candidate.textScale : 1) }
     return validateSheet(merged).ok ? merged : null
   } catch {
     return null

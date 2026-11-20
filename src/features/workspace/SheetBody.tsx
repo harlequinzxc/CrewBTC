@@ -61,6 +61,7 @@ export interface SheetBodyProps {
   readonly onBeginPictureEdit: (cellIndex: number, key: string) => void
   readonly onEndPictureEdit: () => void
   readonly onImageChange: (key: string, transform: Card['imageTransform']) => void
+  readonly onCornerChange?: ((key: string, patch: Pick<Card, 'numberStart'> | Pick<Card, 'cornerLabel'>) => void) | undefined
   readonly onBandsChange: (key: string, bands: Card['bands']) => void
   /** Gives every card one card's band split. */
   readonly onMatchBands?: ((bands: Card['bands']) => void) | undefined
@@ -129,6 +130,7 @@ export function SheetBody(props: SheetBodyProps) {
                 pageNumber: placement.pageNumber,
               })
             }
+            onCornerChange={props.onCornerChange === undefined ? undefined : (patch) => props.onCornerChange?.(key, patch)}
             onBeginTextEdit={(zone) => props.onBeginTextEdit(cell.index, key, zone)}
             onEndEdit={props.onEndEdit}
             onSelectionChange={props.onSelectionChange}

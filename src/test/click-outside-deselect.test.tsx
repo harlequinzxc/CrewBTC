@@ -73,11 +73,11 @@ const placeCard = async (): Promise<HTMLElement> => {
 
 const select = async (cell: HTMLElement): Promise<void> => {
   fireEvent.pointerDown(cell)
-  await screen.findByLabelText('Top')
+  await waitFor(() => expect(cell.className).toContain('outline-accent'))
 }
 
 const expectDeselected = async (): Promise<void> => {
-  await waitFor(() => expect(screen.queryByLabelText('Top')).not.toBeInTheDocument())
+  await waitFor(() => expect(document.querySelector('[data-cell]')?.className).not.toContain('outline-accent'))
   // And the rail is back to the document, which is what "no selection" looks like.
   expect(screen.getByText('Sheet & print')).toBeInTheDocument()
   expect(screen.queryByText(/^Card \d+/)).not.toBeInTheDocument()
@@ -92,7 +92,7 @@ describe('clicking off a card', () => {
   it('deselects on the white margins of the sheet itself', async () => {
     const cell = await placeCard()
     await select(cell)
-    expect(screen.getByText(/^Card 1$/)).toBeInTheDocument()
+    expect(cell.className).toContain('outline-accent')
 
     // The paper, not a cell: the strip of white between the trim edge and the first card.
     const paper = cell.parentElement as HTMLElement
