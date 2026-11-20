@@ -36,7 +36,7 @@ const keyFor = (placement: SheetPlan['placements'][number]) =>
 describe('the thumbnail strip shows real miniatures', () => {
   const sheets = planSheets(pages(14), grid)
 
-  it('sets the card’s own words in the miniature', () => {
+  it('greekes the card’s text into rules shaped by the words', () => {
     const first = sheets[0]
     if (first === undefined) throw new Error('fixture needs a sheet')
     const placement = first.placements[0]
@@ -63,9 +63,15 @@ describe('the thumbnail strip shows real miniatures', () => {
       />,
     )
 
-    // The point of the miniature: the dish's name is legible as a shape, not a grey box.
-    expect(container.textContent).toContain('CHK-01 Kung Pao')
-    expect(container.textContent).toContain('• Plate • Garnish')
+    // A 6mm band at 64px of thumbnail is 3.7px tall, so no font size makes the name
+    // readable — the band is greeked instead. What has to survive is the *shape*: rules
+    // exist, and their widths follow the length of the words rather than being constant.
+    const rules = [...container.querySelectorAll('span[style*="height: 1px"]')]
+    expect(rules.length).toBeGreaterThan(0)
+
+    // The heading is longer than the footer, so its widest rule is wider.
+    const widths = rules.map((rule) => Number.parseFloat((rule as HTMLElement).style.width))
+    expect(new Set(widths).size).toBeGreaterThan(1)
   })
 
   it('draws the dish photo at miniature scale', () => {

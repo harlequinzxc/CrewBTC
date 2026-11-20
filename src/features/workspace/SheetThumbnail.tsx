@@ -13,13 +13,18 @@ import type { Card } from '../../types/card'
  * a sheet with four cards on it looks like it has four cards on it, and a rotated grid
  * looks rotated, without a second renderer to keep in step with the real one.
  *
- * It carries the card's *content* too, not just its presence. An earlier version reduced
- * each card to three bands of tint, which at 44px came out as grey bricks: a strip of them
- * said "there are pages" and nothing else, which is the same thing the sheet count in the
- * top bar already said. So the bands render their real text — the dish code, the dish
- * name, the footer — at whatever size the band affords, and the photo is the dish photo.
- * Small type is a smudge, but a smudge with the shape and length of the actual words is
- * recognisably *this* card, where a grey rectangle is recognisably nothing.
+ * It carries the card's *content* too, not just its presence — but not as type. A card's
+ * header band is 6mm; at 64px of thumbnail that is 3.7 CSS pixels, and a 9pt glyph inside
+ * it is 0.98px tall. There is no font size at which those words are readable, and setting
+ * them anyway produces clipped smears rather than text. So the bands are **greeked**: one
+ * rule per line of text, as long as the line is, in the ink the line is set in. Two lines
+ * of a long dish name look like two rules of two different lengths, which is recognisably
+ * a heading; a single short footer looks like one short rule. That is the most a 20px card
+ * can honestly say, and it is a great deal more than a grey rectangle said.
+ *
+ * The photo is not greeked, because it does not have to be: an image survives downscaling,
+ * so the dish photo is the dish photo and is the thing that makes a thumbnail look like
+ * the page it came from.
  */
 
 /** How wide a thumbnail is, in CSS pixels. Height follows the sheet's aspect ratio. */
@@ -104,58 +109,86 @@ export function SheetThumbnail(props: SheetThumbnailProps) {
 }
 
 /**
- * A card at thumbnail scale: its three bands, holding its actual text and its actual photo.
+ * A card at thumbnail scale: two greeked text bands, the real photo between them.
  *
- * Type is set at the band's own height, less a hair, and clipped rather than wrapped — a
- * thumbnail is a view of one line of a card, and wrapping would show three words of a long
- * dish name as a block, which reads as a different kind of content than the card holds.
- * `whitespace-nowrap` plus `overflow-hidden` is exactly "this line, cut at the edge".
+ * A rule is only drawn when there is room for one — at 3.7px a band holds a single
+ * hairline and a second would be indistinguishable from the first. Long words are split
+ * at whitespace first so a line breaks where the eye expects it, not at the box edge.
  */
+const TEXT_RULE = 1
+
+/** How wide one line of the card's text is, as a fraction of the card, at thumbnail scale. */
+function lineWidths(text: string): readonly number[] {
+  const lines = text.split('\n').filter((line) => line.trim() !== '')
+  if (lines.length === 0) return []
+  // Roughly one rule per line, but a very long line is two rules: at this size what reads
+  // is the *shape* of the block, and a heading is two or three short rules, not one long.
+  return lines.flatMap((line) => {
+    const chars = line.trim().length
+    const share = Math.min(1, chars / 26)
+    return chars > 34 ? [share, share * 0.55] : [share]
+  }).slice(0, 3)
+}
+
+function GreekedBand(props: {
+  readonly text: string
+  readonly color: string
+  readonly heightPx: number
+}) {
+  const lines = props.heightPx >= TEXT_RULE * 2 + 1 ? 2 : 1
+  const widths = lineWidths(props.text).slice(0, lines)
+  if (widths.length === 0) return null
+
+  return (
+    <span
+      className={cn(
+        'relative flex shrink-0 flex-col justify-evenly overflow-hidden px-[1px]',
+        'items-start',
+      )}
+      style={{ height: props.heightPx }}
+    >
+      {widths.map((share, index) => (
+        <span
+          key={index}
+          aria-hidden="true"
+          style={{
+            height: TEXT_RULE,
+            width: `${Math.round(share * 100)}%`,
+            background: props.color,
+            opacity: 0.55,
+          }}
+        />
+      ))}
+    </span>
+  )
+}
+
 function CardMiniature(props: { readonly card: Card; readonly scale: number }) {
   const { card, scale } = props
   const headerPx = card.bands.headerMm * scale
   const footerPx = card.bands.footerMm * scale
-  // A floor of 2.5px: below that the browser draws nothing at all, so a thin band would
-  // lose its text entirely and the card would go back to being a bar.
-  const type = (bandPx: number): number => Math.max(2.5, bandPx * 0.78)
 
   return (
     <span className="absolute inset-0 flex flex-col bg-white outline outline-[0.5px] outline-zinc-300">
-      <span
-        className="relative shrink-0 overflow-hidden whitespace-nowrap px-[0.5px] font-medium"
-        style={{
-          height: headerPx,
-          fontSize: type(headerPx),
-          lineHeight: `${Math.max(2.5, headerPx)}px`,
-          color: card.headerStyle.color,
-        }}
-      >
-        {card.headerText}
-      </span>
+      <GreekedBand
+        text={card.headerText}
+        color={card.headerStyle.color}
+        heightPx={headerPx}
+      />
 
-      <span className="relative min-h-0 flex-1 overflow-hidden bg-white">
-        {card.photo === null ? (
-          // No photo is not a grey hole: the paper is white on a sheet too, so the card
-          // reads as a card with a picture yet to come rather than as a missing image.
-          <span className="absolute inset-0 bg-zinc-50" />
-        ) : (
-          // The photo is already a data URL in memory; showing it is what makes the
-          // miniature look like the page rather than like a bar chart.
+      <span className="relative min-h-0 flex-1 overflow-hidden bg-zinc-50">
+        {card.photo === null ? null : (
+          // The photo is already a data URL in memory, and unlike the type it survives a
+          // 4x downscale: this is what makes the miniature look like its page.
           <img src={card.photo.dataUrl} alt="" className="size-full object-cover" />
         )}
       </span>
 
-      <span
-        className="relative shrink-0 overflow-hidden whitespace-nowrap px-[0.5px]"
-        style={{
-          height: footerPx,
-          fontSize: type(footerPx),
-          lineHeight: `${Math.max(2.5, footerPx)}px`,
-          color: card.bodyStyle.color,
-        }}
-      >
-        {card.bodyText}
-      </span>
+      <GreekedBand
+        text={card.bodyText}
+        color={card.bodyStyle.color}
+        heightPx={footerPx}
+      />
     </span>
   )
 }

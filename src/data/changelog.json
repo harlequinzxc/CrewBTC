@@ -5,7 +5,7 @@
     "title": "All the sheets at once, a strip that looks like the paper, and a rail you can search",
     "highlights": [
       "Sheets are now one continuous column: every page of a 27-file batch is stacked in the canvas, 24px apart, and you scroll from the first to the last instead of paging through them",
-      "The sheet strip shows real miniatures \u2014 the dish code, the dish name, the footer text and the dish photo, scaled down \u2014 so a thumbnail is recognisably a page rather than a grey rectangle",
+      "The sheet strip shows real miniatures \u2014 the dish photo at full fidelity, and each card\u2019s text greeked into rules whose lengths follow the words, because a 6mm band at 64px is 3.7px tall and no font size survives that",
       "Scrolling the canvas moves the active thumbnail, and clicking a thumbnail scrolls the canvas: one answer to which sheet you are on, whichever way you ask",
       "Clicking the dark canvas beside the paper, or the white margin around its cells, clears the red selection and puts the right rail back to Sheet & print",
       "Files gains a filter under Add PDFs for batches too long to scan, and each row shows where its first card landed (S2 \u00b7 07). Clicking a file scrolls to its card and selects it",

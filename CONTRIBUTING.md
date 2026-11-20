@@ -197,10 +197,12 @@ container and effect ordering is not a contract. The canvas scrolls and clears i
 turn this into a stored index mirrored in two components.
 
 `SheetThumbnail` is the sheet's own geometry scaled down, not a second renderer: the same
-grid, the same cell rectangles, and the card's real text and photo — at 64px, a tinted bar
-is indistinguishable from many other tinted bars, which is why an earlier three-band
-version read as grey bricks and said nothing the sheet count had not already said. Type is
-clipped rather than wrapped for the same reason: a wrapped dish name reads as a paragraph.
+grid, the same cell rectangles, the same placements. The card's text is **greeked**, not
+set: a 6mm header band at 64px of thumbnail is 3.7 CSS pixels, and a 9pt glyph inside it is
+0.98px — every font size that fits is an unreadable smear, so the band draws one rule per
+line of text, as wide as that line is. The photo is real, because an image survives the
+downscale. Do not "fix" the thumbnail by raising the font size; the geometry is the
+constraint, not the styling.
 
 ## Width-fit zoom
 
