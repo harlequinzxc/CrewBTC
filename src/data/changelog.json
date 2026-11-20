@@ -1,5 +1,20 @@
 [
   {
+    "version": "1.6.0",
+    "date": "2026-11-20",
+    "title": "Every sheet is reachable, and a narrow window stops eating your work",
+    "highlights": [
+      "Fixed: shrinking the window below 1024px used to unmount the workspace, and an unmount threw away your uploaded PDFs, photos and card edits. The workspace now stays mounted behind the notice, so widening the window brings everything back exactly as it was",
+      "The sheet opens fitted to the width of the window instead of the whole page, so every card is readable on load without zooming \u2014 the sheet scrolls vertically instead",
+      "Fit is a momentary action again: it returns the sheet to width-fit but never stays lit, because width-fit is already where the app rests",
+      "Sheet navigation: documents longer than twelve cards get a strip of sheet miniatures along the bottom of the canvas. Click one to jump to that sheet, or collapse it to a Sheets (2) pill to get the canvas height back",
+      "The canvas shows every sheet, not just the first \u2014 a thirteenth page used to exist in the export and nowhere on screen",
+      "Clicking a file in the Files rail jumps to the sheet its first card is on, and clicking a card on another sheet moves the canvas to it",
+      "Spacing and Margin fields are now sized like one half of a Size or Cell pair, so the number sits hard against its unit instead of floating at the far edge of an empty box",
+      "Numeric fields use tabular figures, so a unit never shifts sideways as the digits change"
+    ]
+  },
+    {
     "version": "1.5.0",
     "date": "2026-11-20",
     "title": "One unit for the whole sheet, and the dead print controls are gone",

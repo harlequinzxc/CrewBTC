@@ -66,6 +66,15 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* A numeric field must not move its unit when the number changes width. `tabular-nums`
+     covers fonts that ship the feature; `font-feature-settings` covers the ones that only
+     expose it as a feature tag. Declared together, once, so no field has to remember. */
+  input[type='number'],
+  input[inputmode='decimal'] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
   /* §3A — never remove a focus ring without a replacement. One accent, everywhere. */
   :focus-visible {
     outline: none;

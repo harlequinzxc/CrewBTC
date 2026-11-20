@@ -28,21 +28,19 @@ export function previousZoom(current: number): number {
 }
 
 /**
- * Pixels per millimetre that make the sheet fit the available box.
+ * Pixels per millimetre that make the sheet's **width** fill the available width.
+ *
+ * Height is deliberately not consulted. Fitting the whole page to a landscape window made
+ * an A4 sheet small enough that a card's type was unreadable on load — the canvas is a
+ * working surface, not a contact sheet, so the sheet fills the width and scrolls
+ * vertically. That is the default view, and what `Fit` returns to.
  *
  * Never returns 0 or a non-finite number: an unmeasured container (the first render
  * before `ResizeObserver` reports) would otherwise collapse the sheet to nothing.
  */
-export function fitScale(availableWidth: number, availableHeight: number, sheetWidthMm: number, sheetHeightMm: number): number {
-  if (
-    !(availableWidth > 0) ||
-    !(availableHeight > 0) ||
-    !(sheetWidthMm > 0) ||
-    !(sheetHeightMm > 0)
-  ) {
-    return 1
-  }
-  return Math.min(availableWidth / sheetWidthMm, availableHeight / sheetHeightMm)
+export function fitWidthScale(availableWidth: number, sheetWidthMm: number): number {
+  if (!(availableWidth > 0) || !(sheetWidthMm > 0)) return 1
+  return availableWidth / sheetWidthMm
 }
 
 /** A multiplier that keeps a Ctrl/Cmd-wheel gesture smooth rather than steppy. */

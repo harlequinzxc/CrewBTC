@@ -40,12 +40,17 @@ describe('the top bar', () => {
 
   it('labels a fitted percentage as fitted, not as a scale you chose', () => {
     render_({ scale: 2.83, fitting: true })
-    const level = screen.getByLabelText('Zoom level, fitted')
+    const level = screen.getByLabelText('Zoom level, fitted to width')
     expect(level.textContent).toBe('283%')
-    expect(screen.getByRole('button', { name: 'Fit to window' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+  })
+
+  it('leaves Fit un-pressed, because it is a momentary action', () => {
+    // The app already rests in width-fit, so a lit Fit described the default state while
+    // looking like a chosen one. It must not report a pressed state even while fitted.
+    render_({ scale: 2.83, fitting: true })
+    const fit = screen.getByRole('button', { name: 'Fit sheet to width' })
+    expect(fit).not.toHaveAttribute('aria-pressed')
+    expect(fit.className).not.toContain('bg-accent')
   })
 
   it('shows the live scale and the three zoom controls', () => {
@@ -56,7 +61,7 @@ describe('the top bar', () => {
     expect(props.onStep).toHaveBeenCalledWith(1)
     fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }))
     expect(props.onStep).toHaveBeenCalledWith(-1)
-    fireEvent.click(screen.getByRole('button', { name: 'Fit to window' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Fit sheet to width' }))
     expect(props.onFit).toHaveBeenCalled()
   })
 

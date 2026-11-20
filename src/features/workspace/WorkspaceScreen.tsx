@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { TopBar } from '../../components/layout/TopBar'
 import { Inspector } from './Inspector'
 import { useBatch } from './use-batch'
@@ -10,36 +10,39 @@ import { useCardExport } from './use-card-export'
 import { useSheet } from './use-sheet'
 import { useSheetZoom } from './use-sheet-zoom'
 import { selectedCardKey } from './selected-card'
+import { useSheetNavigation } from './use-sheet-navigation'
+import { bandsInto, resetProportions, textScaleInto } from './card-edits'
+import { SheetStripSlot } from './SheetStripSlot'
 import { toPageRefs } from '../../lib/pdf/page-refs'
-import { planSheets } from '../../lib/imposition/sheet'
 import { pickFiles } from '../../lib/files/open-picker'
-import { cardKey, clampBands, clampTextScale, defaultBands } from '../../types/card'
-import type { Card } from '../../types/card'
+import { cardKey } from '../../types/card'
+import type { Card, CardBands } from '../../types/card'
 import { useUpdateNotice } from './use-update-notice'
 import { reloadPage } from './reload-page'
 import { SettingsDialog } from '../settings/SettingsDialog'
-import { readSettings, requestPersistence, writeSettings } from '../../lib/storage/db'
-import { DEFAULT_PAGE_SETTINGS, normalisePageSettings } from '../../types/settings'
-import type { PageSettings } from '../../types/settings'
+import { usePageSettings } from './use-page-settings'
 import type { useToasts } from '../../components/ui/use-toasts'
 
 /**
  * One screen: files, the sheet, and the inspector.
  *
- * There is no view state, no navigation, and no bottom drawer. Everything the app can do
- * is reachable from the top bar or from the thing it acts on, which is what lets the sheet
- * take the whole window between them.
+ * There is no view state and no navigation rail. Everything the app can do is reachable
+ * from the top bar or from the thing it acts on, which is what lets the sheet take the
+ * whole window between them. The sheet strip is the one exception, and only for documents
+ * that span more than one page of cards: it is navigation for a set of pages, not for the
+ * app.
  */
 export interface WorkspaceScreenProps {
   readonly notify: ReturnType<typeof useToasts>['show']
 }
 
 export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
-  const [settings, setSettings] = useState<PageSettings>(DEFAULT_PAGE_SETTINGS)
+  const { settings, update: updateSettings } = usePageSettings()
   // Cut guides are on by default: the sheet is a cutting template as much as a preview.
   const [showCutMarks, setShowCutMarks] = useState(true)
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [stripCollapsed, setStripCollapsed] = useState(false)
 
   useUpdateNotice(() => {
     notify({
@@ -56,7 +59,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const cardStore = useCards()
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
 
-  const zoom = useSheetZoom(sheet.settings.sheetWidthMm, sheet.settings.sheetHeightMm)
+  const zoom = useSheetZoom(sheet.settings.sheetWidthMm)
 
   // One seed per placed page: what the upload read, ready to fill a fresh card.
   const seeds = useMemo<readonly CardSeed[]>(
@@ -88,22 +91,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     notify,
   })
 
-  useEffect(() => {
-    void (async () => {
-      // A record written by an older build carries trim and bleed it can no longer use;
-      // normalise rather than trusting the shape, so an upgrade never hands the interface
-      // a `units` value it does not understand or an object it expects to be current.
-      const previous = normalisePageSettings(await readSettings())
-      if (previous !== null) setSettings(previous)
-      await requestPersistence()
-    })()
-  }, [])
-
-  const updateSettings = useCallback((next: PageSettings) => {
-    setSettings(next)
-    void writeSettings(next)
-  }, [])
-
   const clearAll = useCallback(() => {
     batch.clear()
     cardStore.reset()
@@ -117,43 +104,46 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     })()
   }, [batch])
 
+  const hasBatch = batch.documents.length > 0
+
+  // Which sheet is on the canvas, and every way to move it, in one place.
+  const { sheets, sheetIndex, selectCell, goToSheet } = useSheetNavigation({
+    pages: pageRefs,
+    grid: sheet.grid,
+    activeDocumentId: batch.activeId,
+    setSelectedCell,
+  })
+  const sheetCount = sheets.length
+
   // The inspector describes a card when one is selected and the document when it is not.
-  const selectionKey = selectedCardKey(selectedCell, sheet.grid, pageRefs)
+  const selectionKey = selectedCardKey(selectedCell, sheet.grid, pageRefs, sheetIndex)
   const selectedCard = selectionKey === null ? null : (cardStore.cards[selectionKey] ?? null)
 
-  const handleBands = useCallback(
-    (bands: Parameters<typeof clampBands>[0]) => {
+  // One lookup, three patches: the selected card, or nothing if the sheet has no card in
+  // that cell. Repeating the guard in each handler is how they drift apart.
+  const patchSelected = useCallback(
+    (change: (card: Card) => Card) => {
       if (selectionKey === null) return
       const card = cardStore.cards[selectionKey]
       if (card === undefined) return
-      cardStore.setCard(selectionKey, { ...card, bands: clampBands(bands, sheet.grid.cellHeightMm) })
-    },
-    [selectionKey, cardStore, sheet.grid.cellHeightMm],
-  )
-
-  const handleTextScale = useCallback(
-    (textScale: number) => {
-      if (selectionKey === null) return
-      const card = cardStore.cards[selectionKey]
-      if (card === undefined) return
-      cardStore.setCard(selectionKey, { ...card, textScale: clampTextScale(textScale) })
+      cardStore.setCard(selectionKey, change(card))
     },
     [selectionKey, cardStore],
   )
 
-  const handleResetCard = useCallback(() => {
-    if (selectionKey === null) return
-    const card = cardStore.cards[selectionKey]
-    if (card === undefined) return
-    cardStore.setCard(selectionKey, {
-      ...card,
-      bands: clampBands(defaultBands(sheet.grid.cellHeightMm), sheet.grid.cellHeightMm),
-      textScale: 1,
-    })
-  }, [selectionKey, cardStore, sheet.grid.cellHeightMm])
-
-  const hasBatch = batch.documents.length > 0
-  const sheetCount = planSheets(pageRefs, sheet.grid).length
+  const { cellHeightMm } = sheet.grid
+  const handleBands = useCallback(
+    (bands: CardBands) => patchSelected((card) => bandsInto(card, bands, cellHeightMm)),
+    [patchSelected, cellHeightMm],
+  )
+  const handleTextScale = useCallback(
+    (textScale: number) => patchSelected((card) => textScaleInto(card, textScale)),
+    [patchSelected],
+  )
+  const handleResetCard = useCallback(
+    () => patchSelected((card) => resetProportions(card, cellHeightMm)),
+    [patchSelected, cellHeightMm],
+  )
 
   return (
     <div className="flex h-[100svh] max-h-[100svh] w-full flex-col overflow-hidden bg-surface-canvas">
@@ -198,11 +188,25 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           showCutMarks={showCutMarks}
           cards={cardStore.cards}
           selectedCell={selectedCell}
-          onSelectCell={setSelectedCell}
+          onSelectCell={selectCell}
           onCardChange={(key, card: Card) => cardStore.setCard(key, card)}
           scale={zoom.scale}
           fitting={zoom.fitting}
           paneRef={zoom.paneRef}
+          sheetIndex={sheetIndex}
+          sheets={sheets}
+          renderStrip={(plans) => (
+            <SheetStripSlot
+              sheets={plans}
+              sheet={sheet.settings}
+              grid={sheet.grid}
+              cards={cardStore.cards}
+              activeIndex={sheetIndex}
+              onSelectSheet={goToSheet}
+              collapsed={stripCollapsed}
+              onToggleCollapsed={() => setStripCollapsed((collapsed) => !collapsed)}
+            />
+          )}
         />
 
         <Inspector

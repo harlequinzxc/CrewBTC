@@ -158,6 +158,37 @@ Sheet settings persist to `localStorage` under `crewbtc.sheet` and are validated
 — a corrupt or out-of-range value falls back to the defaults rather than rendering a
 broken grid.
 
+## Sheets and navigation
+
+`planSheets` splits pages into sheets, twelve to an A4 cell grid. Which one the canvas
+draws is derived, never stored — `sheet-navigation.ts` explains why: cell indices repeat
+on every sheet, so "the sheet containing cell 4" is ambiguous and would always answer
+sheet 1. A navigation target (a thumbnail click) is consulted first, and the caller clears
+it on every selection change so a stale target cannot pin the view.
+
+`CardSheet` takes `sheetIndex` and draws that sheet's placements. It used to hard-code
+`sheets[0]`, which meant a thirteenth page existed in the export and nowhere on screen.
+`selectedCardKey` takes the same index, because cell 3 holds a different page on every
+sheet and resolving against the wrong one would put the wrong card's numbers in the
+inspector — and then edit the wrong card.
+
+`SheetThumbnail` is the sheet's own geometry scaled down, not a second renderer: the same
+grid, the same cell rectangles, the same placements, with each card summarised as three
+bands of colour because a card's type is sub-pixel at 44px.
+
+## Width-fit zoom
+
+`fitWidthScale` looks at width and nothing else. Fitting the whole page made an A4 sheet
+small enough that a card's type was unreadable on load, which is the opposite of what a
+working canvas is for; the sheet is taller than the pane as a result and the pane scrolls.
+The pane therefore cannot use `place-items-center` while fitted — centring an overflowing
+item clips its top and makes the first rows unreachable — so it is `items-center` on a
+column instead.
+
+Fit is momentary. `TopBar` renders no `aria-pressed` and no accent fill, because the app
+already *rests* in width-fit: a permanently lit Fit described the default state while
+looking like a chosen one. The percentage readout carries the "fitted" label instead.
+
 ## The chrome
 
 The app is one screen: a 48px `TopBar`, a 220px Files rail, the canvas, and a 260px

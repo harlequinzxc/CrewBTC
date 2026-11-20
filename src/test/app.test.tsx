@@ -48,7 +48,7 @@ describe('App shell', () => {
 
     // Zoom lives in the top bar, at the same value the sheet is drawn at.
     expect(screen.getByLabelText(/^Zoom level/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Fit to window' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Fit sheet to width' })).toBeInTheDocument()
   })
 
   it('shows the grid arithmetic in the inspector, where the numbers are', async () => {
