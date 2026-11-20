@@ -68,19 +68,54 @@ export function TextFieldLayer(props: TextFieldLayerProps) {
         did, delivered as user actions rather than inferred from focus.
 
         The focus is taken *back* rather than merely kept, because a field that is open and
-        unfocused takes no typing, which looks exactly as broken as one that never opened.
+        unfocused takes no typing, which looks exactly as broken as one that never opened —
+        with one exception, below.
       */
       onBlur={() => {
         window.setTimeout(() => {
           const field = fieldRef.current
           if (field === null) return
-          if (document.activeElement !== field) takeFocus(field)
+          if (document.activeElement === field) return
+          /*
+            The exception: a deliberate move into the formatting bar.
+
+            Taking focus back unconditionally made the bar unreachable by keyboard — Tab
+            landed on it, this handler pulled it away again, and Tab appeared to cycle
+            between the field and nothing. The presets were mouse-only, which is exactly
+            the kind of thing a pointer-driven test never notices.
+
+            The bar is the one place focus may go, because it only exists while this field
+            is being edited and its controls act on this field. Anything else that takes
+            focus — a scroll, a window change, a layout shift — still gets it back.
+          */
+          const next = document.activeElement
+          if (next instanceof HTMLElement && next.closest('[data-testid="card-text-bar"]') !== null) {
+            return
+          }
+          takeFocus(field)
         }, 0)
       }}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           event.stopPropagation()
           props.onEndEdit()
+        }
+        /*
+          Tab leaves the box for the formatting bar, not for the next card.
+
+          The bar is rendered by the sheet, above the cards in document order, so plain Tab
+          from the field walked *forwards* to the neighbouring zone — a place the user was
+          not going, and one whose button then had the caret pulled back out of it. Sending
+          Tab to the bar explicitly is what makes the presets reachable without a mouse.
+          Shift+Tab keeps the browser's own behaviour.
+        */
+        if (event.key === 'Tab' && !event.shiftKey) {
+          const bar = document.querySelector('[data-testid="card-text-bar"]')
+          const first = bar?.querySelector('button')
+          if (first instanceof HTMLElement) {
+            event.preventDefault()
+            first.focus()
+          }
         }
         // Enter makes a new line; only the sheet's own shortcuts are swallowed.
         event.stopPropagation()

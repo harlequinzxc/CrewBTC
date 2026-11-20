@@ -193,3 +193,46 @@ test('the presets are one click, and the old swatch clutter is gone', async ({ p
   expect(cleared.color).toBe('rgb(17, 24, 39)')
   expect(cleared.weight).toBe('700')
 })
+
+test('the bar is reachable and usable by keyboard alone', async ({ page }) => {
+  await uploadPdf(page)
+  const box = (await textZones(page).first().boundingBox())!
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  await page.keyboard.press('Control+a')
+  await page.keyboard.type('kung pao')
+  await page.waitForTimeout(200)
+
+  // Tab out of the field and into the bar. Before the fix the field's blur handler took
+  // focus straight back, so the bar could be reached by pointer only.
+  // One Tab, because the field sends it to the bar deliberately rather than walking
+  // forwards into the next card's zone.
+  await page.keyboard.press('Tab')
+  await page.waitForTimeout(200)
+  const landed = await page.evaluate(
+    () => (document.activeElement as HTMLElement | null)?.getAttribute('aria-label') ?? '',
+  )
+  expect(landed).toBe('CROCKERIES callout')
+
+  // Activate it with the keyboard: the tag must apply without a pointer ever moving.
+  await page.keyboard.press('Enter')
+  await page.waitForTimeout(200)
+  const tagged = await page.getByLabel('Edit card text').evaluate((element) => {
+    const field = element as HTMLTextAreaElement
+    return { transform: getComputedStyle(field).textTransform, stored: field.value }
+  })
+  expect(tagged.transform).toBe('uppercase')
+  expect(tagged.stored).toBe('kung pao')
+})
+
+test('a press on the canvas still ends the edit', async ({ page }) => {
+  await uploadPdf(page)
+  const box = (await textZones(page).first().boundingBox())!
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  await page.waitForTimeout(250)
+  await expect(page.getByLabel('Edit card text')).toBeVisible()
+
+  // The one place focus is allowed to leave the field must not become a way to get stuck.
+  await page.mouse.click(box.x - 60, 700)
+  await page.waitForTimeout(400)
+  await expect(page.getByLabel('Edit card text')).toBeHidden()
+})
