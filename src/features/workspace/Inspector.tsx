@@ -138,8 +138,9 @@ export function Inspector({
           Export all sheets as one PDF
         </Button>
         <p className="pt-1 text-[11px] leading-relaxed text-zinc-500">
-          Pages are embedded as vectors at full resolution — nothing is re-typed or
-          re-rasterised. Separate one-PDF-per-page files arrive with the .zip export.
+          Text is drawn as real vector text, so it stays sharp at any size. Dish photos
+          are embedded at the resolution they were extracted at. One PDF per page is
+          still to come.
         </p>
       </div>
     </aside>

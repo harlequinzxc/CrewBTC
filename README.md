@@ -1,128 +1,126 @@
 # CrewBTC
 
-A PC-first, fully client-side PWA that batch-parses consistently formatted PDFs and
-recreates them as print-ready vector PDFs. No backend, no upload, no network calls.
+Turn a folder of recipe PDFs into print-ready cards.
 
-Built against [`ENGINEERING_RULES.md`](./ENGINEERING_RULES.md).
+Drop in one PDF or fifty. CrewBTC reads each page, rebuilds it as an editable card —
+photo, title, instructions — and lays twelve of them out on an A4 sheet with cut
+guides, ready to print and chop up.
 
----
-
-## Decisions of record
-
-These are binding for the project. Changing one is a doc change plus a SemVer bump.
-
-| Decision | Value | Why |
-|---|---|---|
-| **Storage library** | **`idb`** (not Dexie, not `idb-keyval`) | §5A allows one. `idb-keyval` has no schema version, so §5's tested upgrade path is unsatisfiable with it. |
-| **Preview engine** | DOM in physical `mm` units + a shared layout engine | Konva rasterises preview text, which cannot match `pdf-lib`'s vector layout. WYSIWYG required DOM. |
-| **Font strategy** | Base-14 standard fonts first; user-uploaded `.ttf`/`.otf` for brand fonts | `@fontsource/inter` ships **woff/woff2 only**, and fontkit needs ttf/otf. Bundling font binaries is a Phase 4 decision. |
-| **Surface support** | **Desktop only**, explicitly declared | Overrides §4's equal-peers rule. Below 1024 px the app states the constraint instead of rendering a crushed layout. |
-| **Export honesty** | CMYK for vector text via `cmyk()`; images stay RGB; **not PDF/X** | `pdf-lib` cannot emit PDF/X with an output intent or encode CMYK JPEGs. The UI says so. |
-| **Imposition model** | Sheet → grid of cells → one page per cell | User decision: multiple PDFs tiled per sheet, every page an object, contain-fit only so nothing is cropped. |
-| **Default geometry** | A4 210×297, cell 52×67 mm, gutter 4 mm, margin 4 mm → **12 cells** | Measured, not assumed: a 4th column needs 217 mm and a 5th row 347 mm, so 12 is the true maximum at this cell size. |
-| **Trim/bleed** | User-configurable, validated | §3 of the spec left `[e.g., A4]` placeholders, which §5 forbids in shipping code. |
-
-### §4 override in force
-
-§4 of the engineering rules treats PC and mobile as equal peers. **This build is
-desktop-only by user decision.** Consequences, stated so they are never silent:
-
-- **Overridden:** §4.3 mobile layout rules, §4.4 installed-mode check *on mobile*,
-  §4.1 mobile touch baseline.
-- **Still enforced:** §4.2 in full, §4.4 on desktop, the `1440/1280/1024` breakpoint
-  ladder plus `320 px @ 200% zoom`, §3A accessibility, the §4.1 target ladder,
-  visible scrollbars, no hover-only paths, and `100svh` for the shell.
+Everything happens inside your browser. No account, no upload, no server. Your PDFs
+never leave your computer.
 
 ---
 
-## Architecture
+## What it does
 
-```
-Batch PDFs ──► pdfjs-dist ──► extraction ──► layout engine ──┬─► DOM preview (mm)
-                                │                            └─► pdf-lib export
-                                └─► IndexedDB (idb, versioned)
-```
+**Reads the PDF for you.** Each page becomes one card. CrewBTC pulls the dish photo
+out of the PDF's own embedded image, takes the title from the text above the photo,
+and the plating steps from the text below — one step per line.
 
-**The one rule that keeps the preview honest:** a single layout engine computes every
-line break, offset, and baseline once, and *both* the preview and the exporter render
-from that output. Nothing re-flows at export time.
+**Scanned pages still work.** A page with no text layer is read with OCR instead of
+being left blank. It needs a connection the first time, and it reads English only.
 
-```
-src/
-  components/ui/       design-system primitives (§2) — Button Card Input Select
-                       Toggle Badge BottomSheet Toast Spinner EmptyState FormField
-  components/layout/   AppShell SidebarNav DesktopOnlyNotice
-  features/workspace/  BatchQueue PrintCanvas Inspector
-  features/settings/   SettingsView MotionProvider use-motion
-  lib/                 units (mm↔pt) trim (geometry, crop marks) dpi motion cn
-  lib/storage/         db.ts (idb) + migrations/
-  types/               page, template, settings, async
-  data/changelog.ts    release notes, synchronised with package.json (§9)
-scripts/               the Appendix A/B gates, runnable via `npm run gate:*`
-```
+**You edit the card, not the PDF.** Three zones: text on top, photo in the middle,
+text underneath.
 
-## Target-size ladder (§4.1)
+- Both text boxes are real text fields. Type in them, mark them bold, change the ink
+  colour, or run a highlighter behind the words.
+- The photo is never stretched. It fits inside its box, and double-clicking lets you
+  pan and zoom within it. Anything that spills past the box is clipped, so a tall
+  photo can't push the text out of the way.
+- Each card tunes its own proportions. The top and bottom heights are yours to set
+  per card, so a dish with long instructions and a dish with a short name can both
+  be laid out the way they need.
 
-Defined **once**, in `src/index.css`, so it cannot drift per call site:
+**Prints properly.** Export gives you a real PDF at print resolution. Text is drawn as
+vector text, so it stays crisp at any size, and the sheet comes out exactly as it
+looked on screen — same words, same colours, same photo position — with crop marks
+for cutting.
 
-- `44px` — default for every interactive element.
-- `32px` — dense desktop chrome, table rows, icon clusters (`data-target="dense"`).
-- `24px` — absolute floor. Nothing below it.
+## Getting started
 
-## Commands
+1. Open CrewBTC in a desktop browser.
+2. Drag PDFs onto the window, or use **Add PDFs**.
+3. Pick a card, then edit its text, colour and photo.
+4. Adjust the top and bottom heights in the band panel under the sheet.
+5. **Export** when you're happy.
 
-```bash
-npm run dev            # dev server on :5173
-npm run build          # tsc -b && vite build
-npm run typecheck      # tsc -b --noEmit   ← plain `tsc --noEmit` is a lie here; see below
-npm run lint           # oxlint, max-lines enforced at 250
-npm run lint:types     # oxlint --type-aware (floating promises live only here)
-npm test               # vitest
-npm run gate           # every gate in Appendix A/D order
-```
+Your sheet settings are remembered between visits.
 
-### Why `tsc -b` and not `tsc`
+### Desktop only
 
-Verified in this repo on Vite 8.3.8 / TypeScript 7.0.2, with a planted
-`const label: string = 42`:
+CrewBTC is built for a desktop browser and asks for at least 1024 pixels of width.
+Below that it tells you so rather than squeezing the layout into something unusable.
+A phone-sized version isn't planned.
 
-| Command | Exit |
-|---|---|
-| `npx tsc --noEmit` | **0** — compiles an empty file set, reports nothing |
-| `npx tsc -b --noEmit` | **1** — catches the error |
+## The sheet
 
-`tsconfig.json` is solution-style (`"files": []` + project references), so only the
-`-b` form actually type-checks `src/`.
+By default you get **A4 at 210 × 297 mm**, holding **twelve cards of 52 × 67 mm** —
+three across, four down — with a 4 mm gap between cards and a 4 mm margin at the edge.
+That puts 67% of the paper to work, and the 4 mm channels are wide enough to get
+scissors or a guillotine between cards without shaving the edge off a card.
 
-### Why two lint passes
+Change any of it: A3, A5, US Letter or square paper, a different card size, a wider
+gutter or margin, or turn the grid 90° on the sheet. CrewBTC tells you when a setting
+won't fit rather than printing a broken sheet.
 
-`no-floating-promises` is type-aware and does not fire in a plain `oxlint` run.
-Verified with a planted floating promise: plain run reported **0** warnings,
-`--type-aware` reported **1** and exited **1**. Both passes are required.
+### Cards are 52 × 67 mm by default
 
-## Known limitations
+Each card splits into a **10 mm** top box, a **42 mm** photo, and a **15 mm** bottom
+box. That split is a starting point, not a rule — every card has its own, adjustable
+with two sliders. Nothing can be tuned into an overlap: there's a minimum for each text
+box and a minimum for the photo, so a card can never become two text boxes with no
+picture.
 
-- **Not PDF/X.** No output intent, no CMYK image conversion. Fine for digital and
-  short-run; a shop requiring PDF/X will bounce these files.
-- **No bundled print font yet.** Base-14 only until Phase 4 decides the font payload.
-- **Browser verification is manual.** Chromium downloads are blocked in the build
-  sandbox, so breakpoint/installed-mode passes are reported as `not run` rather than
-  claimed. Extraction is covered end-to-end by a Node test against a real PDF.
-- **`pdf-lib` is loaded lazily** on first export (245 KB gzip chunk). The app shell is
-  87 KB; both heavy libraries stay out of the first paint.
-- **PDF.js is loaded lazily** on the first import. The initial route is ~83 KB gzip;
-  the 132 KB PDF chunk is requested only when a PDF is added. `scripts/check-bundle.sh`
-  enforces both facts.
-- **Standard-14 font data and CMaps are shipped** under `public/pdfjs/` (2.5 MB served,
-  not in the JS bundle). Without `standardFontDataUrl`, PDF.js cannot substitute
-  Helvetica/Times/Courier and extraction of such text fails.
+## What it won't do
 
-## Phase status
+Being straight about the limits is more useful than discovering them at the printer.
 
-| Phase | Scope | State |
-|---|---|---|
-| 1 | Shell, design system, geometry, storage skeleton, PWA | **done — v0.1.0** |
-| 2 | `pdfjs-dist` extraction engine + queue and preview | **done — v0.2.0** |
-| 3 | Imposition grid, sheet planning, live cut-guide preview | **done — v0.3.0** |
-| 3 | Interactive canvas, DPI readout, synced inspector | not started |
-| 4 | Vector PDF writer: `embedPage` + `drawPage` per cell | **done — v0.4.0** (single merged PDF; zip/individual still to come) |
+- **Not PDF/X.** No output intent, and colour images stay RGB. Fine for digital and
+  short-run printing; a shop that demands PDF/X will bounce the file.
+- **Not a scanner.** A page with no text layer goes through OCR, which reads English
+  and needs a connection the first time. It's a safety net, not a document scanner.
+- **One PDF out, not a zip.** "Export all sheets" gives you one file. Separate files,
+  one per page, are still to come.
+- **Portable typefaces only.** Print output uses the standard PDF fonts, so nothing
+  needs embedding. Uploading a brand font isn't built yet.
+- **It assumes the PDFs look alike.** The app reads a title above the picture and steps
+  below it. Wildly inconsistent layouts will need fixing by hand — which is what the
+  editable cards are for.
+
+## Privacy
+
+There is no backend. CrewBTC has no server to send anything to.
+
+- Your PDFs are opened in the tab and never uploaded.
+- Sheet settings live in your browser's local storage.
+- A service worker caches the app so it opens without a network connection.
+
+The only time CrewBTC reaches the internet is the first time it needs OCR, when it
+fetches the recognition engine. If that fails, the card still opens with empty text
+boxes for you to fill in — you don't lose the upload.
+
+## Updates
+
+When a new version is deployed, an open tab tells you a new version is ready and offers
+a **Reload** button. It won't refresh on its own, because that would throw away cards
+you hadn't exported yet. Reload when it suits you.
+
+If you miss the notice entirely, a normal refresh picks up the latest version.
+
+## Requirements
+
+- A desktop browser — recent Chrome, Edge, Firefox or Safari.
+- That's it. No install, no account, no plugin.
+
+---
+
+## For developers
+
+Build commands, architecture, the engineering rules and the release process live in
+[CONTRIBUTING.md](./CONTRIBUTING.md). The project is built against
+[ENGINEERING_RULES.md](./ENGINEERING_RULES.md).
+
+## Licence
+
+Private project. All rights reserved.

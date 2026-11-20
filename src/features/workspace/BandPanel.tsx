@@ -1,4 +1,4 @@
-import { clampBands, PICTURE_MIN_MM, BAND_MIN_MM } from '../../types/card'
+import { clampBands, defaultBands, PICTURE_MIN_MM, BAND_MIN_MM } from '../../types/card'
 import type { Card, CardBands } from '../../types/card'
 
 export interface BandPanelProps {
@@ -107,10 +107,10 @@ export function BandPanel(props: BandPanelProps) {
       <button
         type="button"
         data-target="dense"
-        onClick={() => props.onChange(clampBands({ headerMm: 13, footerMm: 20 }, cellHeightMm))}
+        onClick={() => props.onChange(clampBands(defaultBands(cellHeightMm), cellHeightMm))}
         className="h-8 min-h-8 self-start rounded border border-zinc-700 px-2 text-[11px] text-zinc-300 transition-colors duration-150 ease-out hover:bg-zinc-800 hover:text-zinc-100 focus-visible:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-red-500"
       >
-        Reset to 13 / 20
+        Reset to default
       </button>
     </div>
   )

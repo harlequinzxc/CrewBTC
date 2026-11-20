@@ -162,7 +162,7 @@ describe('fine-tuning one card', () => {
     // Select the second card: it must still be at its default, not the first card's.
     fireEvent.pointerDown(cells[1] as HTMLElement)
     const header = (await screen.findByLabelText('Header height')) as HTMLInputElement
-    expect(header.value).toBe('13')
+    expect(header.value).toBe('10')
   })
 
   afterEach(() => {
