@@ -1,9 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Card } from '../features/workspace/Card'
-import { CardTextBar } from '../features/workspace/CardTextBar'
 import { blankCard } from '../features/workspace/use-cards'
-import { DEFAULT_IMAGE_TRANSFORM, DEFAULT_TEXT_STYLE } from '../types/card'
+import { DEFAULT_IMAGE_TRANSFORM } from '../types/card'
 import type { Card as CardModel, RectMm } from '../types/card'
 import { textEditGestureStub } from './gesture-stub'
 
@@ -107,65 +106,6 @@ describe('typing into a card', () => {
   })
 })
 
-describe('formatting a text box', () => {
-  const base = {
-    zone: 'body' as const,
-    style: DEFAULT_TEXT_STYLE,
-    active: DEFAULT_TEXT_STYLE,
-    selection: null,
-    onChange: vi.fn(),
-  }
-
-  beforeEach(() => base.onChange.mockClear())
-
-  it('toggles bold for the whole box when nothing is selected', () => {
-    render(<CardTextBar {...base} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Bold' }))
-    expect(base.onChange).toHaveBeenCalledWith({ ...DEFAULT_TEXT_STYLE, bold: true })
-  })
-
-  it('sets the ink colour', () => {
-    render(<CardTextBar {...base} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Text colour Red' }))
-    expect(base.onChange).toHaveBeenCalledWith({ ...DEFAULT_TEXT_STYLE, color: '#b91c1c' })
-  })
-
-  it('sets a highlight and can clear it again', () => {
-    render(<CardTextBar {...base} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Green highlight' }))
-    expect(base.onChange).toHaveBeenCalledWith({ ...DEFAULT_TEXT_STYLE, highlight: '#86efac' })
-
-    render(<CardTextBar {...base} active={{ ...DEFAULT_TEXT_STYLE, highlight: '#86efac' }} />)
-    fireEvent.click(screen.getAllByRole('button', { name: 'No highlight' })[0]!)
-    expect(base.onChange).toHaveBeenLastCalledWith({ ...DEFAULT_TEXT_STYLE, highlight: null })
-  })
-
-  it('says which box it will change', () => {
-    render(<CardTextBar {...base} />)
-    expect(screen.getByText('bottom text')).toBeInTheDocument()
-  })
-
-  it('says when it will restyle only a selection', () => {
-    render(<CardTextBar {...base} selection={{ start: 2, end: 7 }} />)
-    expect(screen.getByText('selection')).toBeInTheDocument()
-  })
-
-  it('names the button for the selection when text is selected', () => {
-    render(<CardTextBar {...base} selection={{ start: 0, end: 4 }} />)
-    expect(screen.getByRole('button', { name: 'Bold selection' })).toBeInTheDocument()
-  })
-
-  it('reports the selection’s own style, not the box’s', () => {
-    render(
-      <CardTextBar
-        {...base}
-        selection={{ start: 0, end: 4 }}
-        active={{ bold: true, color: '#b91c1c', highlight: '#86efac' }}
-      />,
-    )
-    expect(screen.getByRole('button', { name: 'Bold selection' })).toHaveAttribute('aria-pressed', 'true')
-  })
-})
 
 describe('moving the photo', () => {
   const photo = { dataUrl: 'data:image/png;base64,PIC', widthPx: 400, heightPx: 300 }

@@ -51,6 +51,8 @@ interface PaintTextInput {
   readonly bold: boolean
   readonly color: string
   readonly highlight: string | null
+  readonly uppercase?: boolean
+  readonly align?: 'left' | 'center'
   readonly maxPt: number
   readonly fallback: RGB
   readonly rgb: (r: number, g: number, b: number) => RGB
@@ -68,7 +70,14 @@ function paintText(input: PaintTextInput): void {
   const layout = layoutStyledBand(
     {
       text,
-      base: { text: '', bold: input.bold, color: input.color, highlight: input.highlight },
+      base: {
+        text: '',
+        bold: input.bold,
+        color: input.color,
+        highlight: input.highlight,
+        ...(input.uppercase === undefined ? {} : { uppercase: input.uppercase }),
+        ...(input.align === undefined ? {} : { align: input.align }),
+      },
       runs: input.runs,
     },
     zone.yMm,
@@ -92,9 +101,9 @@ function paintText(input: PaintTextInput): void {
   const inkOf = (hex: string): RGB => hexToRgb(hex, input.fallback, input.rgb)
 
   for (const line of layout.lines) {
-    // Segments are drawn left to right, each in its own weight and ink, so a bold word
-    // and a red instruction print exactly as they look on screen.
-    let xMm = zone.xMm + PADDING_MM
+    // Segments are drawn left to right in their own weight and ink. `line.xMm` already
+    // carries the padding (left) or the half-slack (centred), so this needs no branch.
+    let xMm = zone.xMm + line.xMm
     // Baselines and their highlight rectangles both shift by the same offset, so the
     // highlight stays behind its glyphs.
     const yMm = line.yMm + centreMm
@@ -171,6 +180,8 @@ export async function drawCard(input: DrawCardInput): Promise<boolean> {
     bold: card.headerStyle.bold,
     color: card.headerStyle.color,
     highlight: card.headerStyle.highlight,
+    ...(card.headerStyle.uppercase === undefined ? {} : { uppercase: card.headerStyle.uppercase }),
+    ...(card.headerStyle.align === undefined ? {} : { align: card.headerStyle.align }),
     maxPt: HEADER_MAX_PT * (card.textScale ?? 1),
     fallback: black,
     rgb: input.lib.rgb,
@@ -184,6 +195,8 @@ export async function drawCard(input: DrawCardInput): Promise<boolean> {
     bold: card.bodyStyle.bold,
     color: card.bodyStyle.color,
     highlight: card.bodyStyle.highlight,
+    ...(card.bodyStyle.uppercase === undefined ? {} : { uppercase: card.bodyStyle.uppercase }),
+    ...(card.bodyStyle.align === undefined ? {} : { align: card.bodyStyle.align }),
     maxPt: FOOTER_MAX_PT * (card.textScale ?? 1),
     fallback: black,
     rgb: input.lib.rgb,

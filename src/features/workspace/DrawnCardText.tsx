@@ -12,6 +12,8 @@ import type { StyledLine } from '../../lib/export/styled-band'
 export interface DrawnCardTextProps {
   readonly lines: readonly StyledLine[]
   readonly positionPx: (line: StyledLine) => string
+  /** The line's own left edge, already including padding or centring slack. */
+  readonly leftPx: (line: StyledLine) => string
   readonly box: CSSProperties
   /**
    * The inset the drawn lines are positioned from, in pixels.
@@ -72,7 +74,14 @@ export function DrawnCardText(props: DrawnCardTextProps) {
             a one-pixel-tall glyph and an empty pixel both resolve to the button.
           */
           className="pointer-events-none absolute whitespace-pre"
-          style={{ top: props.positionPx(line), left: 0, fontWeight: 400 }}
+          /*
+            `left` comes from the layout, not from zero. A centred line starts partway into
+            the box, and the layout is the only thing that knows by how much: it measured
+            the line's width with the same metrics the exporter uses, so the two agree on
+            where the first glyph sits. Left-aligned lines report the plain padding here,
+            which is where they have always started.
+          */
+          style={{ top: props.positionPx(line), left: props.leftPx(line), fontWeight: 400 }}
         >
           {line.segments.map((segment, segmentIndex) => (
             <span

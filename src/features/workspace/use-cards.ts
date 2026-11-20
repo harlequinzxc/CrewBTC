@@ -4,7 +4,7 @@ import {
   clampBands,
   DEFAULT_BODY_STYLE,
   DEFAULT_IMAGE_TRANSFORM,
-  DEFAULT_TEXT_STYLE,
+  DEFAULT_HEADER_STYLE,
 } from '../../types/card'
 import { bandsForContent } from '../../types/band-fit'
 import type { Card, CardBands, ImageTransform, PhotoSource, TextStyle } from '../../types/card'
@@ -137,7 +137,7 @@ export function blankCard(cellHeightMm: number): Card {
     headerText: '',
     bodyText: '',
     photo: null,
-    headerStyle: DEFAULT_TEXT_STYLE,
+    headerStyle: DEFAULT_HEADER_STYLE,
     bodyStyle: DEFAULT_BODY_STYLE,
     imageTransform: DEFAULT_IMAGE_TRANSFORM,
     bands: { headerMm: Math.round(cellHeightMm * 0.145), footerMm: Math.round(cellHeightMm * 0.22) },

@@ -33,6 +33,24 @@ export interface TextRun {
   readonly bold?: boolean
   readonly color?: string
   readonly highlight?: string | null
+  readonly uppercase?: boolean
+  readonly align?: 'left' | 'center'
+}
+
+/**
+ * Copies only the properties that are actually defined.
+ *
+ * `exactOptionalPropertyTypes` is on, and rightly: `{ uppercase: undefined }` and `{}` are
+ * different claims — the first says "this run has no opinion", the second says nothing at
+ * all. Spreading an optional value straight in would quietly widen the type and let a
+ * later reader treat "undefined" as "explicitly off".
+ */
+const withOptional = <T extends object>(base: T, extra: Record<string, unknown>): T => {
+  const out: Record<string, unknown> = { ...(base as Record<string, unknown>) }
+  for (const [key, value] of Object.entries(extra)) {
+    if (value !== undefined) out[key] = value
+  }
+  return out as T
 }
 
 /** Runs kept in order, non-overlapping, and inside the text's length. */
@@ -116,11 +134,16 @@ export interface StyledText {
 export function styleAt(base: TextStyle, runs: readonly TextRun[], offset: number): TextStyle {
   const run = runAt(runs, offset)
   if (run === undefined) return base
-  return {
-    bold: run.bold ?? base.bold,
-    color: run.color ?? base.color,
-    highlight: run.highlight === undefined ? base.highlight : run.highlight,
-  }
+  // A run that says nothing about caps or alignment inherits the box's, rather than
+  // resetting it: otherwise a one-word colour change would un-centre a heading.
+  return withOptional(
+    {
+      bold: run.bold ?? base.bold,
+      color: run.color ?? base.color,
+      highlight: run.highlight === undefined ? base.highlight : run.highlight,
+    },
+    { uppercase: run.uppercase ?? base.uppercase, align: run.align ?? base.align },
+  )
 }
 
 /** Every offset where the effective style changes, plus 0 — the boundaries to lay out. */
@@ -159,12 +182,15 @@ export function applyToSelection(
 
   // The selected span inherits whatever it looked like, then takes the change.
   const inherited = styleAt(base, runs, start)
-  const applied: TextRun = {
-    start,
-    end,
-    bold: patch.bold ?? inherited.bold,
-    color: patch.color ?? inherited.color,
-    highlight: patch.highlight === undefined ? inherited.highlight : patch.highlight,
-  }
+  const applied = withOptional<TextRun>(
+    {
+      start,
+      end,
+      bold: patch.bold ?? inherited.bold,
+      color: patch.color ?? inherited.color,
+      highlight: patch.highlight === undefined ? inherited.highlight : patch.highlight,
+    },
+    { uppercase: patch.uppercase ?? inherited.uppercase, align: patch.align ?? inherited.align },
+  )
   return normaliseRuns([...kept, applied], Number.MAX_SAFE_INTEGER)
 }

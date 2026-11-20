@@ -22,8 +22,20 @@ import { useCallback } from 'react'
  * caret can be placed in it at all.
  */
 export interface EditDismissal {
-  /** A press on a card, or on nothing. Ends the edit unless it is the card being edited. */
-  readonly selectCell: (cellIndex: number | null) => void
+  /**
+   * A press on a card, or on nothing. Ends the edit unless it is the card being edited.
+   *
+   * `page` is forwarded rather than swallowed. Cell 4 holds a different page on every
+   * sheet, so the cell number alone cannot say *which* sheet was pointed at — the caller
+   * resolves that to `selectionSheet`, and without it the sheet compares `null` against
+   * every index and no card is ever drawn as selected. That also hid the band dividers,
+   * which only mount on the selected card. Dropping this argument in v1.8.2 is what made
+   * a card look unselected no matter how often it was pressed.
+   */
+  readonly selectCell: (
+    cellIndex: number | null,
+    page?: { readonly documentId: string; readonly pageNumber: number },
+  ) => void
   /**
    * Every other way an edit ends: Escape, a press on the paper, the field closing itself.
    * The caller clears its own state here; dropping the selection is the sheet's business.
@@ -36,15 +48,22 @@ export interface EditDismissal {
 export function useEditDismissal(input: {
   readonly editingCell: number | null
   readonly onEndEdit: () => void
-  readonly onSelectCell: (cellIndex: number | null) => void
+  readonly onSelectCell: (
+    cellIndex: number | null,
+    page?: { readonly documentId: string; readonly pageNumber: number },
+  ) => void
   readonly onDeselect: () => void
 }): EditDismissal {
   const { editingCell, onEndEdit, onSelectCell, onDeselect } = input
 
   const selectCell = useCallback(
-    (cellIndex: number | null) => {
+    (
+      cellIndex: number | null,
+      page?: { readonly documentId: string; readonly pageNumber: number },
+    ) => {
       if (cellIndex !== editingCell) onEndEdit()
-      onSelectCell(cellIndex)
+      // Forwarded verbatim: this hook decides *when* an edit ends, not who was selected.
+      onSelectCell(cellIndex, page)
     },
     [editingCell, onEndEdit, onSelectCell],
   )
