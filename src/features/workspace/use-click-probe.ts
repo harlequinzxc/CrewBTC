@@ -55,6 +55,39 @@ export function useClickProbe(version: string): void {
           )
         }
 
+        /*
+          Then watch what the app does with it.
+
+          The hit-test above answers "did the press reach the text". This answers the next
+          question: did a field appear, and did anything take the caret away again. Those
+          are different failures and they need different fixes, so the report must not stop
+          at the one that happens to be easy to measure.
+        */
+        const seen: string[] = []
+        const capture = (): boolean => {
+          const field = document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Edit card text"]')
+          seen.push(
+            field === null
+              ? 'no field'
+              : document.activeElement === field
+                ? 'field focused'
+                : `field present, focus is ${document.activeElement?.tagName ?? 'none'}`,
+          )
+          return field !== null
+        }
+        window.setTimeout(() => {
+          capture()
+          window.setTimeout(() => {
+            const opened = capture()
+            lines.push(`after the press: ${seen.join(' -> ')}`)
+            if (!opened) {
+              lines.push('the field never appeared — the press did not start an edit')
+            }
+            console.info('[crewbtc click probe]\n' + lines.join('\n'))
+            panel.textContent = lines.join('\n') + '\n\n(click anywhere to dismiss)'
+          }, 400)
+        }, 60)
+
         console.info('[crewbtc click probe]\n' + lines.join('\n'))
 
         // Also on screen: the user is not necessarily in the console.
