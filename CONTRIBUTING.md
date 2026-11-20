@@ -211,6 +211,34 @@ line of text, as wide as that line is. The photo is real, because an image survi
 downscale. Do not "fix" the thumbnail by raising the font size; the geometry is the
 constraint, not the styling.
 
+## Session persistence
+
+The workspace is stored in its own IndexedDB database (`crewbtc-session`), one record,
+replaced whole. Three decisions there are load-bearing:
+
+- **Its own database, not a store in `crewbtc`.** Adding a store means a schema bump, and
+  `onupgradeneeded` is the only unrecoverable place in IndexedDB — a bad step leaves a
+  database the app cannot open at all. This feature shares no records with settings, so it
+  does not earn that risk. It is still the same library (`idb`), which is what one-storage-
+  library means.
+- **A snapshot of the *result*, not the PDF bytes.** Band heights, photo framing and text
+  edits cannot be reproduced by re-parsing a PDF, so what is stored is the parsed documents
+  plus the card map. A restored session is what the user left, not a second opinion.
+- **The writer is armed only after the batch has taken the snapshot** (`BatchApi.hydrated`).
+  The read is asynchronous, so the batch is constructed before there is anything to
+  construct it from. A writer armed on "the read finished" would — for one render — save an
+  empty batch over the session it had just loaded.
+
+`validate` in `lib/storage/snapshot.ts` rejects an unknown shape rather than coercing it,
+and a version mismatch is a discard, not a migration: this is a cache of a session, not a
+record of anything the user owns. An **empty** batch is valid and is stored — it means the
+user cleared their files.
+
+Selecting a card, or entering a text box, must never move the canvas. `focus()` scrolls the
+nearest scrollable ancestor unless given `preventScroll`, and the formatting bar floats over
+the sheet rather than taking height from it, for the same reason: editing text must not move
+the page.
+
 ## Width-fit zoom
 
 `fitWidthScale` looks at width and nothing else. Fitting the whole page made an A4 sheet

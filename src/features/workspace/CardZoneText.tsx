@@ -54,7 +54,13 @@ export function CardZoneText(props: CardZoneTextProps) {
     if (!editing) return
     const field = fieldRef.current
     if (field === null) return
-    field.focus()
+    // `preventScroll` is not an optimisation. A bare `focus()` scrolls the nearest
+    // scrollable ancestor to reveal the element, so clicking a card near the bottom of
+    // the viewport moved the whole stack up to centre it — the paper slid out from under
+    // the pointer the instant you clicked into a text box. Every other gesture in this
+    // canvas avoids that scroll deliberately; this one was the exception, which is why it
+    // was the only one that still jumped.
+    field.focus({ preventScroll: true })
     field.select()
   }, [editing])
 

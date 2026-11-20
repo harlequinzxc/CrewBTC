@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.8.0",
+    "date": "2026-11-20",
+    "title": "Your work survives a reload, and Clear all can be undone",
+    "highlights": [
+      "Your session is saved: uploads, placements and every card edit are restored when you come back, so closing the tab is no longer a total loss",
+      "Clear all files now offers Undo. It used to be one click that destroyed the batch and every edit made to it, with no copy anywhere to recover from",
+      "Fixed: clicking into a card\u2019s text moved the canvas. Focusing a text box scrolled the stack to reveal it, and the formatting bar appearing above the sheet shrank the canvas \u2014 both moved the page out from under the pointer",
+      "The text formatting bar now floats over the top of the sheet instead of taking 32px of canvas height the moment you start editing",
+      "Fixed: an unhandled render error white-screened the app and took every unsaved edit with it. A boundary now catches it and offers a reload",
+      "Removed the unused `batches` store from the database schema and the storage hook nothing called \u2014 a store that promised persistence the app did not have"
+    ]
+  },
+  {
     "version": "1.7.1",
     "date": "2026-11-20",
     "title": "Selecting a card no longer drags the page out from under the pointer",

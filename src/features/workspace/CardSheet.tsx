@@ -133,9 +133,19 @@ export function CardSheet(props: CardSheetProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* The formatting bar follows whichever text box has the caret. */}
+      {/*
+        The formatting bar follows whichever text box has the caret, and it is an overlay
+        rather than a row.
+        
+        In flow it cost 32px of the pane's height the moment you clicked into a text box —
+        the canvas shrank, so everything below the fold moved up under the pointer. That is
+        the same defect as the focus scroll, from the other direction: editing text must
+        not move the page. Floating it leaves the canvas geometry untouched, and because it
+        sits over the top of the sheet it also never covers the box being typed into on the
+        first row.
+      */}
       {editing !== null && editZone !== null ? (
-        <div className="flex h-8 shrink-0 items-center border-b border-hairline px-2">
+        <div className="absolute inset-x-0 top-0 z-20 flex h-8 items-center border-b border-hairline bg-surface-panel px-2 shadow-lg shadow-black/20">
           <CardTextBar
             zone={editZone}
             style={barCard[editZone === 'header' ? 'headerStyle' : 'bodyStyle']}
@@ -171,7 +181,7 @@ export function CardSheet(props: CardSheetProps) {
           if (event.target === event.currentTarget) onSelectCell(null)
         }}
         className={cn(
-          'min-h-0 flex-1 overflow-auto',
+          'relative min-h-0 flex-1 overflow-auto',
           // Width-fit makes the sheet as wide as the pane and taller than it, so the pane
           // always scrolls vertically. It used to `place-items-center` while fitted, which
           // is exactly what breaks a page taller than its container: centring an

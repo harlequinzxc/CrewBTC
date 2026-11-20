@@ -31,10 +31,17 @@ export interface CardStore {
   readonly setImage: (key: string, transform: ImageTransform) => void
   readonly setBands: (key: string, bands: CardBands, cellHeightMm: number) => void
   readonly reset: () => void
+  /** Put a whole set back, for Undo. Replaces rather than merges. */
+  readonly restoreCards: (cards: Readonly<Record<string, Card>>) => void
 }
 
-export function useCards(): CardStore {
-  const [cards, setCards] = useState<Record<string, Card>>({})
+/**
+ * `restore` seeds the store once, before the first render, so a restored session paints
+ * with its cards already in place rather than flashing empty cards first. Seeding stays
+ * additive on top: `seedCard` still refuses to overwrite, so a restored edit wins.
+ */
+export function useCards(restore?: Readonly<Record<string, Card>> | null): CardStore {
+  const [cards, setCards] = useState<Record<string, Card>>(() => ({ ...restore }))
 
   const patch = useCallback((key: string, change: (card: Card) => Card) => {
     setCards((current) => {
@@ -84,12 +91,26 @@ export function useCards(): CardStore {
   )
 
   const reset = useCallback(() => setCards({}), [])
+  const restoreCards = useCallback(
+    (restored: Readonly<Record<string, Card>>) => setCards({ ...restored }),
+    [],
+  )
 
   // Memoised because `seedCard` is an effect dependency downstream: a fresh object each
   // render would re-run the seeding effect on every render for no reason at all.
   return useMemo(
-    () => ({ cards, setCard, seedCard, setText, setStyle, setImage, setBands, reset }),
-    [cards, setCard, seedCard, setText, setStyle, setImage, setBands, reset],
+    () => ({
+      cards,
+      setCard,
+      seedCard,
+      setText,
+      setStyle,
+      setImage,
+      setBands,
+      reset,
+      restoreCards,
+    }),
+    [cards, setCard, seedCard, setText, setStyle, setImage, setBands, reset, restoreCards],
   )
 }
 

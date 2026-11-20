@@ -11,14 +11,6 @@ export interface SettingsRecord {
   readonly updatedAt: string
 }
 
-export interface BatchRecord {
-  readonly id: string
-  readonly name: string
-  readonly createdAt: string
-  readonly sourceBytes: ArrayBuffer
-  readonly byteLength: number
-}
-
 export interface UiStateRecord {
   readonly id: 'workspace'
   readonly activeFileId: string | null
@@ -28,7 +20,6 @@ export interface UiStateRecord {
 interface PrintStudioSchema extends DBSchema {
   settings: { key: string; value: SettingsRecord }
   templates: { key: string; value: TemplatePreset }
-  batches: { key: string; value: BatchRecord }
   ui: { key: string; value: UiStateRecord }
 }
 
@@ -49,7 +40,6 @@ async function openDatabase(): Promise<Database> {
       if (fromVersion < 1) {
         db.createObjectStore('settings', { keyPath: 'id' })
         db.createObjectStore('templates', { keyPath: 'id' })
-        db.createObjectStore('batches', { keyPath: 'id' })
         db.createObjectStore('ui', { keyPath: 'id' })
       }
     },
