@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Sparkles } from 'lucide-react'
 import { useNonPassiveWheel } from '../../lib/use-wheel'
 import { cn } from '../../lib/cn'
 import { containRectMm, MAX_IMAGE_SCALE, MIN_IMAGE_SCALE } from '../../types/card'
@@ -14,6 +15,8 @@ export interface CardZoneImageProps {
   readonly onBeginEdit: () => void
   readonly onEndEdit: () => void
   readonly onChange: (transform: ImageTransform) => void
+  /** Applies this card's bands to every card. Absent when there is nothing to copy to. */
+  readonly onMatchBands?: (() => void) | undefined
 }
 
 const ZOOM_STEP = 0.08
@@ -219,6 +222,27 @@ export function CardZoneImage(props: CardZoneImageProps) {
         </button>
       )}
 
+      {/*
+        "Same margins everywhere", inside the frame only while it is being adjusted: the
+        decision is made while looking at one card's framing, and appearing only in adjust
+        mode means it cannot be pressed by accident while panning.
+      */}
+      {editing && props.onMatchBands !== undefined ? (
+        <button
+          type="button"
+          data-target="dense"
+          aria-label="Use these margins for all cards"
+          title="Same margins on every card"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation()
+            props.onMatchBands?.()
+          }}
+          className="absolute bottom-1 right-1 grid h-6 min-h-6 w-6 place-items-center rounded-sm bg-surface-panel/90 text-ink-primary shadow-md shadow-black/30 hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          <Sparkles aria-hidden className="size-3.5" />
+        </button>
+      ) : null}
     </div>
   )
 }

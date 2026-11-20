@@ -33,6 +33,8 @@ export interface CardProps {
   readonly gesture: TextEditGesture
   /** Present only on the selected card: dividers are a pointer gesture on that one card. */
   readonly onBandsChange?: (bands: Card['bands']) => void
+  /** Gives every card this card's band split. */
+  readonly onMatchBands?: ((bands: Card['bands']) => void) | undefined
 }
 
 /**
@@ -60,7 +62,9 @@ export function Card(props: CardProps) {
       data-cell={props.cellIndex}
       data-page={props.pageLabel}
       className={cn(
-        'absolute overflow-hidden rounded-[1mm] bg-white',
+        // Square corners: a cut card has no radius, and the outline is what the exporter
+        // draws too, so the preview is not rounding something the print keeps sharp.
+        'absolute overflow-hidden bg-white',
         selected ? 'outline outline-2 outline-accent' : 'outline outline-1 outline-zinc-200',
       )}
       style={{
@@ -86,6 +90,7 @@ export function Card(props: CardProps) {
         maxPt={9}
         textScale={card.textScale ?? 1}
         placeholder="Dish code · Dish name"
+        centreVertically
         onBeginEdit={() => props.onBeginTextEdit('header')}
         onChange={(text) => props.onTextChange('header', text)}
         onEndEdit={props.onEndEdit}
@@ -100,6 +105,9 @@ export function Card(props: CardProps) {
         editing={pictureEditing}
         onBeginEdit={props.onBeginPictureEdit}
         onEndEdit={props.onEndPictureEdit}
+        onMatchBands={
+          props.onMatchBands === undefined ? undefined : () => props.onMatchBands?.(card.bands)
+        }
         onChange={props.onImageChange}
       />
 

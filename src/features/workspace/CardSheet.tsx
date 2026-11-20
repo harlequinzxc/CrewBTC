@@ -5,13 +5,13 @@ import type { GridLayout, SheetSettings } from '../../types/imposition'
 import { clampBands } from '../../types/card'
 import { cn } from '../../lib/cn'
 import type { Card } from '../../types/card'
-import { CardTextBar } from './CardTextBar'
+import { TextBarLayer } from './TextBarLayer'
 import { SheetPaper } from './SheetPaper'
 import { blankCard } from './use-cards'
 import { CANVAS_PADDING } from './use-sheet-zoom'
 import { sheetOffsets } from './sheet-stack'
 import { useSheetScroll } from './use-sheet-scroll'
-import { activeStyle, styleInto, styleSelection, textInto } from './card-edits'
+import { activeStyle, bandsInto, styleInto, styleSelection, textInto } from './card-edits'
 import { useTextEditGesture } from './use-text-edit-gesture'
 import { useEditDismissal } from './use-edit-dismissal'
 import type { CardZone } from './Card'
@@ -144,34 +144,22 @@ export function CardSheet(props: CardSheetProps) {
     // `relative` is load-bearing: without it the absolutely-positioned formatting bar
     // resolved against the app root and sat at y=0, over the top bar and Export.
     <div className="relative flex min-h-0 flex-1 flex-col">
-      {/*
-        The formatting bar follows whichever text box has the caret, and it is an overlay
-        rather than a row.
-        
-        In flow it cost 32px of the pane's height the moment you clicked into a text box —
-        the canvas shrank, so everything below the fold moved up under the pointer. That is
-        the same defect as the focus scroll, from the other direction: editing text must
-        not move the page. Floating it leaves the canvas geometry untouched, and because it
-        sits over the top of the sheet it also never covers the box being typed into on the
-        first row.
-      */}
+      {/* Floating overlay; `TextBarLayer` explains why it is not in flow. */}
       {editing !== null && editZone !== null ? (
-        <div className="absolute inset-x-0 top-0 z-20 flex h-8 items-center border-b border-hairline bg-surface-panel px-2 shadow-lg shadow-black/20">
-          <CardTextBar
-            zone={editZone}
-            style={barCard[editZone === 'header' ? 'headerStyle' : 'bodyStyle']}
-            selection={selection}
-            active={activeStyle(barCard, editZone, selection)}
-            onChange={(style) => {
-              const zone = editZone
-              apply(editing.key, (card) =>
-                selection === null
-                  ? styleInto(card, zone, style)
-                  : styleSelection(card, zone, selection, style),
-              )
-            }}
-          />
-        </div>
+        <TextBarLayer
+          zone={editZone}
+          style={barCard[editZone === 'header' ? 'headerStyle' : 'bodyStyle']}
+          selection={selection}
+          active={activeStyle(barCard, editZone, selection)}
+          onChange={(style) => {
+            const zone = editZone
+            apply(editing.key, (card) =>
+              selection === null
+                ? styleInto(card, zone, style)
+                : styleSelection(card, zone, selection, style),
+            )
+          }}
+        />
       ) : null}
 
       <div
@@ -238,6 +226,13 @@ export function CardSheet(props: CardSheetProps) {
               onImageChange={(key, transform) =>
                 apply(key, (current) => ({ ...current, imageTransform: transform }))
               }
+              // Every card takes this one's split. Driven through `onCardChange`, which the
+              // sheet already has, so the workspace stays the only writer.
+              onMatchBands={(bands) => {
+                for (const [key, card] of Object.entries(cards)) {
+                  props.onCardChange(key, bandsInto(card, bands, grid.cellHeightMm))
+                }
+              }}
               onBandsChange={(key, bands) =>
                 apply(key, (current) => ({ ...current, bands: clampBands(bands, grid.cellHeightMm) }))
               }

@@ -11,9 +11,9 @@ import type { Card, RectMm, TextRun } from '../../types/card'
  * Drawing one card onto an output page.
  *
  * Everything here is measured in millimetres and converted once at the drawing call, so
- * the only place points appear is at the boundary. The zone split and the picture
- * rectangle come from `cardZones`/`containRectMm` — the same functions the on-screen
- * card uses — which is what makes the print match the preview rather than resemble it.
+ * points only appear at the boundary. The zone split and the picture rectangle come from
+ * `cardZones`/`containRectMm` — the same functions the on-screen card uses — which is what
+ * makes the print match the preview rather than resemble it.
  */
 
 /** Type sizes a card's boxes start at, before shrinking to fit. */
@@ -53,6 +53,8 @@ interface PaintTextInput {
   readonly highlight: string | null
   readonly uppercase?: boolean
   readonly align?: 'left' | 'center'
+  /** Centres a short block in its band; the steps box starts at the top instead. */
+  readonly centreVertically: boolean
   readonly maxPt: number
   readonly fallback: RGB
   readonly rgb: (r: number, g: number, b: number) => RGB
@@ -89,14 +91,11 @@ function paintText(input: PaintTextInput): void {
     { paddingMm: PADDING_MM },
   )
 
-  // Centre a short block in its band, exactly as the preview does. `layoutBand` places the
-  // first baseline `padding + size` below the box top; when the block is shorter than the
-  // inner height, half the remainder belongs above it.
   const blockMm = layout.lines.length * layout.sizePt * LINE_HEIGHT * ptToMm(1)
   // Never lifts an overflowing block: slack is what the inner box has left over, so text
   // cannot be drawn outside its own band.
   const slackMm = Math.max(0, zone.heightMm - 2 * PADDING_MM - blockMm)
-  const centreMm = slackMm / 2
+  const centreMm = input.centreVertically ? slackMm / 2 : 0
 
   const inkOf = (hex: string): RGB => hexToRgb(hex, input.fallback, input.rgb)
 
@@ -182,6 +181,7 @@ export async function drawCard(input: DrawCardInput): Promise<boolean> {
     highlight: card.headerStyle.highlight,
     ...(card.headerStyle.uppercase === undefined ? {} : { uppercase: card.headerStyle.uppercase }),
     ...(card.headerStyle.align === undefined ? {} : { align: card.headerStyle.align }),
+    centreVertically: true,
     maxPt: HEADER_MAX_PT * (card.textScale ?? 1),
     fallback: black,
     rgb: input.lib.rgb,
@@ -197,6 +197,7 @@ export async function drawCard(input: DrawCardInput): Promise<boolean> {
     highlight: card.bodyStyle.highlight,
     ...(card.bodyStyle.uppercase === undefined ? {} : { uppercase: card.bodyStyle.uppercase }),
     ...(card.bodyStyle.align === undefined ? {} : { align: card.bodyStyle.align }),
+    centreVertically: false,
     maxPt: FOOTER_MAX_PT * (card.textScale ?? 1),
     fallback: black,
     rgb: input.lib.rgb,

@@ -99,6 +99,13 @@ describe('formatting a text box', () => {
     expect(screen.getByText('bottom text')).toBeInTheDocument()
   })
 
+  it('says nothing when it will restyle the whole box', () => {
+    // The quiet "whole box" label was removed: it described the ordinary state and spent
+    // room the presets need.
+    render(<CardTextBar {...base} />)
+    expect(screen.queryByText('whole box')).not.toBeInTheDocument()
+  })
+
   it('says when it will restyle only a selection', () => {
     render(<CardTextBar {...base} selection={{ start: 2, end: 7 }} />)
     expect(screen.getByText('selection')).toBeInTheDocument()
