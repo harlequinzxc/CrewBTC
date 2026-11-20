@@ -61,16 +61,17 @@ export interface GridLayout {
 export const DEFAULT_SHEET: SheetSettings = {
   sheetWidthMm: 210,
   sheetHeightMm: 297,
-  cellWidthMm: 64,
-  cellHeightMm: 90,
+  cellWidthMm: 52,
+  cellHeightMm: 67,
   gutterMm: 4,
   marginMm: 4,
   rotateCells: false,
-  // 3 x 3 on A4: a 64 x 90 mm card, 83% of the paper, no unused bands.
-  // 13 + 57 + 20 = 90 — a title, the dish photo, then the instruction box, which
-  // needs more room than a caption because plating steps run to several lines.
-  headerMm: 13,
-  footerMm: 20,
+  // 3 x 4 on A4: twelve 52 x 67 mm cards, 67% of the paper used.
+  // The zones below are only the fallback for a card that has no bands of its own —
+  // `defaultBands(67)` derives 10 / 15, leaving a 42 mm photo. Every card tunes its
+  // own split in the band panel, so these two numbers are never the last word.
+  headerMm: 10,
+  footerMm: 15,
 }
 
 export const SHEET_PRESETS = [

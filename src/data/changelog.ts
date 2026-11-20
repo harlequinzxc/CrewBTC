@@ -8,6 +8,18 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '1.1.0',
+    date: '2026-11-19',
+    title: 'Twelve cards per sheet, and a README written for people who print things',
+    highlights: [
+      'Default sheet now holds twelve 52 x 67 mm cards — three across, four down — instead of nine larger ones',
+      'Each card starts at 10 / 42 / 15 mm, derived from the cell height rather than fixed, so a different card size still gets a sensible split',
+      'Reset in the band panel now returns to that per-card default instead of a hardcoded 13 / 20 tuned for the old 90 mm card',
+      'The export panel no longer claims pages are embedded as vectors — it says what actually happens: vector text, photos at their extracted resolution',
+      'README rewritten for the people using the app; build commands, architecture and release process moved to CONTRIBUTING.md',
+    ],
+  },
+  {
     version: '1.0.3',
     date: '2026-11-19',
     title: 'A deploy must reach a running client — now an engineering rule',
