@@ -183,10 +183,10 @@ export function CardZoneText(props: CardZoneTextProps) {
           const end = field.selectionEnd
           props.onSelectionChange(end > start ? { start, end } : null)
         }}
+        // Every property here matches `DrawnCardText`, so a caret is the only difference
+        // between the two states. They used to differ in padding (a Tailwind step against
+        // a scaled millimetre inset), surface and corner radius — which is the jump.
         className="zone-box absolute resize-none overflow-hidden rounded-sm border-0 bg-white/95 outline outline-2 outline-accent"
-        // Same 0.8 mm inset as the drawn text, so the caret starts where the glyphs will.
-        // Without it the field's own padding made the first character jump left by 4px
-        // the moment editing ended.
         style={{
           left: px(xMm),
           top: px(yMm),
@@ -225,6 +225,8 @@ export function CardZoneText(props: CardZoneTextProps) {
           props.onEndEdit()
         }
       }}
+      // The field's own padding, so the two states cannot drift apart.
+      insetPx={px(PADDING_MM)}
       box={{
         left: px(xMm),
         top: px(yMm),
@@ -232,7 +234,13 @@ export function CardZoneText(props: CardZoneTextProps) {
         height: px(heightMm),
         fontSize,
         lineHeight: `${lineHeight}px`,
-        fontWeight: 400,
+        color: style.color,
+        fontWeight: style.bold ? 700 : 400,
+        // The paper white the field paints: nothing changes when the caret arrives.
+        background: style.highlight ?? 'rgba(255,255,255,0.95)',
+        // `rounded-sm` in this Tailwind build, written out: the class is on the field and
+        // inline styles beat utilities, so the drawn box has to carry the same value.
+        borderRadius: '0.25rem',
       }}
     />
   )

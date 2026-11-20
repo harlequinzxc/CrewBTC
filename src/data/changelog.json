@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.8.3",
+    "date": "2026-11-19",
+    "title": "The text box no longer changes when you click into it, and the formatting bar stopped covering the header",
+    "highlights": [
+      "Fixed: clicking a card\u2019s text made it jump. The drawn box and the field you type into were two different boxes \u2014 the drawn one carried a 4px padding and sat on the bare card, while the focused one carried 0.8mm of padding on a near-white plate with rounded corners. The moment the caret arrived, every letter moved. The drawn box now uses the focused box\u2019s measurements, colour and plate, so what you see before clicking is exactly what you get after",
+      "Fixed: the formatting toolbar appeared across the very top of the window, over the zoom controls and the Export button. The bar is positioned against its nearest positioned ancestor, and the sheet had none \u2014 so the bar climbed all the way to the app root. One missing class; it now sits at the top of the canvas, below the header, and Export is never covered",
+      "Both are now held by tests that were shown to fail on the old code first: the box is compared before and after the caret arrives on seven computed properties and on the exact pixel the type starts at, and the bar is checked to start below the header and below Export",
+      "Described in full, the bar offers: the zone name, whether you are restyling the whole box or just the selection, a Bold toggle, four text colours and four highlight colours plus an off switch \u2014 and every control keeps your selection alive when you click it"
+    ]
+  },
+  {
     "version": "1.8.2",
     "date": "2026-11-20",
     "title": "The text box stops closing itself, and only one sheet opens it",
