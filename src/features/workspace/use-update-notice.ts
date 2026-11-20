@@ -48,6 +48,7 @@ export function useUpdateNotice(onAvailable: () => void): UpdateNotice {
   }, [onAvailable])
   const announcedRef = useRef(false)
   const settleRef = useRef(false)
+  const checkingRef = useRef(false)
 
   useEffect(() => {
     // Read it once: `navigator.serviceWorker` is absent in jsdom, in some embedded
@@ -74,8 +75,42 @@ export function useUpdateNotice(onAvailable: () => void): UpdateNotice {
     }
 
     workers.addEventListener('controllerchange', onControllerChange)
+
+    /*
+      Ask the browser whether a newer worker exists — twice.
+
+      `autoUpdate` installs and activates a new worker by itself, but only once the browser
+      has *checked*, and by default that happens on navigation. So a tab left open keeps
+      running the build it started with, and the user's experience is "I have to reload a
+      few times before the update takes": the first reload starts a check, the check finds
+      the worker, the worker activates, and the *next* load is the new build.
+
+      Registering the same URL again is the documented way to trigger that check. Doing it
+      at mount and once shortly after costs nothing and collapses three reloads into one.
+    */
+    const check = (): void => {
+      if (checkingRef.current) return
+      checkingRef.current = true
+      // Optional: a partial implementation, or a test double, may not have it. A missing
+      // update check is worth nothing and must never be worth a crash.
+      const getRegistration = workers.getRegistration?.bind(workers)
+      if (getRegistration === undefined) {
+        checkingRef.current = false
+        return
+      }
+      void Promise.resolve(getRegistration('/'))
+        .then((registration) => registration?.update())
+        .catch(() => undefined)
+        .finally(() => {
+          checkingRef.current = false
+        })
+    }
+    check()
+    const second = window.setTimeout(check, 4000)
+
     return () => {
       window.clearTimeout(timer)
+      window.clearTimeout(second)
       workers.removeEventListener('controllerchange', onControllerChange)
     }
   }, [])

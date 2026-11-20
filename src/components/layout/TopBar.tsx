@@ -1,6 +1,10 @@
 import { Maximize2, Minus, PanelRightClose, PanelRightOpen, Plus, Settings2 } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { ExportControl } from './ExportControl'
+import { CHANGELOG } from '../../data/changelog'
+
+/** The shipped build, read from the changelog so the two cannot drift apart. */
+const APP_VERSION = CHANGELOG[0]?.version ?? 'unknown'
 import { APP_NAME } from '../../config/brand'
 import { MAX_ZOOM, MIN_ZOOM, zoomPercent } from '../../lib/zoom'
 
@@ -61,6 +65,15 @@ export function TopBar(props: TopBarProps) {
           className="size-5 shrink-0 rounded-[5px]"
         />
         <span className="text-[13px] font-medium tracking-tight text-ink-primary">{APP_NAME}</span>
+        {/*
+          The version, quietly. It answers "am I actually running the build I think I am?"
+          — a question this app forces on you, because it is a PWA and an update only takes
+          over once the page has been reloaded into it. Muted and small: it is a fact, not
+          a control.
+        */}
+        <span className="tabular text-[10px] leading-none text-ink-muted/70" aria-label={`Version ${APP_VERSION}`}>
+          v{APP_VERSION}
+        </span>
       </div>
 
       <div className="ml-2 flex items-center gap-2 border-l border-hairline pl-3">

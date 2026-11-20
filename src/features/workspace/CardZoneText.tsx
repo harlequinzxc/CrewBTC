@@ -56,11 +56,18 @@ export function CardZoneText(props: CardZoneTextProps) {
    * field is in the DOM before the browser would have handled that press, and focusing it
    * here closes the window in which nothing is focused (a stray `blur` there ended the
    * edit immediately). The effect covers edits that begin any other way.
+   *
+   * The caret goes to the **end**, not to a selection. It used to `select()` the lot, which
+   * makes the first keystroke replace the whole dish name — type one character into
+   * "Kung Pao Chicken" and you are left with "X". That is indistinguishable from the text
+   * being broken, and it is the reason editing felt like it was not working at all.
+   * Selecting everything is only helpful for an empty box, where there is nothing to lose.
    */
   const takeFocus = useCallback((field: HTMLTextAreaElement | null) => {
     if (field === null) return
     field.focus({ preventScroll: true })
-    field.select()
+    const end = field.value.length
+    field.setSelectionRange(end, end)
   }, [])
 
   useEffect(() => {
