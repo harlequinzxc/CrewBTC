@@ -37,13 +37,15 @@ describe('inspector numeric fields', () => {
   it('does the same for the sheet size pair and the select', () => {
     render(
       <SizePair
-        first={{ name: 'Cell width', value: 52, error: undefined, onChange: () => undefined }}
-        second={{ name: 'Cell height', value: 67, error: undefined, onChange: () => undefined }}
+        first={{ name: 'Cell width', valueMm: 52, units: 'mm', error: undefined, onChangeMm: () => undefined }}
+        second={{ name: 'Cell height', valueMm: 67, units: 'mm', error: undefined, onChangeMm: () => undefined }}
       />,
     )
     expect(shell(screen.getByLabelText('Cell width')).className).toContain('border-hairline-strong')
 
-    render(<SizeField name="Gutter" value={4} error={undefined} onChange={() => undefined} />)
-    expect(shell(screen.getByLabelText('Gutter')).className).toContain('border-hairline-strong')
+    render(
+      <SizeField name="Spacing" valueMm={4} units="mm" error={undefined} onChangeMm={() => undefined} />,
+    )
+    expect(shell(screen.getByLabelText('Spacing')).className).toContain('border-hairline-strong')
   })
 })

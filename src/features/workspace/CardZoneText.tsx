@@ -32,6 +32,8 @@ const PT_TO_MM = 25.4 / 72
 
 /** Line pitch, matching the exporter so a break lands on the same line in both. */
 const LINE_HEIGHT = 1.25
+/** The exporter's band padding (`PADDING_MM` in `draw-card`). Previews must match it. */
+const PADDING_MM = 0.8
 
 /** Approximate width of a character at a given size, used for on-screen wrapping only. */
 const measure = (text: string, sizePt: number): number => text.length * sizePt * 0.5 * PT_TO_MM
@@ -92,12 +94,13 @@ export function CardZoneText(props: CardZoneTextProps) {
   // room to spare — dividing that room either side is what makes a hand-tuned tall band
   // look deliberate, instead of leaving one conspicuous gap under the words.
   const blockMm = layout.lines.length * layout.sizePt * LINE_HEIGHT * PT_TO_MM
+  const innerMm = Math.max(0, heightMm - PADDING_MM * 2)
   // Slack is what the inner box has left over, never less than nothing. A block that
-  // overflows (the layout keeps a legibility floor, so a very short band can hold more
-  // than it should) therefore gets no offset at all and is clipped at the box edge, rather
-  // than being lifted until it covers the card above it.
-  const slackMm = Math.max(0, heightMm - 2 * 0.8 - blockMm)
-  const centreMm = slackMm / 2
+  // overflows gets no offset at all rather than being lifted until it covers the card
+  // above it; the box below clips it, which is the backstop, not the plan — `layoutBand`
+  // has already picked a size that fits, and only a band dragged shorter than its own
+  // type can get here.
+  const centreMm = Math.max(0, innerMm - blockMm) / 2
 
   // Lines are placed on the band's own rhythm so the drawn block is no taller than the
   // block `layoutBand` measured — the check that guarantees it fits. `yMm` is the baseline
@@ -127,12 +130,16 @@ export function CardZoneText(props: CardZoneTextProps) {
           const end = field.selectionEnd
           props.onSelectionChange(end > start ? { start, end } : null)
         }}
-        className="zone-box absolute resize-none overflow-hidden rounded-sm border-0 bg-white/95 p-1 outline outline-2 outline-accent"
+        className="zone-box absolute resize-none overflow-hidden rounded-sm border-0 bg-white/95 outline outline-2 outline-accent"
+        // Same 0.8 mm inset as the drawn text, so the caret starts where the glyphs will.
+        // Without it the field's own padding made the first character jump left by 4px
+        // the moment editing ended.
         style={{
           left: px(xMm),
           top: px(yMm),
           width: px(widthMm),
           height: px(heightMm),
+          padding: px(PADDING_MM),
           fontSize,
           lineHeight: `${lineHeight}px`,
           color: style.color,

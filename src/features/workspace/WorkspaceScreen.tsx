@@ -18,9 +18,8 @@ import type { Card } from '../../types/card'
 import { useUpdateNotice } from './use-update-notice'
 import { reloadPage } from './reload-page'
 import { SettingsDialog } from '../settings/SettingsDialog'
-import { computePageGeometry } from '../../lib/trim'
 import { readSettings, requestPersistence, writeSettings } from '../../lib/storage/db'
-import { DEFAULT_PAGE_SETTINGS } from '../../types/settings'
+import { DEFAULT_PAGE_SETTINGS, normalisePageSettings } from '../../types/settings'
 import type { PageSettings } from '../../types/settings'
 import type { useToasts } from '../../components/ui/use-toasts'
 
@@ -37,8 +36,6 @@ export interface WorkspaceScreenProps {
 
 export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const [settings, setSettings] = useState<PageSettings>(DEFAULT_PAGE_SETTINGS)
-  const [includeBleed, setIncludeBleed] = useState(true)
-  const [drawMarks, setDrawMarks] = useState(false)
   // Cut guides are on by default: the sheet is a cutting template as much as a preview.
   const [showCutMarks, setShowCutMarks] = useState(true)
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
@@ -93,7 +90,10 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
 
   useEffect(() => {
     void (async () => {
-      const previous = await readSettings()
+      // A record written by an older build carries trim and bleed it can no longer use;
+      // normalise rather than trusting the shape, so an upgrade never hands the interface
+      // a `units` value it does not understand or an object it expects to be current.
+      const previous = normalisePageSettings(await readSettings())
       if (previous !== null) setSettings(previous)
       await requestPersistence()
     })()
@@ -116,8 +116,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
       if (files.length > 0) batch.addFiles(files)
     })()
   }, [batch])
-
-  const geometry = computePageGeometry(settings)
 
   // The inspector describes a card when one is selected and the document when it is not.
   const selectionKey = selectedCardKey(selectedCell, sheet.grid, pageRefs)
@@ -214,6 +212,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           onBandsChange={handleBands}
           onTextScaleChange={handleTextScale}
           onResetCard={handleResetCard}
+          units={settings.units}
           sheet={sheet.settings}
           grid={sheet.grid}
           sheetErrors={sheet.errors}
@@ -221,14 +220,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           onResetSheet={sheet.reset}
           showCutMarks={showCutMarks}
           onShowCutMarksChange={setShowCutMarks}
-          page={settings}
-          onPageChange={updateSettings}
-          includeBleed={includeBleed}
-          onIncludeBleedChange={setIncludeBleed}
-          drawMarks={drawMarks}
-          onDrawMarksChange={setDrawMarks}
-          marksFit={geometry.marksFit}
-          bleedMm={geometry.bleedMm}
         />
       </main>
 

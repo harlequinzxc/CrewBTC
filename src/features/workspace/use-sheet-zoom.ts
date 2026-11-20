@@ -32,6 +32,17 @@ export const CANVAS_PADDING = 24
 
 export function useSheetZoom(sheetWidthMm: number, sheetHeightMm: number): SheetZoom {
   const [manualScale, setManualScale] = useState<number | null>(null)
+
+  /**
+   * Leave Fit mode.
+   *
+   * Every manual change comes through here, which is what keeps the pressed state
+   * honest: Fit is lit only while `manualScale` is null, and any gesture that picks a
+   * scale — `-`, `+`, Ctrl/Cmd+wheel — clears it in the same event as the gesture. The
+   * value is never *derived* into non-null, so there is no render where a hand-chosen
+   * 100% could still be labelled fitted.
+   */
+  const pin = (next: number): void => setManualScale(next)
   const [measureRef, size] = useElementSize<HTMLDivElement>()
 
   const scale =
@@ -53,7 +64,7 @@ export function useSheetZoom(sheetWidthMm: number, sheetHeightMm: number): Sheet
   const wheelRef = useNonPassiveWheel<HTMLDivElement>((event) => {
     if (!event.ctrlKey && !event.metaKey) return
     event.preventDefault()
-    setManualScale(wheelZoom(wheelScale.current, event.deltaY))
+    pin(wheelZoom(wheelScale.current, event.deltaY))
   })
 
   // Two things need this node: the measurer (a callback ref) and the wheel listener (an
@@ -72,8 +83,11 @@ export function useSheetZoom(sheetWidthMm: number, sheetHeightMm: number): Sheet
     paneRef: attach,
     scale,
     fitting: manualScale === null,
-    setScale: setManualScale,
-    step: (direction) => setManualScale(direction === 1 ? nextZoom(scale) : previousZoom(scale)),
+    setScale: (next) => {
+      if (next === null) setManualScale(null)
+      else pin(next)
+    },
+    step: (direction) => pin(direction === 1 ? nextZoom(scale) : previousZoom(scale)),
     fit: () => setManualScale(null),
   }
 }

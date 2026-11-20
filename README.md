@@ -37,8 +37,8 @@ text underneath.
 
 **Prints properly.** Export gives you a real PDF at print resolution. Text is drawn as
 vector text, so it stays crisp at any size, and the sheet comes out exactly as it
-looked on screen — same words, same colours, same photo position — with crop marks
-for cutting.
+looked on screen — same words, same colours, same photo position — with the cut guides
+you turned on drawn into the file.
 
 ## The screen
 
@@ -48,11 +48,15 @@ Three columns and a bar across the top:
   button.
 - **The sheet** in the middle, as big as the window allows.
 - **The inspector** on the right, 260px. It shows the document's own settings — sheet
-  size, cell size, gutter, margin, rotation, cut guides, bleed — and when you select a
-  card it puts that card's **Top**, **Bottom** and **Text** numbers above them.
+  size, cell size, spacing, margin, rotation, cut guides — and when you select a card it
+  puts that card's **Top**, **Bottom** and **Text** numbers above them.
+- **The gear** opens settings over the sheet rather than on a page of its own: units,
+  reduced motion, and the changelog folded into one row that names the version you are on.
 
-The gear opens settings over the sheet rather than on a page of its own: trim and bleed,
-reduced motion, and the changelog folded into one row that names the version you are on.
+Measurements read in millimetres, centimetres or inches, and the choice is applied to
+every field at once — the inspector, the sheet size, the card boxes. Changing it converts
+the display and nothing else: the document is stored and printed in millimetres either
+way, so 21 cm and 210 mm are the same sheet.
 
 ## Zooming the sheet
 

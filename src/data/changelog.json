@@ -1,5 +1,21 @@
 [
   {
+    "version": "1.5.0",
+    "date": "2026-11-20",
+    "title": "One unit for the whole sheet, and the dead print controls are gone",
+    "highlights": [
+      "Units now offers millimetres, centimetres and inches, and the choice converts every field at once \u2014 the inspector, the sheet size, the cell size and the card boxes all read in the unit you picked",
+      "Nothing is stored in your chosen unit: dimensions stay millimetres in the document and in the exported PDF, so 21 cm and 210 mm are the same sheet and switching units cannot shift a value",
+      "Bleed, Trim marks and the Trim size dropdown have been removed. They never reached the file \u2014 the page was always the sheet's own size, and no trim mark was ever drawn \u2014 so they now stop promising one",
+      "The space between cards is called Spacing instead of Gutter",
+      "Number fields are 24px with no internal padding, so a number and its unit sit together instead of floating in an empty box; the inspector's rows and section padding are tightened to match",
+      "The header shows the app's real icon rather than a lettered red square",
+      "Text in a card's boxes is clipped to its own box with the exporter's own padding, so a short band can never bleed type into the photo or the next card",
+      "Fit is lit only while the sheet is actually fitted; any manual zoom clears it in the same gesture",
+      "The explanatory line under Print output is gone, along with the section it described"
+    ]
+  },
+    {
     "version": "1.4.2",
     "date": "2026-11-20",
     "title": "The photo gets the room the words do not need",

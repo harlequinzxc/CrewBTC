@@ -126,6 +126,7 @@ describe('the inspector drives the same values the sliders used to', () => {
       card={props.card ?? model()}
       cellIndex={0}
       cellHeightMm={67}
+      units="mm"
       onBandsChange={props.onBandsChange ?? vi.fn()}
       onTextScaleChange={props.onTextScaleChange ?? vi.fn()}
       onReset={vi.fn()}

@@ -4,16 +4,21 @@ import { Select, SizeField, SizePair } from './fields'
 import { Section } from './Section'
 import { Switch } from './Switch'
 import { SHEET_PRESETS } from '../../../types/imposition'
-import { TRIM_PRESETS } from '../../../types/settings'
 import type { GridLayout, SheetSettings as SheetSettingsValue } from '../../../types/imposition'
-import type { PageSettings } from '../../../types/settings'
+import type { UnitSystem } from '../../../lib/units'
 
 /**
- * The sheet, the cells, and the print marks — the document's own properties.
+ * The sheet and the cells — the document's own properties.
  *
  * Always the second section, and the first one only when nothing is selected. Rows are
- * label-left / control-right at 30px, so seven settings fit in the height the old panel
- * spent on two of them.
+ * label-left / control-right at 24px, so the whole grid setup fits without scrolling.
+ *
+ * Every length here is stored in millimetres and shown in whatever unit the document is
+ * set to, so switching to centimetres converts this panel and Settings together.
+ *
+ * There is no trim, bleed or trim-mark row. Those controls were here and did not reach
+ * the exporter; the sheet's own size is what the page is built from, and that is the
+ * Preset and Size rows below.
  */
 export interface SheetSectionProps {
   readonly sheet: SheetSettingsValue
@@ -21,16 +26,9 @@ export interface SheetSectionProps {
   readonly errors: Readonly<Record<string, string>>
   readonly onChange: (patch: Partial<SheetSettingsValue>) => void
   readonly onReset: () => void
-  readonly page: PageSettings
-  readonly onPageChange: (settings: PageSettings) => void
+  readonly units: UnitSystem
   readonly showCutMarks: boolean
   readonly onShowCutMarksChange: (value: boolean) => void
-  readonly includeBleed: boolean
-  readonly onIncludeBleedChange: (value: boolean) => void
-  readonly drawMarks: boolean
-  readonly onDrawMarksChange: (value: boolean) => void
-  readonly marksFit: boolean
-  readonly bleedMm: number
 }
 
 export function SheetSection(props: SheetSectionProps) {
@@ -42,18 +40,12 @@ export function SheetSection(props: SheetSectionProps) {
         Math.abs(preset.heightMm - sheet.sheetHeightMm) < 0.5,
     )?.id ?? 'custom'
 
-  // A trim size the marks cannot sit outside of turns them off rather than silently
-  // drawing them over the artwork; the switch reflects that instead of lying.
-  const marksAvailable = props.marksFit && props.bleedMm > 0
-
   return (
     <Section
-      // "Sheet & print" only once there is print output to describe; a bare sheet is a
-      // sheet, and the title should not promise settings that are not on screen.
-      title={props.bleedMm > 0 || props.marksFit ? 'Sheet & print' : 'Sheet'}
+      title="Sheet & print"
       action={<ResetButton label="Reset sheet settings" onClick={props.onReset} />}
     >
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1">
         <Row label="Preset">
           <Select
             label="Sheet preset"
@@ -72,33 +64,38 @@ export function SheetSection(props: SheetSectionProps) {
 
         <Row label="Size">
           <SizePair
-            first={{ name: 'Sheet width', value: sheet.sheetWidthMm, error: errors.sheetWidthMm, onChange: (sheetWidthMm) => onChange({ sheetWidthMm }) }}
-            second={{ name: 'Sheet height', value: sheet.sheetHeightMm, error: errors.sheetHeightMm, onChange: (sheetHeightMm) => onChange({ sheetHeightMm }) }}
+            first={{ name: 'Sheet width', valueMm: sheet.sheetWidthMm, units: props.units, error: errors.sheetWidthMm, onChangeMm: (sheetWidthMm) => onChange({ sheetWidthMm }) }}
+            second={{ name: 'Sheet height', valueMm: sheet.sheetHeightMm, units: props.units, error: errors.sheetHeightMm, onChangeMm: (sheetHeightMm) => onChange({ sheetHeightMm }) }}
           />
         </Row>
 
         <Row label="Cell">
           <SizePair
-            first={{ name: 'Cell width', value: sheet.cellWidthMm, error: errors.cellWidthMm, onChange: (cellWidthMm) => onChange({ cellWidthMm }) }}
-            second={{ name: 'Cell height', value: sheet.cellHeightMm, error: errors.cellHeightMm, onChange: (cellHeightMm) => onChange({ cellHeightMm }) }}
+            first={{ name: 'Cell width', valueMm: sheet.cellWidthMm, units: props.units, error: errors.cellWidthMm, onChangeMm: (cellWidthMm) => onChange({ cellWidthMm }) }}
+            second={{ name: 'Cell height', valueMm: sheet.cellHeightMm, units: props.units, error: errors.cellHeightMm, onChangeMm: (cellHeightMm) => onChange({ cellHeightMm }) }}
           />
         </Row>
 
-        <Row label="Gutter">
+        {/* "Spacing", not "gutter": it is the space between cards, measured like every
+            other length on this sheet. The model keeps `gutterMm` because that is the
+            imposition's own word for it. */}
+        <Row label="Spacing">
           <SizeField
-            name="Gutter"
-            value={sheet.gutterMm}
+            name="Spacing"
+            valueMm={sheet.gutterMm}
+            units={props.units}
             error={errors.gutterMm}
-            onChange={(gutterMm) => onChange({ gutterMm })}
+            onChangeMm={(gutterMm) => onChange({ gutterMm })}
           />
         </Row>
 
         <Row label="Margin">
           <SizeField
             name="Margin"
-            value={sheet.marginMm}
+            valueMm={sheet.marginMm}
+            units={props.units}
             error={errors.marginMm}
-            onChange={(marginMm) => onChange({ marginMm })}
+            onChangeMm={(marginMm) => onChange({ marginMm })}
           />
         </Row>
 
@@ -117,55 +114,11 @@ export function SheetSection(props: SheetSectionProps) {
             onChange={props.onShowCutMarksChange}
           />
         </Row>
-
-        <Row label="Bleed">
-          <Switch
-            label="Include bleed"
-            checked={props.includeBleed}
-            disabled={props.bleedMm === 0}
-            onChange={props.onIncludeBleedChange}
-          />
-        </Row>
-
-        <Row label="Trim marks">
-          <Switch
-            label="Draw trim marks"
-            checked={props.drawMarks}
-            disabled={!marksAvailable}
-            onChange={props.onDrawMarksChange}
-          />
-        </Row>
-
-        <Row label="Trim">
-          <Select
-            label="Trim size"
-            value={
-              TRIM_PRESETS.find(
-                (preset) =>
-                  preset.widthMm === props.page.trimWidthMm &&
-                  preset.heightMm === props.page.trimHeightMm,
-              )?.id ?? 'custom'
-            }
-            options={[
-              ...TRIM_PRESETS.map((preset) => ({ value: preset.id, label: preset.label })),
-              { value: 'custom', label: 'Custom' },
-            ]}
-            onChange={(id) => {
-              const preset = TRIM_PRESETS.find((item) => item.id === id)
-              if (preset === undefined) return
-              props.onPageChange({
-                ...props.page,
-                trimWidthMm: preset.widthMm,
-                trimHeightMm: preset.heightMm,
-              })
-            }}
-          />
-        </Row>
       </div>
 
       {/* The grid's arithmetic is the one number worth showing: it is the difference
           between twelve cards and eight, and it is not otherwise visible anywhere. */}
-      <p className="tabular mt-2.5 flex items-center justify-between text-[10px] text-ink-muted">
+      <p className="tabular mt-2 flex items-center justify-between text-[10px] text-ink-muted">
         <span>
           {props.grid.columns} × {props.grid.rows} · {props.grid.cellCount} cells
         </span>
@@ -174,4 +127,3 @@ export function SheetSection(props: SheetSectionProps) {
     </Section>
   )
 }
-

@@ -2,7 +2,7 @@ import { CardSection } from './inspector/CardSection'
 import { SheetSection } from './inspector/SheetSection'
 import type { Card, CardBands } from '../../types/card'
 import type { GridLayout, SheetSettings as SheetSettingsValue } from '../../types/imposition'
-import type { PageSettings } from '../../types/settings'
+import type { UnitSystem } from '../../lib/units'
 
 /**
  * The right rail: whatever is selected, nothing more.
@@ -20,6 +20,8 @@ export interface InspectorProps {
   readonly card: Card | null
   readonly cellIndex: number | null
   readonly cellHeightMm: number
+  /** The document's display unit. Every length in this pane is converted with it. */
+  readonly units: UnitSystem
   readonly onBandsChange: (bands: CardBands) => void
   readonly onTextScaleChange: (scale: number) => void
   readonly onResetCard: () => void
@@ -31,15 +33,6 @@ export interface InspectorProps {
   readonly sheetErrors: Readonly<Record<string, string>>
   readonly onSheetChange: (patch: Partial<SheetSettingsValue>) => void
   readonly onResetSheet: () => void
-
-  readonly page: PageSettings
-  readonly onPageChange: (settings: PageSettings) => void
-  readonly includeBleed: boolean
-  readonly onIncludeBleedChange: (value: boolean) => void
-  readonly drawMarks: boolean
-  readonly onDrawMarksChange: (value: boolean) => void
-  readonly marksFit: boolean
-  readonly bleedMm: number
 }
 
 export function Inspector(props: InspectorProps) {
@@ -53,6 +46,7 @@ export function Inspector(props: InspectorProps) {
           card={props.card}
           cellIndex={props.cellIndex}
           cellHeightMm={props.cellHeightMm}
+          units={props.units}
           onBandsChange={props.onBandsChange}
           onTextScaleChange={props.onTextScaleChange}
           onReset={props.onResetCard}
@@ -65,16 +59,9 @@ export function Inspector(props: InspectorProps) {
         errors={props.sheetErrors}
         onChange={props.onSheetChange}
         onReset={props.onResetSheet}
+        units={props.units}
         showCutMarks={props.showCutMarks}
         onShowCutMarksChange={props.onShowCutMarksChange}
-        page={props.page}
-        onPageChange={props.onPageChange}
-        includeBleed={props.includeBleed}
-        onIncludeBleedChange={props.onIncludeBleedChange}
-        drawMarks={props.drawMarks}
-        onDrawMarksChange={props.onDrawMarksChange}
-        marksFit={props.marksFit}
-        bleedMm={props.bleedMm}
       />
     </aside>
   )

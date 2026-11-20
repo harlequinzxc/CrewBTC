@@ -62,6 +62,9 @@ export async function readSettings(): Promise<PageSettings | null> {
   return record?.settings ?? null
 }
 
+/** What is actually on disk: an older build may have written more fields than we read. */
+export type StoredSettings = PageSettings
+
 export async function writeSettings(settings: PageSettings): Promise<void> {
   const db = await getDb()
   const record: SettingsRecord = { id: 'page', settings, updatedAt: new Date().toISOString() }

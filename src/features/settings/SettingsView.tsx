@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { ChevronRight } from 'lucide-react'
-import { NumberField } from '../../components/ui/NumberField'
 import { Switch } from '../workspace/inspector/Switch'
 import { useMotion } from './use-motion'
 import type { PageSettings } from '../../types/settings'
-import { LIMITS } from '../../types/settings'
-import { validatePageSettings } from '../../lib/trim'
+import { UNIT_ORDER, UNITS } from '../../lib/units'
+import type { UnitSystem } from '../../lib/units'
 import { CHANGELOG } from '../../data/changelog'
 import { cn } from '../../lib/cn'
 
@@ -17,41 +16,21 @@ export interface SettingsViewProps {
 /**
  * Settings, in the inspector's own language: titled sections, label-left rows, no prose.
  *
- * General preferences come first, because they are the reason most people open this: the
- * unit they read every number in, and whether the interface moves. Print output follows —
- * it changes less often — and the changelog is not a preference at all, so it is a single
- * collapsed row at the bottom: closed, it costs one line and tells you the version you are
- * on; open, it is the release history.
+ * One section, because there is one preference that changes anything: the unit the whole
+ * interface reads in. Units sits first because it is what people open this dialog for, and
+ * because everything else that can be measured — the sheet, the cells, the spacing, a
+ * card's boxes — already follows it.
  *
- * The print fields are *global defaults*: they set the paper every sheet is built on, and
- * they are what an export uses. The inspector's sheet panel stays focused on the active
- * sheet — its gutter and margin — so the two panels never present the same number twice
- * without saying which is which.
+ * The changelog is not a preference, so it is a single collapsed row at the bottom: closed,
+ * it costs one line and tells you the version you are on; open, it is the release history.
+ *
+ * Trim, bleed and crop marks are deliberately absent. They were here, and none of them
+ * reached the exporter.
  */
 export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) {
   const { choice, setChoice } = useMotion()
-  const validation = validatePageSettings(settings)
   const [notesOpen, setNotesOpen] = useState(false)
   const latest = CHANGELOG[0]
-
-  const numberField = (
-    key: 'trimWidthMm' | 'trimHeightMm' | 'bleedMm' | 'markMarginMm',
-    label: string,
-  ): React.ReactNode => (
-    <div key={key} className="flex flex-col gap-1">
-      <span className="text-[11px] text-ink-secondary">{label}</span>
-      <NumberField
-        label=""
-        name={label}
-        suffix="mm"
-        value={settings[key]}
-        min={0}
-        step={0.5}
-        onChange={(next) => onSettingsChange({ ...settings, [key]: next })}
-        className={cn(validation.errors[key] === undefined ? undefined : 'border-accent')}
-      />
-    </div>
-  )
 
   return (
     <div className="flex flex-col">
@@ -66,15 +45,18 @@ export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) 
             aria-label="Units"
             value={settings.units}
             onChange={(event) =>
-              onSettingsChange({ ...settings, units: event.target.value === 'in' ? 'in' : 'mm' })
+              onSettingsChange({ ...settings, units: event.target.value as UnitSystem })
             }
             className={cn(
               'h-6 min-h-6 rounded border border-hairline-strong bg-surface-raised px-1.5',
               'text-[11px] text-ink-primary focus-visible:border-accent focus-visible:outline-none',
             )}
           >
-            <option value="mm">Millimetres</option>
-            <option value="in">Inches</option>
+            {UNIT_ORDER.map((unit) => (
+              <option key={unit} value={unit}>
+                {UNITS[unit].label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -86,25 +68,6 @@ export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) 
             onChange={(checked) => setChoice(checked ? 'on' : 'off')}
           />
         </div>
-      </section>
-
-      <section className="border-b border-hairline px-4 py-3">
-        <h3 className="mb-0.5 text-[11px] font-medium uppercase tracking-[0.06em] text-ink-secondary">
-          Print output
-        </h3>
-        <p className="mb-2 text-[10px] text-ink-muted">Global defaults for every sheet.</p>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-          {numberField('trimWidthMm', 'Trim width')}
-          {numberField('trimHeightMm', 'Trim height')}
-          {numberField('bleedMm', 'Bleed')}
-          {numberField('markMarginMm', 'Crop-mark margin')}
-        </div>
-
-        {validation.ok ? null : (
-          <p role="alert" className="mt-2 text-[11px] text-accent-bright">
-            Trim must be {LIMITS.minTrimMm}–{LIMITS.maxTrimMm} mm per side.
-          </p>
-        )}
       </section>
 
       <section>
