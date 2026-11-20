@@ -81,7 +81,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   })
 
   const seeds = useCardSeeds(pageRefs, sheet.grid, batch.documents)
-  useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm, sheet.grid.cellWidthMm)
+  useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm)
 
   const visibleCards = useMemo(() => numberedCards(cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale ?? DEFAULT_TEXT_SCALE), [cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale])
 

@@ -149,7 +149,8 @@ describe('the inspector drives the same values the sliders used to', () => {
 
   it('reports the top band as clamped millimetres', () => {
     const onBandsChange = vi.fn()
-    render(section({ onBandsChange }))
+    // Leave enough room for an exact 20 mm header plus the photo minimum.
+    render(section({ onBandsChange, card: { ...model(), bands: { headerMm: 7.28, footerMm: 25 } } }))
     fireEvent.change(screen.getByLabelText('Top'), { target: { value: '20' } })
     expect(onBandsChange).toHaveBeenCalled()
     const sent = onBandsChange.mock.calls.at(-1)?.[0] as CardBands

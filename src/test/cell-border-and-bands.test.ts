@@ -85,6 +85,17 @@ function strokes(content: string): readonly string[] {
 }
 
 describe('the cell border in the exported PDF', () => {
+  it('paints the frame after the image and corner labels', async () => {
+    const content = await exportOne(makeCard({ displayNumber: 1, cornerLabel: 'X' }))
+    const frame = content.lastIndexOf('0.5 w')
+    const image = content.lastIndexOf(' Do')
+    const label = content.lastIndexOf('<58> Tj')
+    expect(image).toBeGreaterThan(-1)
+    expect(label).toBeGreaterThan(-1)
+    expect(frame).toBeGreaterThan(image)
+    expect(frame).toBeGreaterThan(label)
+  })
+
   it('is stroked even when cut marks are off', async () => {
     const plain = await exportOne(makeCard(), false)
     // One stroke for the cell border; without it there would be none at all.

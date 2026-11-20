@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bandsForContent, textHeightMm } from '../types/band-fit'
-import { BAND_MIN_MM, PICTURE_MIN_MM, defaultBands } from '../types/card'
+import { BAND_MIN_MM, PICTURE_MIN_MM } from '../types/card'
 
 /**
  * Bands follow their text.
@@ -42,7 +42,7 @@ describe('bands follow content', () => {
     if (bands === null) return
 
     const photo = CELL_H - bands.headerMm - bands.footerMm
-    const legacyPhoto = CELL_H - defaultBands(CELL_H).headerMm - defaultBands(CELL_H).footerMm
+    const legacyPhoto = CELL_H - 10 - 15
 
     // The old fixed split gave the photo 42 mm of 67. A two-line card gets more.
     expect(photo).toBeGreaterThan(legacyPhoto)

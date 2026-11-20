@@ -105,10 +105,8 @@ export const PICTURE_MIN_MM = 12
 
 /** The bands a card starts with, for a cell of this height. */
 export function defaultBands(cellHeightMm: number): CardBands {
-  // Roughly the old 13 / 20 split, scaled to however tall the cell actually is.
-  const headerMm = Math.max(BAND_MIN_MM, Math.round(cellHeightMm * 0.145))
-  const footerMm = Math.max(BAND_MIN_MM, Math.round(cellHeightMm * 0.22))
-  return { headerMm, footerMm }
+  // Preserve the requested values where they fit; smaller cells keep the photo minimum.
+  return clampBands({ headerMm: 7.28, footerMm: 35.45 }, cellHeightMm)
 }
 
 /**

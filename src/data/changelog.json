@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.9.7",
+    "date": "2026-11-19",
+    "title": "New card margins and a visible print border",
+    "highlights": [
+      "Newly extracted cards start with a 7.28 mm top band and a 35.45 mm bottom band, where the cell has room. Existing cards keep their own measurements; smaller cells clamp the split to preserve photo space.",
+      "The printed card border is now drawn above the image and corner labels so it stays visible."
+    ]
+  },
+  {
     "version": "1.9.6",
     "date": "2026-11-19",
     "title": "Card measurements and editable label runs",

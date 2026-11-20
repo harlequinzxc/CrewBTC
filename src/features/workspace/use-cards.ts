@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   cardKey,
+  defaultBands,
   clampBands,
   DEFAULT_BODY_STYLE,
   DEFAULT_IMAGE_TRANSFORM,
   DEFAULT_HEADER_STYLE,
 } from '../../types/card'
-import { bandsForContent } from '../../types/band-fit'
 import type { Card, CardBands, ImageTransform, PhotoSource, TextStyle } from '../../types/card'
 
 /**
@@ -140,7 +140,7 @@ export function blankCard(cellHeightMm: number): Card {
     headerStyle: DEFAULT_HEADER_STYLE,
     bodyStyle: DEFAULT_BODY_STYLE,
     imageTransform: DEFAULT_IMAGE_TRANSFORM,
-    bands: { headerMm: Math.round(cellHeightMm * 0.145), footerMm: Math.round(cellHeightMm * 0.22) },
+    bands: defaultBands(cellHeightMm),
   }
 }
 
@@ -164,7 +164,6 @@ export function useSeedCards(
   store: CardStore,
   seeds: readonly CardSeed[],
   cellHeightMm: number,
-  cellWidthMm: number,
 ): void {
   /**
    * `seedCard` only writes where no card exists, so re-running over a seed that is already
@@ -180,25 +179,14 @@ export function useSeedCards(
     if (seeds.length === 0) return
 
     for (const seed of seeds) {
-      // The split follows the text, so a short title does not hold ten millimetres of
-      // blank paper away from its photo. Edits are never re-seeded, so a card the user has
-      // tuned keeps its tuned bands.
-      const bands = bandsForContent({
-        headerText: seed.headerText,
-        footerText: seed.bodyText,
-        cellWidthMm,
-        cellHeightMm,
-      })
-
       store.seedCard(seed.key, {
         ...blankCard(cellHeightMm),
-        bands: bands ?? blankCard(cellHeightMm).bands,
         headerText: seed.headerText,
         bodyText: seed.bodyText,
         photo: seed.photo,
       })
     }
-  }, [seeds, store, cellHeightMm, cellWidthMm])
+  }, [seeds, store, cellHeightMm])
 }
 
 export { cardKey }
