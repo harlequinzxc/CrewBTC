@@ -115,7 +115,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     setSelectedCell,
   })
   const sheetCount = sheets.length
-  const reveal = usePageReveal(pageRefs, sheet.grid, selectCell)
+  const reveal = usePageReveal(pageRefs, sheet.grid, selectCell, goToSheet)
 
   // The inspector describes a card when one is selected and the document when it is not.
   // Resolved against the sheet the *selection* came from, since every sheet is drawn.

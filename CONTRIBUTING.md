@@ -196,6 +196,13 @@ A thumbnail click is a *request* (`scrollTo`), because the canvas owns the scrol
 container and effect ordering is not a contract. The canvas scrolls and clears it. Do not
 turn this into a stored index mirrored in two components.
 
+**Selecting a card never scrolls.** `selectCell` records the selection and nothing else.
+The press that selects a card is the same press that places a caret in its text and grabs
+its photo, so any scroll on that gesture moves the paper out from under the pointer and the
+caret or drag is lost. Movement is an explicit act with exactly two triggers — the strip and
+a file row — and both call `goToSheet` at the call site. If you find yourself wanting a
+third, check whether the card is already on screen: every sheet is drawn, so it usually is.
+
 `SheetThumbnail` is the sheet's own geometry scaled down, not a second renderer: the same
 grid, the same cell rectangles, the same placements. The card's text is **greeked**, not
 set: a 6mm header band at 64px of thumbnail is 3.7 CSS pixels, and a 9pt glyph inside it is
