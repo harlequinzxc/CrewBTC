@@ -32,7 +32,15 @@ export interface SheetBodyProps {
   readonly editingCell: number | null
   readonly pictureKey: string | null
   readonly onDeselect: () => void
-  readonly onSelectCell: (cellIndex: number) => void
+  /**
+   * A cell was clicked. The page identity travels with it: cell 4 holds a different page
+   * on every sheet, so the cell number alone cannot say which sheet the user just pointed
+   * at.
+   */
+  readonly onSelectCell: (
+    cellIndex: number,
+    page?: { readonly documentId: string; readonly pageNumber: number },
+  ) => void
   readonly onBeginTextEdit: (cellIndex: number, key: string, zone: 'header' | 'body') => void
   readonly onEndEdit: () => void
   readonly onSelectionChange: (zone: 'header' | 'body', selection: { readonly start: number; readonly end: number } | null) => void
@@ -98,7 +106,12 @@ export function SheetBody(props: SheetBodyProps) {
             selected={props.selectedCell === cell.index}
             editing={props.editingCell === cell.index ? props.activeZone : null}
             pictureEditing={props.pictureKey === key}
-            onSelect={() => props.onSelectCell(cell.index)}
+            onSelect={() =>
+              props.onSelectCell(cell.index, {
+                documentId: placement.documentId,
+                pageNumber: placement.pageNumber,
+              })
+            }
             onBeginTextEdit={(zone) => props.onBeginTextEdit(cell.index, key, zone)}
             onEndEdit={props.onEndEdit}
             onSelectionChange={props.onSelectionChange}

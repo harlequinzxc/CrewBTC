@@ -4,7 +4,7 @@ import {
   MIN_ZOOM,
   ZOOM_STEPS,
   clampZoom,
-  fitScale,
+  fitWidthScale,
   nextZoom,
   previousZoom,
   wheelZoom,
@@ -60,16 +60,25 @@ describe('zoom ladder', () => {
   })
 })
 
-describe('fit to window', () => {
-  it('takes the tighter of the two axes', () => {
-    // A 210 x 297 sheet in a 420 x 900 pane: width allows 2 px/mm, height 3, so width wins.
-    expect(fitScale(420, 900, 210, 297)).toBeCloseTo(2, 6)
-    expect(fitScale(900, 594, 210, 297)).toBeCloseTo(2, 6)
+describe('fit to width', () => {
+  it('fills the pane width and ignores its height', () => {
+    // 420px of pane over a 210mm sheet is 2 px/mm whatever the pane is tall.
+    expect(fitWidthScale(420, 210)).toBeCloseTo(2, 6)
+    // The same width in a short pane still fits the width: the sheet scrolls instead.
+    expect(fitWidthScale(420, 210)).toBeCloseTo(2, 6)
+    expect(fitWidthScale(900, 210)).toBeCloseTo(900 / 210, 6)
+  })
+
+  it('gives a readable card without any manual zoom', () => {
+    // A 260px-wide canvas is a narrow laptop; a 52mm card must still be legible, which is
+    // the whole reason for abandoning whole-page fit. Below ~40px a card's type is gone.
+    const scale = fitWidthScale(700, 210)
+    expect(52 * scale).toBeGreaterThan(120)
   })
 
   it('never returns zero or infinity for an unmeasured pane', () => {
     // The first render, before ResizeObserver has reported, must not collapse the sheet.
-    for (const value of [fitScale(0, 0, 210, 297), fitScale(100, 100, 0, 0), fitScale(Number.NaN, 10, 210, 297)]) {
+    for (const value of [fitWidthScale(0, 210), fitWidthScale(100, 0), fitWidthScale(Number.NaN, 210)]) {
       expect(Number.isFinite(value)).toBe(true)
       expect(value).toBeGreaterThan(0)
     }

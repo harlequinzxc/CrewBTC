@@ -29,7 +29,15 @@ export function Select(props: {
   )
 }
 
-/** One figure in the sheet's units, right-aligned, with the unit inside the box. */
+/**
+ * One figure in the sheet's units, right-aligned, with the unit inside the box.
+ *
+ * The width matters: a `w-full` field in a `justify-between` row stretched to the whole
+ * remaining rail, so 4 mm read as `4 mm` floating at the far right of an empty 150px box,
+ * with the unit a gap away from the number. The `SizePair` above it is two boxes of half
+ * that width, so one field is sized to the same proportion and the column reads as one
+ * ladder rather than two different kinds of row.
+ */
 export function SizeField(props: FieldProps) {
   return (
     <NumberField
@@ -39,7 +47,7 @@ export function SizeField(props: FieldProps) {
       units={props.units}
       min={0}
       onChangeMm={props.onChangeMm}
-      className={cn('w-full', props.error === undefined ? undefined : 'border-accent')}
+      className={cn('w-[118px]', props.error === undefined ? undefined : 'border-accent')}
     />
   )
 }

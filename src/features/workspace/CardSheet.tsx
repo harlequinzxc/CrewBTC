@@ -25,6 +25,8 @@ export interface CardSheetProps {
   readonly scale: number
   readonly fitting: boolean
   readonly paneRef: (node: HTMLDivElement | null) => void
+  /** Which sheet of the plan the canvas is showing. Zero-based. */
+  readonly sheetIndex: number
 }
 
 interface EditState {
@@ -53,6 +55,7 @@ export function CardSheet(props: CardSheetProps) {
     selectedCell,
     onSelectCell,
     paneRef,
+    sheetIndex,
   } = props
   const [editing, setEditing] = useState<EditState | null>(null)
   const [pictureEditing, setPictureEditing] = useState<string | null>(null)
@@ -64,7 +67,10 @@ export function CardSheet(props: CardSheetProps) {
   } | null>(null)
 
   const sheets = planSheets(pages, grid)
-  const first = sheets[0]
+  // The sheet on the canvas, not necessarily the first: the strip switches which one this
+  // is, and everything drawn below — placements, cut marks, the empty-cell numerals —
+  // belongs to it.
+  const current = sheets[sheetIndex] ?? sheets[0]
   const marks = showCutMarks ? cutMarksFor(grid) : []
 
   const apply = useCallback(
@@ -117,11 +123,12 @@ export function CardSheet(props: CardSheetProps) {
         ref={paneRef}
         data-testid="sheet-pane"
         className={cn(
-          'min-h-0 flex-1',
-          // Fit shrinks the paper, so there is never anything to scroll. A pinned scale
-          // can exceed the pane, and then the pane scrolls rather than the paper being
-          // clamped back down — that is the difference between Fit and 200%.
-          fitting ? 'grid place-items-center overflow-hidden' : 'overflow-auto',
+          'min-h-0 flex-1 overflow-auto',
+          // Width-fit makes the sheet as wide as the pane and taller than it, so the pane
+          // always scrolls vertically. It used to `place-items-center` while fitted, which
+          // is exactly what breaks a page taller than its container: centring an
+          // overflowing item clips its top and makes the first rows unreachable.
+          fitting ? 'flex flex-col items-center' : 'block',
         )}
         style={{ padding: CANVAS_PADDING }}
       >
@@ -136,7 +143,7 @@ export function CardSheet(props: CardSheetProps) {
           <SheetBody
             grid={grid}
             scale={scale}
-            placements={first?.placements}
+            placements={current?.placements}
             marks={marks}
             cards={cards}
             selectedCell={selectedCell}

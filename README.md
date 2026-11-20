@@ -61,13 +61,22 @@ way, so 21 cm and 210 mm are the same sheet.
 ## Zooming the sheet
 
 `−`, the current percentage, `+` and **Fit** sit in the middle of the top bar. The sheet
-opens fitted — it fills the window rather than sitting at a literal 100%, which on a large
-screen is a postage stamp. The percentage still shows the real scale, and **Fit** is
-highlighted while the fit is live, so you can tell a computed `283%` from one you chose.
+opens **fitted to the width of the window**, not to the whole page: filling the width is
+what makes a card's type readable without zooming, and the sheet simply scrolls down past
+the bottom of the screen. The percentage shows the real scale, and is labelled as fitted
+while the sheet is still following the window.
 
-**Fit** keeps the sheet matched to the window as you resize it; step the zoom with `−`,
-`+` or `Ctrl`/`Cmd` + wheel and it stays where you put it, with scrollbars when the sheet
-outgrows the pane. **Fit** returns you to the mode.
+Scroll with the wheel or the scrollbar to read down the page, zoom with `−`, `+` or
+`Ctrl`/`Cmd` + wheel, and **Fit** puts the sheet back to the window's width. Fit is a
+momentary action — it never stays lit, because width-fit is already where the app rests.
+
+## Sheets
+
+Twelve cards fit one A4 sheet, so a document longer than twelve pages has more than one.
+When that happens a strip of sheet miniatures appears along the bottom of the canvas:
+click one to move the canvas to that sheet, or collapse it to a `Sheets (2)` pill to get
+the height back. Clicking a file in the **Files** rail jumps to the sheet its first card
+is on. The active sheet is the one with the accent border.
 
 ## Getting started
 
@@ -81,7 +90,9 @@ Your sheet settings are remembered between visits.
 
 ### Desktop only
 
-CrewBTC is built for a desktop browser and asks for at least 1024 pixels of width.
+CrewBTC is built for a desktop browser. Narrower than 1024 pixels you get a notice asking
+for a wider window — but nothing is thrown away while it is up: your files, cards and
+edits are all still there when you widen it again.
 Below that it tells you so rather than squeezing the layout into something unusable.
 A phone-sized version isn't planned.
 

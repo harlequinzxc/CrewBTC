@@ -63,11 +63,12 @@ describe('chrome geometry', () => {
 
     const bar = screen.getByRole('banner')
     const percent = within(bar).getByLabelText(/^Zoom level/)
-    // Fit is the default, and a fitted sheet is drawn at some positive percentage.
+    // Width-fit is the default, and a fitted sheet is drawn at some positive percentage.
     expect(percent.textContent).toMatch(/^\d+%$/)
-    expect(within(bar).getByRole('button', { name: 'Fit to window' })).toHaveAttribute(
+    expect(within(bar).getByLabelText('Zoom level, fitted to width')).toBeInTheDocument()
+    // And the Fit control reports no pressed state, because it is a momentary action.
+    expect(within(bar).getByRole('button', { name: 'Fit sheet to width' })).not.toHaveAttribute(
       'aria-pressed',
-      'true',
     )
   })
 
@@ -79,16 +80,14 @@ describe('chrome geometry', () => {
     const fitted = level.textContent
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
     expect(level.textContent).not.toBe(fitted)
-    expect(screen.getByRole('button', { name: 'Fit to window' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    expect(screen.queryByLabelText('Zoom level, fitted to width')).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Fit to window' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Fit sheet to width' }))
     expect(level.textContent).toBe(fitted)
-    expect(screen.getByRole('button', { name: 'Fit to window' })).toHaveAttribute(
+    // Back in width-fit, and the button still carries no pressed state.
+    expect(screen.getByLabelText('Zoom level, fitted to width')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Fit sheet to width' })).not.toHaveAttribute(
       'aria-pressed',
-      'true',
     )
   })
 })

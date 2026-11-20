@@ -1,7 +1,7 @@
 import { act, render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { useSheetZoom } from '../features/workspace/use-sheet-zoom'
-import { fitScale } from '../lib/zoom'
+import { fitWidthScale } from '../lib/zoom'
 
 /**
  * Fit has to happen, and it has to happen to the pane as it is *now*.
@@ -21,7 +21,7 @@ const sized = (node: HTMLElement | null, width: number, height: number): void =>
 }
 
 function Probe(props: { readonly show: boolean; readonly w: number; readonly h: number }) {
-  const zoom = useSheetZoom(210, 297)
+  const zoom = useSheetZoom(210)
   return (
     <div>
       <span data-testid="scale">{zoom.scale.toFixed(4)}</span>
@@ -55,9 +55,14 @@ describe('sheet zoom', () => {
     expect(getByTestId('scale').textContent).toBe('1.0000')
 
     rerender(<Probe show w={600} h={800} />)
-    const expected = fitScale(600 - 48, 800 - 48, 210, 297)
+    // Width only: the height of the pane must not shrink the sheet.
+    const expected = fitWidthScale(600 - 64, 210)
     expect(getByTestId('scale').textContent).toBe(expected.toFixed(4))
     expect(expected).toBeGreaterThan(1)
+
+    // A shorter pane fits the same width: it scrolls rather than shrinking.
+    rerender(<Probe show w={600} h={300} />)
+    expect(getByTestId('scale').textContent).toBe(expected.toFixed(4))
   })
 
   it('re-fits when the window resizes, because Fit is a mode', () => {

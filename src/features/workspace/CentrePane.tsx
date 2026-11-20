@@ -1,6 +1,7 @@
 import { DropZone } from './DropZone'
 import { CardSheet } from './CardSheet'
-import type { PageRef } from '../../lib/imposition/sheet'
+import type { ReactNode } from 'react'
+import type { PageRef, SheetPlan } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import type { Card } from '../../types/card'
 
@@ -28,6 +29,9 @@ export interface CentrePaneProps {
   readonly fitting: boolean
   /** Callback ref for the measured canvas region; the top bar's fit depends on it. */
   readonly paneRef: (node: HTMLDivElement | null) => void
+  readonly sheetIndex: number
+  readonly sheets: readonly SheetPlan[]
+  readonly renderStrip: (sheets: ReadonlyArray<SheetPlan>) => ReactNode
 }
 
 export function CentrePane(props: CentrePaneProps) {
@@ -56,8 +60,13 @@ export function CentrePane(props: CentrePaneProps) {
           scale={props.scale}
           fitting={props.fitting}
           paneRef={paneRef}
+          sheetIndex={props.sheetIndex}
         />
       )}
+
+      {/* Inside the centre column, under the sheet: it steals canvas height, never rail
+          width, and collapsing it hands that height straight back. */}
+      {props.renderStrip(props.sheets)}
     </div>
   )
 }
