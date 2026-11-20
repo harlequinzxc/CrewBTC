@@ -1,3 +1,4 @@
+import { CARD_LINE_HEIGHT, CARD_TEXT_PT } from './card-typography'
 import { wrapToWidth } from '../lib/export/text-band'
 import { BAND_MIN_MM, clampBands } from './card'
 import type { CardBands } from './card'
@@ -11,40 +12,33 @@ import type { CardBands } from './card'
  * zone, which reads as the photo being squeezed by nothing. That is the gap between the
  * title and the picture, and the gap under the last bullet.
  *
- * So the bands are derived instead. Text is drawn at the largest size that fits, and
- * shrinks only when it has to, so the height a block needs at its full size is exactly the
- * height it will use — fill the band to that and there is no slack to leave blank.
+ * So the bands are derived instead. Text is drawn at a fixed user-selected size; the
+ * estimated height helps leave room for its lines without taking space from the photo.
  *
- * Two details make this safe rather than merely tighter:
- *
- * - It never *shrinks* a band below what the text needs, so no card loses type size to the
- *   fit. A card with four bullets gets 15 mm, the same as the old default; a card with two
- *   gets 8 mm and hands the other 7 mm to its photo.
- * - The result goes through `clampBands`, the same budget the dividers and the inspector
- *   obey, so the photo keeps its 12 mm minimum whatever the text asks for.
+ * The result goes through `clampBands`, so the photo keeps its 12 mm minimum even if
+ * that means a long block overflows. The font size never changes to force the text to fit.
  */
 
 /** Points to millimetres — the conversion the layout engine uses throughout. */
 const PT_TO_MM = 25.4 / 72
 
 /** Line pitch, matching the renderer so the estimate counts the same lines it will draw. */
-const LINE_HEIGHT = 1.25
+const LINE_HEIGHT = CARD_LINE_HEIGHT
 
 /** The engine's own padding, plus a little room so text is not flush against the edge. */
 const PADDING_MM = 0.8
 const BREATHING_MM = 1
 
-/** The type sizes the card renderer requests before shrinking to fit. */
-export const HEADER_PT = 9
-export const FOOTER_PT = 8
+/** The shared nominal type size used for the two text bands. */
+export const HEADER_PT = CARD_TEXT_PT
+export const FOOTER_PT = CARD_TEXT_PT
 
 /**
  * Width of a string at a size, in millimetres.
  *
- * The same approximation `CardZoneText` wraps with, on purpose: the band is sized by the
- * lines the preview will actually draw, so the sheet the user sees is the sheet that was
- * measured. The exporter measures real Helvetica and may break a line differently, but it
- * also shrinks to fit, so the difference costs a fraction of a point, never an overflow.
+ * An estimate for initial band sizing only. The preview measures real browser glyphs and
+ * the exporter measures Helvetica, so either may wrap differently; a long block can
+ * still overflow and users can adjust the bands without changing text size.
  */
 const measureAt = (text: string, sizePt: number): number => text.length * sizePt * 0.5 * PT_TO_MM
 

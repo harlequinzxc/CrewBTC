@@ -73,3 +73,41 @@ test('background removal uses a real browser image and supports sensitivity and 
   await page.getByLabel('Put the original photo back').click()
   await expect(image.locator('img')).toHaveAttribute('src', original)
 })
+
+test('all card text uses one size and font, and both corner boxes grow with it', async ({ page }) => {
+  await uploadPdf(page)
+  const inspect = async () => page.locator('[data-cell]').first().evaluate((cell) => {
+    const header = cell.querySelector('button[aria-label^="Card text:"]') as HTMLElement
+    const body = cell.querySelectorAll('button[aria-label^="Card text:"]')[1] as HTMLElement
+    const number = cell.querySelector('[aria-label="Card number"]') as HTMLElement
+    const label = cell.querySelector('[aria-label="Card corner label"]') as HTMLElement
+    const props = (el: HTMLElement) => ({ size: parseFloat(getComputedStyle(el).fontSize), font: getComputedStyle(el).fontFamily, weight: getComputedStyle(el).fontWeight, align: getComputedStyle(el).textAlign, height: el.getBoundingClientRect().height, lineHeight: parseFloat(getComputedStyle(el).lineHeight) })
+    return { header: props(header), body: props(body), number: props(number), label: props(label) }
+  })
+  for (const percent of ['100', '150', '200']) {
+    const size = page.getByLabel('All text size')
+    await size.fill(percent)
+    await size.press('Tab')
+    const data = await inspect()
+    for (const part of [data.body, data.number, data.label]) {
+      expect(part.size).toBeCloseTo(data.header.size, 2)
+      expect(part.font).toBe(data.header.font)
+      expect(part.weight).toBe(data.header.weight)
+    }
+    expect(data.number.align).toBe('center')
+    expect(data.label.align).toBe('center')
+    expect(data.number.height).toBeCloseTo(data.label.height, 2)
+    expect(data.number.height).toBeGreaterThan(data.number.lineHeight)
+  }
+})
+
+test('a corner field remains editable after editing text on the same card', async ({ page }) => {
+  await uploadPdf(page)
+  await textZones(page).first().click()
+  await expect(page.getByLabel('Edit card text')).toHaveCount(1)
+  const label = page.getByLabel('Card corner label').first()
+  await label.click()
+  await expect(label).toBeFocused()
+  await page.keyboard.type('AB')
+  await expect(label).toHaveValue('AB')
+})

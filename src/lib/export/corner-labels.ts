@@ -1,3 +1,4 @@
+import { CARD_TEXT_PT, cornerHeightMm } from '../../types/card-typography'
 import type { RGB } from '@cantoo/pdf-lib'
 import type { Card, RectMm } from '../../types/card'
 import { mmToPt } from '../units'
@@ -7,8 +8,10 @@ import type { CardCanvas } from './draw-card'
 export function drawCornerLabels(canvas: CardCanvas, cell: RectMm, card: Card, rgb: (r: number, g: number, b: number) => RGB): void {
   if (card.displayNumber === undefined) return
   const width = mmToPt(cell.widthMm * 0.22)
-  const height = mmToPt(5)
-  const size = 7 * (card.textScale ?? 1)
+  const textScale = card.textScale ?? 1
+  const height = mmToPt(cornerHeightMm(textScale))
+  const size = CARD_TEXT_PT * textScale
+  const font = canvas.bold
   const y = canvas.sheetHeightPt - mmToPt(cell.yMm) - height
   const x = mmToPt(cell.xMm)
   const bg = rgb(228 / 255, 228 / 255, 231 / 255)
@@ -21,11 +24,16 @@ export function drawCornerLabels(canvas: CardCanvas, cell: RectMm, card: Card, r
     let safe = ''
     for (const char of text) {
       try {
-        canvas.regular.encodeText(char)
-        if (canvas.regular.widthOfTextAtSize(safe + char, size) > Math.max(0, width - 2)) break
+        font.encodeText(char)
+        if (font.widthOfTextAtSize(safe + char, size) > Math.max(0, width - 2)) break
         safe += char
       } catch { /* Unsupported character cannot be printed in this font. */ }
     }
-    if (safe !== '') canvas.page.drawText(safe, { x: left + 1, y: y + Math.max(1, (height - size) / 2), size, font: canvas.regular, color: rgb(0, 0, 0) })
+    if (safe !== '') {
+      const textWidth = font.widthOfTextAtSize(safe, size)
+      const fontHeight = font.heightAtSize(size)
+      const descent = fontHeight - font.heightAtSize(size, { descender: false })
+      canvas.page.drawText(safe, { x: left + (width - textWidth) / 2, y: y + (height - fontHeight) / 2 + descent, size, font, color: rgb(0, 0, 0) })
+    }
   }
 }

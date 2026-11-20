@@ -181,3 +181,21 @@ describe('corner overlays in print', () => {
     expect(content.match(/0\.8941176470588236 0\.8941176470588236 0\.9058823529411765 rg/g)).toHaveLength(2)
   })
 })
+
+it('all four card text areas print at the same bold size', async () => {
+  const content = await exportOne(makeCard({
+    photo: null,
+    headerText: 'HEADER',
+    bodyText: 'BODY',
+    headerStyle: { bold: true, color: '#111827', highlight: null },
+    bodyStyle: { bold: true, color: '#111827', highlight: null },
+    displayNumber: 40,
+    cornerLabel: 'AB',
+    textScale: 1.5,
+  }))
+  const fonts = [...content.matchAll(/\/(Helvetica-Bold-\d+)\s+([\d.]+)\s+Tf/g)]
+  expect(fonts).toHaveLength(4)
+  expect(fonts.map((match) => Number(match[2]))).toEqual([13.5, 13.5, 13.5, 13.5])
+  expect(content).toContain('<3430> Tj')
+  expect(content).toContain('<4142> Tj')
+})
