@@ -1,5 +1,9 @@
 # Root cause: "clicking a card's text does nothing" (v1.7.0 → v1.8.2)
 
+> Historical note: this report describes a withdrawn sequence and a numbering restart.
+> Later releases reused some version numbers; references below refer to the historical
+> attempts, not necessarily to today’s release with the same number.
+
 **Release numbering restarts here.** The failed attempts below were published as
 v1.8.2 through v1.9.11 and have been withdrawn; the fix ships as **v1.8.2**, the
 version that follows v1.8.1, because v1.8.1 is where the fault became visible and

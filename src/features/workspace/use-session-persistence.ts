@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { SNAPSHOT_VERSION } from '../../types/persisted'
 import type { WorkspaceSnapshot } from '../../types/persisted'
 import { writeSnapshot } from '../../lib/storage/snapshot'
+import { sweepProjectSources } from '../../lib/storage/project-sources'
 import type { Card } from '../../types/card'
 import type { IngestedDocument } from '../../types/document'
 
@@ -34,6 +35,7 @@ export function useRestoredSession(): RestoredSession {
     void (async () => {
       const { readSnapshot } = await import('../../lib/storage/snapshot')
       const stored = await readSnapshot()
+      void sweepProjectSources().catch(() => undefined)
       if (!live) return
       setSnapshot(stored)
       setRestored(true)
@@ -76,7 +78,7 @@ export function useSaveSession(
       // An empty batch is a snapshot too: the user cleared the files, and restoring them
       // on the next load would undo the action they just took. The record simply *is* the
       // state, including the empty one.
-      void writeSnapshot(next)
+      void writeSnapshot(next).then(() => sweepProjectSources()).catch(() => undefined)
     }, 400)
     return () => window.clearTimeout(timer)
   }, [hydrated, documents, cards, activeId])

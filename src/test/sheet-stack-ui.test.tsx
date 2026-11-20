@@ -136,11 +136,7 @@ describe('the inspector can be given back to the sheet', () => {
       <Inspector
         card={null}
         cellIndex={null}
-        cellHeightMm={67}
         units="mm"
-        onBandsChange={() => undefined}
-        onTextScaleChange={() => undefined}
-        onResetCard={() => undefined}
         sheet={DEFAULT_SHEET}
         grid={grid}
         sheetErrors={{}}
@@ -188,11 +184,7 @@ describe('the inspector can be given back to the sheet', () => {
       <Inspector
         card={null}
         cellIndex={null}
-        cellHeightMm={67}
         units="mm"
-        onBandsChange={() => undefined}
-        onTextScaleChange={() => undefined}
-        onResetCard={() => undefined}
         sheet={DEFAULT_SHEET}
         grid={grid}
         sheetErrors={{}}

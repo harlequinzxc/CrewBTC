@@ -53,8 +53,9 @@ PDF ──► pdfjs-dist ──► ingest ──► Card ──┬─► DOM pre
 ```
 
 **The rule that keeps the preview honest:** one layout engine computes every zone
-rectangle and every picture fit, and *both* the preview and the exporter render from
-that same output. Nothing re-flows at export time.
+rectangle and picture fit, and *both* the preview and exporter use that geometry. Text
+uses shared layout logic but browser and PDF font metrics can differ, so inspect print
+output for clipping or wrapping differences.
 
 ```
 src/
@@ -66,9 +67,10 @@ src/
   lib/pdf/             extraction: ingest, recipe-text, food-photo, painted-box, ocr
   lib/export/          draw-card (the renderer), write-cards, band-clip, doc-cache
   lib/imposition/      grid + sheet geometry
-  lib/storage/         db.ts (idb) + versioned migrations
+  lib/storage/         IndexedDB settings, session and original-source storage
+  lib/project/         versioned portable project validation and encoding
   types/card.ts        the card model and the zone arithmetic
-  data/changelog.ts    release notes, synchronised with package.json (§9)
+  data/changelog.json  release notes, read by changelog.ts and aligned with package.json
 scripts/               the Appendix A/B gates
 ```
 
@@ -83,8 +85,8 @@ Everything visual traces back to two pure functions in `src/types/card.ts`:
   skip drawing rather than emit a zero.
 
 `layoutBand` / `layoutStyledBand` (`lib/export/text-band.ts`, `styled-band.ts`) and
-`drawCard` (`lib/export/draw-card.ts`) do the same job for text and pictures: one set of
-measurements produces both the on-screen card and the printed one.
+`drawCard` (`lib/export/draw-card.ts`) share layout rules for text and pictures; actual
+glyph measurements come from the browser and PDF fonts respectively.
 
 ### Selection-level text formatting
 
@@ -100,9 +102,8 @@ stays correct after the box is recoloured.
 - `lib/export/styled-band.ts` — wraps per style segment, because a bold word measures
   wider than a regular one. A box with no runs takes the single-style path unchanged.
 - `draw-card.ts` — draws each segment at its own x offset, so printed output matches.
-- `textScale` multiplies the requested point size before layout, so the type still
-  shrinks to fit the band. It is applied in `CardZoneText` and in `drawCard`, from the
-  same number, which is what keeps the print equal to the preview.
+- Sheet-wide `textScale` multiplies the requested point size. Text wraps at that size
+  and clips on overflow; it never automatically shrinks to fit the band.
 
 ## Geometry
 
@@ -114,22 +115,14 @@ Defaults live in `DEFAULT_SHEET` (`src/types/imposition.ts`):
 | Cell | 52 × 67 mm |
 | Gutter / margin | 4 mm / 4 mm |
 | Grid | 3 × 4 = **12 cells**, 67% coverage |
-| Card zones | derived per seeded card by `bandsForContent` |
-| Fallback zones | `defaultBands(cellHeightMm)` — 10 / 42 / 15 mm |
+| New card bands | Top 7.28 mm; bottom 35.45 mm where feasible |
+| Text size | 80% sheet-wide |
 
-`blankCard` still starts from `defaultBands`, but seeding measures the card's own text
-(`types/band-fit.ts`) and asks for a split that fits it, so the photo gets the surplus
-rather than a fixed 42 mm. The fitter measures with the preview's own approximation
-(`len × size × 0.5`) so the bands match the lines the preview draws, floors each band at
-`BAND_MIN_MM = 6`, and hands the result to `clampBands`, which keeps
-`PICTURE_MIN_MM = 12` for the photo. A card can therefore never become two text boxes
-with nothing between them, and no banner is ever shrunk to make the arithmetic work.
-
-Text is **centred in its band** rather than pinned to the top: `CardZoneText` and
-`drawCard` both offset a block by `max(0, band − 2 × padding − block) / 2`. That is what
-makes a hand-tuned tall box look deliberate — the slack is split either side instead of
-pooling under the words. An overflowing block gets zero offset and is clipped at the box
-edge, never lifted over the picture.
+`defaultBands(cellHeightMm)` supplies the split to newly seeded cards; `clampBands`
+keeps a minimum for the text bands and photo, including smaller cells. Existing cards
+keep their own bands. The inspector reads those measurements; the card dividers change
+them, and the sparkles action copies one split across cards. Header text is centred;
+body text is top-aligned. Text wraps at the chosen size and overflow is clipped.
 
 ## Units
 
@@ -154,7 +147,7 @@ marks it can draw are the cut guides between cells. A trim box and a real bleed 
 pipeline, not a label on a form — until one exists, a switch claiming to do it is worse
 than no switch.
 
-Sheet settings persist to `localStorage` under `crewbtc.sheet` and are validated on read
+Sheet settings persist to `localStorage` under `crewbtc.sheet.v2` (with `crewbtc.sheet` as a legacy fallback) and are validated on read
 — a corrupt or out-of-range value falls back to the defaults rather than rendering a
 broken grid.
 
@@ -230,9 +223,22 @@ replaced whole. Three decisions there are load-bearing:
   empty batch over the session it had just loaded.
 
 `validate` in `lib/storage/snapshot.ts` rejects an unknown shape rather than coercing it,
-and a version mismatch is a discard, not a migration: this is a cache of a session, not a
-record of anything the user owns. An **empty** batch is valid and is stored — it means the
+and migrates snapshot versions 1 and 2 to version 3 while retaining card edits; unknown
+future versions are rejected. An **empty** batch is valid and is stored — it means the
 user cleared their files.
+
+Original PDFs are retained separately in `crewbtc-project-sources` by document UUID.
+Array-keyed retirement markers coexist with older string-keyed source records without a
+schema bump. Clear, re-run and project replacement retire removed sources; cleanup waits
+past the Undo window and checks the saved workspace before deleting. Undo and reopening a
+project cancel retirement. Expired markers are revisited after reload; storage errors leave
+sources in place rather than proving them unused. Existing unmarked older orphans are not
+automatically removed. Clear browser site data to remove retained copies manually.
+
+Portable `.crewbtc` files are versioned JSON (`lib/project/project.ts`): snapshot, sheet,
+unit preference, cut guides and available base64 original PDFs. Validation happens before
+replacing the workspace. Missing originals produce a warning; cards still export without
+source PDFs. Project files may be large and contain private content.
 
 Selecting a card, or entering a text box, must never move the canvas. `focus()` scrolls the
 nearest scrollable ancestor unless given `preventScroll`, and the formatting bar floats over
@@ -266,7 +272,7 @@ is exactly one accent (`#E5484D`), used at three depths: the base for rings and 
 `accent-solid` for fills that carry white text (4.72:1), and `accent-bright` for accent
 text on a dark panel. `scripts/check-contrast.mjs` measures all three.
 
-The inspector is contextual: `CardSection` appears when a card is selected, `SheetSection`
+The inspector is contextual: `CardReadout` appears when a card is selected, `SheetSection`
 is always there. It does not take a callback from the canvas — `selectedCardKey()` derives
 which card is meant from the selected cell and the sheet plan, so there is only one answer.
 
@@ -296,9 +302,9 @@ Ctrl+wheel both use the direct listener.
 
 `writeCards` builds the output PDF page by page:
 
-1. Compute the grid from the sheet settings (same `computeGrid` the preview uses).
-2. For each placed page, draw its card into the cell.
-3. Draw crop marks from `cutMarksFor(grid)` (`lib/imposition/sheet.ts`).
+1. Plan sheets using the grid shared with the preview.
+2. Draw cut guides when enabled, then each card and its corner overlays.
+3. Stroke each cell border last, above the photo and overlays.
 
 Text is drawn as vector text via `draw-card.ts`. Photos are re-embedded from the
 extracted PNG bytes (`embedPng`), at the resolution they were extracted at. The source
@@ -339,8 +345,8 @@ Measured on the production build, gzip:
 
 | Chunk | Size | Loaded |
 |---|---|---|
-| Initial route JS | ~101 KB | on first paint |
-| Initial route CSS | ~7.6 KB | on first paint |
+| Initial route JS | ~127 KB | on first paint |
+| Initial route CSS | ~8 KB | on first paint |
 | `pdf` chunk | ~128 KB | first PDF import |
 | `es` chunk (pdf-lib) | ~242 KB | first export |
 
@@ -354,6 +360,7 @@ suite exists for lived in production CSS and production timing.
 
 ```bash
 npx playwright install chromium   # once, needs network
+npm run build                    # test against the current production build
 npm run test:e2e
 ```
 
@@ -374,7 +381,7 @@ and release is invisible to it — which is exactly how that bug shipped twice.
 
 ## Testing
 
-199 tests across 22 files. The ones that protect against specific past bugs:
+Run `npm test` for the current test counts. Some tests protecting past bugs:
 
 - `card-seeding.test.tsx` — drives the real `App` through upload to placed card. Guards
   the `documentId`-by-file-name behaviour; reintroducing the `id` lookup fails 3 of 7.
@@ -392,11 +399,15 @@ before running it.
   tested structurally, not end to end.
 - **ZIP export** (one file per page) is not built.
 - **No font upload.** Base-14 standard fonts only.
-- **Browser passes are manual.** Chromium downloads are blocked in the build sandbox, so
-  breakpoint and installed-mode checks are reported as `not run`, never claimed.
+- **Installed-mode and full cross-browser inspection** are separate from the automated
+  Chromium suite; report them as not run unless actually performed.
+- **Corner labels:** unsupported font characters are dropped and long labels truncated
+  in print; review the exported PDF.
+- **This sheet export** currently selects the first sheet, not the sheet in view.
+- **Original source cleanup** does not remove unmarked orphan records created by older builds.
 
 ## Release process
 
 SemVer per §9: PATCH for fixes/docs/refactors, MINOR for new user-facing capability,
 MAJOR for breaking storage or API changes. Every release updates `package.json` **and**
-prepends an entry to `src/data/changelog.ts`; the two must agree.
+prepends an entry to `src/data/changelog.json`; the two must agree.

@@ -13,7 +13,6 @@ import { useSheet } from './use-sheet'
 import { useSheetZoom } from './use-sheet-zoom'
 import { selectedCardKey } from './selected-card'
 import { useSheetNavigation } from './use-sheet-navigation'
-import { useCardInspector } from './use-card-inspector'
 import { SheetStripSlot } from './SheetStripSlot'
 import { toPageRefs } from '../../lib/pdf/page-refs'
 import { pickFiles } from '../../lib/files/open-picker'
@@ -143,7 +142,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   )
   const selectedCard = selectionKey === null ? null : (visibleCards[selectionKey] ?? null)
 
-  const inspectorEdits = useCardInspector(cardStore, selectionKey, sheet.grid.cellHeightMm)
 
   return (
     <div className="flex h-[100svh] max-h-[100svh] w-full flex-col overflow-hidden bg-surface-canvas">
@@ -223,10 +221,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         <Inspector
           card={selectedCard}
           cellIndex={selectionKey === null ? null : selectedCell}
-          cellHeightMm={sheet.grid.cellHeightMm}
-          onBandsChange={inspectorEdits.onBandsChange}
-          onTextScaleChange={inspectorEdits.onTextScaleChange}
-          onResetCard={inspectorEdits.onResetCard}
           units={settings.units}
           sheet={sheet.settings}
           grid={sheet.grid}

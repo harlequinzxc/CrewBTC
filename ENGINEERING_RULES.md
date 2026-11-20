@@ -6,6 +6,11 @@ This document governs **every file and every action in the project it is attache
 
 **Precedence against the human.** Explicit instructions from the user override this document. When the user asks for something a rule forbids, say which rule you are setting aside and why, do it, and note it in the completion report. Never use this document as a reason to refuse a direct instruction, and never silently ignore a rule either.
 
+**Project-specific desktop exception.** CrewBTC currently requires a viewport at least
+1024 pixels wide and shows a wider-window notice below that size. The explicit project
+scope takes precedence over this document's mobile parity requirement; keep the notice
+and preserve workspace state when narrow. Do not report mobile editing as supported.
+
 **Stack assumption.** The named tools (React, Tailwind, Vite, `lucide-react`, `oxlint`, `vitest`, `playwright`, `idb`/Dexie) are the defaults. If the project already uses a different equivalent, use the existing one and say so in the report — do not install a second tool to satisfy the letter of a rule. Vercel is the assumed deploy target (§5B, §7).
 
 ---

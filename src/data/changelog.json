@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.10.1",
+    "date": "2026-11-19",
+    "title": "Reliable units and tidier local storage",
+    "highlights": [
+      "Fixed: units selected in Settings and restored from projects now survive a reload.",
+      "Removed original PDFs are reclaimed after the Undo window when safe; Undo and re-opened projects keep their originals.",
+      "Removed unused code and updated the user and developer documentation to match the current editor."
+    ]
+  },
+  {
     "version": "1.10.0",
     "date": "2026-11-19",
     "title": "Save and open editable projects",

@@ -35,7 +35,7 @@ const clampScale = (value: number): number => Math.min(MAX_IMAGE_SCALE, Math.max
  * or drag was applied. The drawn rectangle comes from the photo's own pixels, so the
  * dish keeps its shape instead of taking the box's.
  *
- * Double-click enters adjust mode: drag pans, the wheel zooms, arrow keys nudge, and
+ * A click enters adjust mode: drag pans, the wheel zooms, arrow keys nudge, and
  * Escape or Enter leaves with the framing kept.
  */
 export function CardZoneImage(props: CardZoneImageProps) {

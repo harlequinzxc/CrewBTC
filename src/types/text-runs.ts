@@ -3,10 +3,8 @@ import type { TextStyle } from './card'
 /**
  * How much larger or smaller a card's type is drawn, as a multiple.
  *
- * `layoutBand` already shrinks type until it fits, so this exists for the opposite
- * problem: type that fits comfortably but reads too small, or a card the user wants a
- * little airier. It scales the size the layout settles on, and the layout re-runs, so a
- * card that fits at 100% still fits at 120% — it simply wraps sooner.
+ * This multiplier sets the requested sheet-wide type size. Text wraps at that size;
+ * it does not shrink automatically when a band is too small.
  */
 export const MIN_TEXT_SCALE = 0.6
 export const MAX_TEXT_SCALE = 2

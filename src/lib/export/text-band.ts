@@ -13,7 +13,7 @@
  * bug: the output is valid, just wrong.
  */
 
-/** Smaller than this and the words are a smudge on paper; we stop shrinking instead. */
+/** Lower bound for requested text size, capped by the requested maximum. */
 export const MIN_BAND_TEXT_PT = 4
 
 const PT_TO_MM = 25.4 / 72
@@ -29,7 +29,7 @@ export interface BandLine {
 export interface BandLayout {
   readonly lines: readonly BandLine[]
   readonly sizePt: number
-  /** True when the text still did not fit at the legibility floor. */
+  /** True when the requested size does not fit within the band. */
   readonly overflow: boolean
 }
 

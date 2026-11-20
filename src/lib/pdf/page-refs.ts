@@ -21,7 +21,7 @@ export function toPageRefs(documents: readonly IngestedDocument[]): readonly Pag
 
     for (let pageNumber = 1; pageNumber <= document.metrics.pageCount; pageNumber += 1) {
       refs.push({
-        // The exporter resolves source bytes by file name (see doc-cache).
+        // Placements and card keys use file name as the shared identity.
         documentId: document.fileName,
         fileName: document.fileName,
         pageNumber,
