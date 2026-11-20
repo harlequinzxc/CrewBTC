@@ -162,6 +162,25 @@ export function CardZoneText(props: CardZoneTextProps) {
     <button
       type="button"
       data-target="dense"
+      /*
+        Edit begins on **pointer-down**, not click.
+        
+        Selecting a card reveals the band dividers, and they sit at a higher `z-index` than
+        the zones so they can be grabbed. On an unselected card those dividers do not exist
+        yet: pressing the text mounted them under the pointer, and the `click` that followed
+        was delivered to the divider instead of this button. The result was that the first
+        click on a card's text selected the card and did nothing else — you had to click
+        again, by which time the thing you clicked had moved.
+
+        Beginning the edit on pointer-down happens before the dividers mount, so the
+        gesture completes regardless of what ends up under the pointer. `onClick` is kept
+        for keyboard activation (`Enter`/`Space`), where there is no pointer at all.
+      */
+      onPointerDown={(event) => {
+        if (event.button !== 0) return
+        event.stopPropagation()
+        props.onBeginEdit()
+      }}
       onClick={(event) => {
         event.stopPropagation()
         props.onBeginEdit()

@@ -99,17 +99,6 @@ export function Card(props: CardProps) {
         onChange={props.onImageChange}
       />
 
-      {/* Dividers sit above the zones so they can be grabbed, but only on the card the
-          user has selected — otherwise every card would sprout handles. */}
-      {selected && props.onBandsChange !== undefined ? (
-        <ZoneDividers
-          bands={card.bands}
-          cellHeightMm={cell.heightMm}
-          scale={scale}
-          onChange={props.onBandsChange}
-        />
-      ) : null}
-
       <CardZoneText
         text={card.bodyText}
         scale={scale}
@@ -130,6 +119,25 @@ export function Card(props: CardProps) {
         onStyle={(style) => props.onStyleChange('body', style)}
       />
 
+      {/*
+        Dividers go **last**, and that is the whole fix. They used to sit between the
+        header and the body, so the two 7px bands centred on the zone boundaries painted
+        over the bottom of the header box and the top of the footer box — and they only
+        exist on the *selected* card, which is precisely the card whose text you are trying
+        to click. Selecting a card made its own text unclickable within ~3.5px of the band
+        edge, which is most of a short header.
+
+        Rendered last they still sit above the zones and stay grabbable, but the zones
+        after them can take the pointer, so a click on the words edits the words.
+      */}
+      {selected && props.onBandsChange !== undefined ? (
+        <ZoneDividers
+          bands={card.bands}
+          cellHeightMm={cell.heightMm}
+          scale={scale}
+          onChange={props.onBandsChange}
+        />
+      ) : null}
     </div>
   )
 }

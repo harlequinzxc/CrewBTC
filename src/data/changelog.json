@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.8.1",
+    "date": "2026-11-20",
+    "title": "One click on a card\u2019s text now edits it",
+    "highlights": [
+      "Fixed: the first click on a card\u2019s text only selected the card, so editing took two clicks and the second one landed on something that had moved. Selecting a card reveals its band dividers, and those appeared under the pointer between press and release, swallowing the click",
+      "Text now begins editing on press rather than on release, so the gesture completes before anything can appear underneath it",
+      "The band dividers are drawn after the text boxes rather than between them, so they no longer paint over the last few pixels of a header or footer band"
+    ]
+  },
+  {
     "version": "1.8.0",
     "date": "2026-11-20",
     "title": "Your work survives a reload, and Clear all can be undone",
