@@ -81,9 +81,24 @@ Everything visual traces back to two pure functions in `src/types/card.ts`:
   and offset, and never distorts. Returns `null` for a degenerate box so callers can
   skip drawing rather than emit a zero.
 
-`layoutBand` (`lib/export/text-band.ts`) and `drawCard` (`lib/export/draw-card.ts`) do
-the same job for text and pictures: one set of measurements produces both the on-screen
-card and the printed one.
+`layoutBand` / `layoutStyledBand` (`lib/export/text-band.ts`, `styled-band.ts`) and
+`drawCard` (`lib/export/draw-card.ts`) do the same job for text and pictures: one set of
+measurements produces both the on-screen card and the printed one.
+
+### Selection-level text formatting
+
+A card carries a box style (`headerStyle` / `bodyStyle`) and, on top of it, a list of
+**runs** (`headerRuns` / `bodyRuns`) that override bold, ink or highlight for a stretch of
+characters. Only overridden properties are stored, so a run written when the box was black
+stays correct after the box is recoloured.
+
+- `types/text-runs.ts` — the run model: clamping, `shiftRuns` (runs move with the text),
+  `applyToSelection` (restyle only what is selected), `styleAt`.
+- `features/workspace/card-edits.ts` — the pure card edits the UI applies: `styleInto`,
+  `styleSelection`, `textInto`, `changedSpan`, `activeStyle`.
+- `lib/export/styled-band.ts` — wraps per style segment, because a bold word measures
+  wider than a regular one. A box with no runs takes the single-style path unchanged.
+- `draw-card.ts` — draws each segment at its own x offset, so printed output matches.
 
 ## Geometry
 

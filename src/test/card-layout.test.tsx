@@ -54,6 +54,7 @@ function renderCard(options: { cellIndex?: number; bands?: { headerMm: number; f
         onBeginPictureEdit={() => {}}
         onEndPictureEdit={() => {}}
         onImageChange={() => {}}
+        onSelectionChange={() => {}}
       />
     </div>,
   )
@@ -152,11 +153,24 @@ describe('text is sized to fit its band', () => {
 
   it('places each line absolutely so the drawn block cannot exceed the layout', () => {
     const { container } = renderCard()
-    const spans = [...container.querySelectorAll('[aria-label^="Card text"] span')] as HTMLElement[]
-    expect(spans.length).toBeGreaterThan(0)
-    for (const span of spans) {
-      expect(span.className).toContain('absolute')
-      expect(Number.parseFloat(span.style.top)).toBeGreaterThanOrEqual(0)
+    // Lines are the direct children of the text box; their segments are nested inside.
+    const lines = [...container.querySelectorAll('[aria-label^="Card text"] > span')] as HTMLElement[]
+    expect(lines.length).toBeGreaterThan(0)
+    for (const line of lines) {
+      expect(line.className).toContain('absolute')
+      expect(Number.parseFloat(line.style.top)).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('styles each segment individually rather than the whole line', () => {
+    const { container } = renderCard()
+    const segments = [...container.querySelectorAll('[aria-label^="Card text"] > span > span')] as HTMLElement[]
+    expect(segments.length).toBeGreaterThan(0)
+    for (const segment of segments) {
+      // A segment carries its own ink and weight, which is what makes a bold word
+      // inside an otherwise regular line possible.
+      expect(segment.style.fontWeight).not.toBe('')
+      expect(segment.style.color).not.toBe('')
     }
   })
 })

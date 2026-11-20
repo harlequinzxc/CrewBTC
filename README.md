@@ -23,11 +23,13 @@ being left blank. It needs a connection the first time, and it reads English onl
 **You edit the card, not the PDF.** Three zones: text on top, photo in the middle,
 text underneath.
 
-- Both text boxes are real text fields. Type in them, mark them bold, change the ink
-  colour, or run a highlighter behind the words.
-- The photo is never stretched. It fits inside its box, and double-clicking lets you
-  pan and zoom within it. Anything that spills past the box is clipped, so a tall
-  photo can't push the text out of the way.
+- Both text boxes are real text fields. Type in them, add or remove lines, and select
+  text to format it. **Bold**, ink colour and a red / green / amber highlight apply to
+  whatever you have selected; with nothing selected they set the whole box.
+- The photo is never stretched. Double-click it to adjust: drag to move, use the wheel
+  or the `+` / `−` buttons to zoom, and **Reset** to put it back. Anything that spills
+  past the box is clipped, so a tall photo can't push the text out of the way. Click
+  outside or press `Escape` when you are happy — the framing is kept.
 - Each card tunes its own proportions. The top and bottom heights are yours to set
   per card, so a dish with long instructions and a dish with a short name can both
   be laid out the way they need.

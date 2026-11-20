@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { layoutBand } from '../../lib/export/text-band'
-import type { TextStyle } from '../../types/card'
+import { layoutStyledBand } from '../../lib/export/styled-band'
+import type { TextStyle, TextRun } from '../../types/card'
 
 export interface CardZoneTextProps {
   readonly text: string
@@ -12,7 +12,11 @@ export interface CardZoneTextProps {
   readonly xMm: number
   readonly yMm: number
   readonly style: TextStyle
+  /** Per-selection styling on top of `style`. */
+  readonly runs: readonly TextRun[]
   readonly editing: boolean
+  /** Reports the live selection so the formatting bar can act on it. */
+  readonly onSelectionChange: (selection: { readonly start: number; readonly end: number } | null) => void
   readonly maxPt: number
   readonly placeholder: string
   readonly onBeginEdit: () => void
@@ -53,14 +57,25 @@ export function CardZoneText(props: CardZoneTextProps) {
   // `layoutBand` measures down from `boxTopMm`, so the box's own top is passed rather
   // than a height. This is the same function the exporter calls, which is what keeps a
   // line break in the same place on screen and on paper.
-  const layout = layoutBand(
-    text === '' ? props.placeholder : text,
+  const shown = text === '' ? props.placeholder : text
+  const layout = layoutStyledBand(
+    {
+      text: shown,
+      // A placeholder is never styled: it is a hint, not content.
+      base: {
+        text: '',
+        bold: text === '' ? false : style.bold,
+        color: text === '' ? '#9ca3af' : style.color,
+        highlight: text === '' ? null : style.highlight,
+      },
+      runs: text === '' ? [] : props.runs,
+    },
     0,
     widthMm,
     heightMm,
     props.maxPt,
     LINE_HEIGHT,
-    measure,
+    (candidate, sizePt, bold) => (bold ? measure(candidate, sizePt) * 1.06 : measure(candidate, sizePt)),
   )
   // Drawn at the size the layout chose, with no legibility floor. A constant floor is
   // what made a 10 mm header overflow into the photo: at this preview scale a floor of
@@ -72,10 +87,6 @@ export function CardZoneText(props: CardZoneTextProps) {
   // block `layoutBand` measured — the check that guarantees it fits.
   const positionPx = (line: (typeof layout.lines)[number]): string =>
     `${(line.yMm - layout.sizePt * LINE_HEIGHT * PT_TO_MM) * scale}px`
-
-  // Placeholder copy is greyed so an empty box reads as empty rather than as content.
-  const ink = text === '' ? '#9ca3af' : style.color
-  const highlight = style.highlight ?? 'transparent'
 
   if (editing) {
     return (
@@ -93,6 +104,12 @@ export function CardZoneText(props: CardZoneTextProps) {
           event.stopPropagation()
         }}
         onPointerDown={(event) => event.stopPropagation()}
+        onSelect={(event) => {
+          const field = event.currentTarget
+          const start = field.selectionStart
+          const end = field.selectionEnd
+          props.onSelectionChange(end > start ? { start, end } : null)
+        }}
         className="zone-box absolute resize-none overflow-hidden rounded-sm border-0 bg-white/95 p-1 outline outline-2 outline-sky-500"
         style={{
           left: px(xMm),
@@ -103,6 +120,8 @@ export function CardZoneText(props: CardZoneTextProps) {
           lineHeight: `${lineHeight}px`,
           color: style.color,
           fontWeight: style.bold ? 700 : 400,
+          // A highlight tint behind the field, so the box does not hide what is styled.
+          background: style.highlight ?? 'rgba(255,255,255,0.95)',
         }}
         aria-label="Edit card text"
       />
@@ -125,18 +144,31 @@ export function CardZoneText(props: CardZoneTextProps) {
         height: px(heightMm),
         fontSize,
         lineHeight: `${lineHeight}px`,
-        color: ink,
-        fontWeight: style.bold ? 700 : 400,
+        fontWeight: 400,
       }}
       aria-label={`Card text: ${text === '' ? props.placeholder : text}`}
     >
       {layout.lines.map((line, index) => (
         <span
           key={`${index}-${line.text}`}
+          // A line is a run of segments, each with the style it was measured in. Bold
+          // characters are wider, so per-segment styling is what keeps on-screen breaks
+          // equal to the ones the exporter computed.
           className="absolute whitespace-pre"
-          style={{ top: positionPx(line), left: 0, background: highlight }}
+          style={{ top: positionPx(line), left: 0, fontWeight: 400 }}
         >
-          {line.text === '' ? '\u00a0' : line.text}
+          {line.segments.map((segment, segmentIndex) => (
+            <span
+              key={`${segmentIndex}-${segment.text}`}
+              style={{
+                background: segment.highlight ?? 'transparent',
+                color: segment.color,
+                fontWeight: segment.bold ? 700 : 400,
+              }}
+            >
+              {segment.text}
+            </span>
+          ))}
         </span>
       ))}
     </button>
