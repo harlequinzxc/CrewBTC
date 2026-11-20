@@ -7,11 +7,17 @@ import { DEFAULT_SHEET } from '../types/imposition'
 afterEach(() => localStorage.clear())
 
 describe('storage upgrades', () => {
-  it('retains a v1 session and upgrades it to v2', () => {
+  it('retains a v1 session and upgrades it to v3', () => {
     const old = { version: 1, documents: [], cards: { key: { headerText: 'edited' } }, activeId: null, savedAt: '2026-01-01' }
     const migrated = validate(old)
-    expect(migrated?.version).toBe(2)
+    expect(migrated?.version).toBe(3)
     expect(migrated?.cards.key?.headerText).toBe('edited')
+  })
+  it('retains a v2 session with old card labels', () => {
+    const old = { version: 2, documents: [], cards: { key: { cornerLabel: 'original' } }, activeId: null }
+    const migrated = validate(old)
+    expect(migrated?.version).toBe(3)
+    expect(migrated?.cards.key?.cornerLabel).toBe('original')
   })
   it('retains legacy sheet geometry and writes the versioned setting', async () => {
     const { textScale: _textScale, ...legacy } = DEFAULT_SHEET

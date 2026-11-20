@@ -58,7 +58,6 @@ export { containRectMm, fitInsideMm } from './photo-rect'
 export { MAX_TEXT_SCALE, MIN_TEXT_SCALE, clampTextScale } from './text-runs'
 
 export type { TextRun } from './text-runs'
-
 /** An extracted dish photo with the pixel shape it must be drawn at. */
 export interface PhotoSource {
   readonly dataUrl: string
@@ -197,6 +196,7 @@ export interface Card {
   /** Optional numbering restart and editable corner label. */
   readonly numberStart?: number
   readonly cornerLabel?: string
+  readonly cornerLabelStart?: string
   /** Values resolved from sheet order for display and export. */
   readonly displayNumber?: number
   readonly displayCornerLabel?: string

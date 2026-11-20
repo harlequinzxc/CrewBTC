@@ -7,7 +7,7 @@ interface Props {
   readonly scale: number
   readonly widthMm: number
   readonly onInteract: () => void
-  readonly onChange: (patch: Pick<Card, 'numberStart'> | Pick<Card, 'cornerLabel'>) => void
+  readonly onChange: (patch: Pick<Card, 'numberStart'> | Pick<Card, 'cornerLabelStart'>) => void
 }
 
 /** Two equal overlay fields; print uses slightly less vertical padding. */
@@ -25,7 +25,7 @@ export function CardCornerLabels({ card, scale, widthMm, onChange, onInteract }:
       <select data-corner-label title="Choose a card number" onFocus={onInteract} aria-label="Card number" value={card.displayNumber ?? 1} style={{ ...style, textAlignLast: 'center' }} className={`${field} left-0 appearance-none`} onChange={(event) => onChange({ numberStart: Number(event.target.value) })}>
         {Array.from({ length: 40 }, (_, i) => <option value={i + 1} key={i}>{i + 1}</option>)}
       </select>
-      <input data-corner-label onFocus={onInteract} aria-label="Card corner label" placeholder="XXXXX" value={card.displayCornerLabel ?? card.cornerLabel ?? ''} readOnly={card.cornerLabelMirrored === true} title={card.cornerLabelMirrored === true ? 'Mirrors the first card label' : 'This label is copied to all following cards'} style={style} className={`${field} right-0`} onChange={(event) => onChange({ cornerLabel: event.target.value })} />
+      <input data-corner-label onFocus={onInteract} aria-label="Card corner label" placeholder="XXXXX" value={card.displayCornerLabel ?? card.cornerLabelStart ?? card.cornerLabel ?? ''} title="Changes this and following card labels" style={style} className={`${field} right-0`} onChange={(event) => onChange({ cornerLabelStart: event.target.value })} />
     </>
   )
 }

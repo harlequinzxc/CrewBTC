@@ -108,13 +108,16 @@ describe('a page lands on a populated card', () => {
 })
 
 describe('fine-tuning one card', () => {
-  it('keeps only sheet controls in the inspector when a card is selected', async () => {
+  it('shows read-only selected card values and the sheet text size', async () => {
     const cell = await placeCard()
     fireEvent.pointerDown(cell)
     const inspector = screen.getByRole('complementary', { name: 'Inspector' })
-    expect(inspector.querySelector('[aria-label="Top"]')).toBeNull()
-    expect(inspector.querySelector('[aria-label="Bottom"]')).toBeNull()
-    expect(screen.getByLabelText('All text size')).toBeInTheDocument()
+    expect(inspector.querySelector('[aria-label="Top value"]')).toHaveTextContent('mm')
+    expect(inspector.querySelector('[aria-label="Bottom value"]')).toHaveTextContent('mm')
+    expect(inspector.querySelector('[aria-label="Text value"]')).toHaveTextContent('80%')
+    expect(inspector.querySelector('input[aria-label="Top"]')).toBeNull()
+    fireEvent.change(screen.getByLabelText('All text size'), { target: { value: '125' } })
+    expect(inspector.querySelector('[aria-label="Text value"]')).toHaveTextContent('125%')
   })
 
   it('numbers following cards and allows a corner label', async () => {
@@ -132,7 +135,9 @@ describe('fine-tuning one card', () => {
     fireEvent.change(labels[0]!, { target: { value: 'ABC' } })
     expect(labels[0]?.value).toBe('ABC')
     expect(labels[1]?.value).toBe('ABC')
-    expect(labels[1]?.readOnly).toBe(true)
+    fireEvent.change(labels[1]!, { target: { value: 'REST' } })
+    expect(labels[0]?.value).toBe('ABC')
+    expect(labels[1]?.value).toBe('REST')
   })
 
   afterEach(() => {
