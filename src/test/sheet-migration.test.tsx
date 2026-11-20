@@ -14,10 +14,22 @@ describe('storage upgrades', () => {
     expect(migrated?.cards.key?.headerText).toBe('edited')
   })
   it('retains legacy sheet geometry and writes the versioned setting', async () => {
-    localStorage.setItem('crewbtc.sheet', JSON.stringify({ ...DEFAULT_SHEET, cellWidthMm: 60 }))
+    const { textScale: _textScale, ...legacy } = DEFAULT_SHEET
+    void _textScale
+    localStorage.setItem('crewbtc.sheet', JSON.stringify({ ...legacy, cellWidthMm: 60 }))
     const { result } = renderHook(() => useSheet())
     expect(result.current.settings.cellWidthMm).toBe(60)
-    expect(result.current.settings.textScale).toBe(1)
+    expect(result.current.settings.textScale).toBe(0.8)
     await waitFor(() => expect(localStorage.getItem('crewbtc.sheet.v2')).not.toBeNull())
   })
+})
+
+
+it('defaults to 80 percent while retaining a previously saved choice', () => {
+  const first = renderHook(() => useSheet())
+  expect(first.result.current.settings.textScale).toBe(0.8)
+  first.unmount()
+  localStorage.setItem('crewbtc.sheet.v2', JSON.stringify({ ...DEFAULT_SHEET, textScale: 1.5 }))
+  const saved = renderHook(() => useSheet())
+  expect(saved.result.current.settings.textScale).toBe(1.5)
 })

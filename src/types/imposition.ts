@@ -1,3 +1,5 @@
+import { DEFAULT_TEXT_SCALE } from './card-typography'
+
 /** Sheet and cell geometry for imposition. All values in millimetres. */
 
 export interface SheetSettings {
@@ -61,6 +63,7 @@ export interface GridLayout {
 }
 
 export const DEFAULT_SHEET: SheetSettings = {
+  textScale: DEFAULT_TEXT_SCALE,
   sheetWidthMm: 210,
   sheetHeightMm: 297,
   cellWidthMm: 52,

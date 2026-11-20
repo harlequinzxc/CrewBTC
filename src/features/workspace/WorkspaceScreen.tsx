@@ -1,5 +1,6 @@
-import { numberedCards } from './numbered-cards'
+import { cardForStorage, numberedCards } from './numbered-cards'
 import { useCallback, useMemo, useState } from 'react'
+import { DEFAULT_TEXT_SCALE } from '../../types/card-typography'
 import { TopBar } from '../../components/layout/TopBar'
 import { Inspector } from './Inspector'
 import { useBatch } from './use-batch'
@@ -69,7 +70,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const sheet = useSheet()
   const cardStore = useCards(session.snapshot?.cards ?? null)
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
-
   const zoom = useSheetZoom(sheet.settings.sheetWidthMm)
 
   // Write-side: armed only once the read has finished, so an early frame cannot erase the
@@ -83,7 +83,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const seeds = useCardSeeds(pageRefs, sheet.grid, batch.documents)
   useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm, sheet.grid.cellWidthMm)
 
-  const visibleCards = useMemo(() => numberedCards(cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale ?? 1), [cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale])
+  const visibleCards = useMemo(() => numberedCards(cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale ?? DEFAULT_TEXT_SCALE), [cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale])
 
   const exporter = useCardExport({
     settings: sheet.settings,
@@ -197,7 +197,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           selectedCell={selectedCell}
           selectionSheet={selectionSheet}
           onSelectCell={selectCell}
-          onCardChange={(key, card: Card) => cardStore.setCard(key, card)}
+          onCardChange={(key, card: Card) => cardStore.setCard(key, cardForStorage(card))}
           scale={zoom.scale}
           fitting={zoom.fitting}
           paneRef={zoom.paneRef}

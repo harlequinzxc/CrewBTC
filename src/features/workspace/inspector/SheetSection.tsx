@@ -1,3 +1,4 @@
+import { DEFAULT_TEXT_SCALE } from '../../../types/card-typography'
 import { NumberField } from '../../../components/ui/NumberField'
 import { MIN_TEXT_SCALE, MAX_TEXT_SCALE, clampTextScale } from '../../../types/card'
 import { ResetButton } from '../../../components/ui/ResetButton'
@@ -102,7 +103,7 @@ export function SheetSection(props: SheetSectionProps) {
         </Row>
 
         <Row label="Text size">
-          <NumberField label="" name="All text size" suffix="%" value={Math.round((sheet.textScale ?? 1) * 100)} min={MIN_TEXT_SCALE * 100} max={MAX_TEXT_SCALE * 100} step={5} onChange={(value) => onChange({ textScale: clampTextScale(value / 100) })} />
+          <NumberField label="" name="All text size" suffix="%" value={Math.round((sheet.textScale ?? DEFAULT_TEXT_SCALE) * 100)} min={MIN_TEXT_SCALE * 100} max={MAX_TEXT_SCALE * 100} step={5} onChange={(value) => onChange({ textScale: clampTextScale(value / 100) })} />
         </Row>
 
         <Row label="Rotate 90°">
