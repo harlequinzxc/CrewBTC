@@ -105,7 +105,9 @@ describe('a reload', () => {
     fireEvent.pointerDown(zone, { button: 0 })
     const field = await screen.findByLabelText('Edit card text')
     fireEvent.change(field, { target: { value: 'EDITED BEFORE RELOAD' } })
-    fireEvent.blur(field)
+    // End the edit the way a user does. A bare blur no longer commits: a field that loses
+    // focus to nothing stays open, because that is also what a window losing focus does.
+    fireEvent.keyDown(field, { key: 'Escape' })
     expect(screen.getAllByRole('button', { name: /card text:/i })[0]?.getAttribute('aria-label'))
       .toContain('EDITED BEFORE RELOAD')
 

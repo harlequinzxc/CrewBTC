@@ -141,7 +141,39 @@ export function CardZoneText(props: CardZoneTextProps) {
         ref={fieldRef}
         value={text}
         onChange={(event) => props.onChange(event.target.value)}
-        onBlur={props.onEndEdit}
+        /*
+          Blur is not the same thing as "the user finished".
+
+          A newly focused element blurs for reasons that have nothing to do with the user:
+          the window losing focus to another window, a scroll, a layout shift caused by the
+          field mounting in the first place. Any of those ended the edit, and since the
+          editor is only ever closed here, a blur that arrives milliseconds after the press
+          closes the box as soon as it opens — mount and unmount inside one gesture.
+
+          So the end of an edit is decided by *what the user did next*, not by focus. The
+          box closes on Escape (below), or when the press moves somewhere else (the sheet's
+          own deselect), or when the user clicks another card. `focusout` is kept only as a
+          fallback for the one legitimate case: focus moving to another control that is not
+          part of this box.
+        */
+        onBlur={(event) => {
+          const next = event.relatedTarget as Node | null
+          /*
+            Focus leaving to nothing at all is not a user action: a window that lost focus,
+            a scroll, a layout shift caused by the field itself mounting. Keep the editor
+            open — and put the caret back, because a field that is open but not focused
+            takes no typing, which looks exactly as broken as one that never opened.
+          */
+          if (next === null) {
+            window.setTimeout(() => {
+              if (document.activeElement !== event.currentTarget) takeFocus(fieldRef.current)
+            }, 0)
+            return
+          }
+          // Moving between the field and something inside the same zone is not a finish.
+          if (event.currentTarget.contains(next)) return
+          props.onEndEdit()
+        }}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             event.stopPropagation()
