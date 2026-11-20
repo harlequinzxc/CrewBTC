@@ -13,6 +13,15 @@ export interface DrawnCardTextProps {
   readonly lines: readonly StyledLine[]
   readonly positionPx: (line: StyledLine) => string
   readonly box: CSSProperties
+  /**
+   * The inset the drawn lines are positioned from, in pixels.
+   *
+   * It must be the same number the editable field uses (`0.8 mm` at the current scale),
+   * not a Tailwind step. `p-1` is 4 px at any zoom; the field inset scales with the sheet.
+   * The two disagreeing by a fraction of a pixel is enough to shift every line sideways
+   * when the box is clicked — the jump this component exists to prevent.
+   */
+  readonly insetPx: string
   readonly label: string
   readonly onBeginEdit: () => void
   readonly onPress: (event: React.PointerEvent<HTMLButtonElement>) => void
@@ -33,8 +42,20 @@ export function DrawnCardText(props: DrawnCardTextProps) {
         props.onBeginEdit()
       }}
       onKeyDown={props.onKeyDown}
-      className="zone-box absolute block cursor-text overflow-hidden border-0 bg-transparent p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-      style={props.box}
+      // Chrome-free: a sheet box is a picture of paper. The only affordances are the
+      // cursor and the focus ring, neither of which moves a glyph.
+      className="zone-box absolute block cursor-text overflow-hidden border-0 bg-transparent p-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+      /*
+        The same box model the field uses, so the two states occupy one rectangle.
+
+        `insetPx` is the field's own millimetre padding, and the surface and corner come
+        from `props.box`, which `CardZoneText` fills with the field's values. An earlier
+        draft of this block re-declared `background: 'transparent'` and `color: 'inherit'`
+        *after* the spread, which silently undid both — the surface stayed see-through and
+        clicking still changed the box. Anything set after the spread has to be something
+        the spread does not carry.
+      */
+      style={{ ...props.box, padding: props.insetPx, outlineOffset: 0 }}
       aria-label={props.label}
     >
       {props.lines.map((line, index) => (

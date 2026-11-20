@@ -64,9 +64,15 @@ test('a press on the ground still closes the editor', async ({ page }) => {
   await page.mouse.up()
   await expect(page.getByLabel('Edit card text')).toBeVisible()
 
-  // Above the paper, inside the pane's scroll container: the ground, not a card.
+  /*
+    Above the paper, inside the pane's scroll container: the ground, not a card.
+
+    Not the first few pixels of the pane — the formatting bar is docked there while an edit
+    is open (48 to 80 px), and it is meant to be. This point is below it and still above the
+    sheet, which is the definition of ground.
+  */
   const pane = await page.getByTestId('sheet-pane').boundingBox()
-  await page.mouse.click(pane!.x + pane!.width / 2, pane!.y + 8)
+  await page.mouse.click(pane!.x + pane!.width / 2, pane!.y + 44)
   await expect(page.getByLabel('Edit card text')).toHaveCount(0)
 })
 

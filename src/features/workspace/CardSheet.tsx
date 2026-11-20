@@ -141,7 +141,9 @@ export function CardSheet(props: CardSheetProps) {
   const activeZone = editing === null ? null : editing.zone
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    // `relative` is load-bearing: without it the absolutely-positioned formatting bar
+    // resolved against the app root and sat at y=0, over the top bar and Export.
+    <div className="relative flex min-h-0 flex-1 flex-col">
       {/*
         The formatting bar follows whichever text box has the caret, and it is an overlay
         rather than a row.
