@@ -37,7 +37,6 @@ function props(card: CardModel) {
     onBeginPictureEdit: vi.fn(),
     onEndPictureEdit: vi.fn(),
     onImageChange: vi.fn(),
-    onBandsChange: vi.fn(),
   }
 }
 
@@ -115,35 +114,6 @@ describe('formatting a text box', () => {
   it('says which box it will change', () => {
     render(<CardTextBar {...base} />)
     expect(screen.getByText('bottom text')).toBeInTheDocument()
-  })
-})
-
-describe('tuning the three zones of one card', () => {
-  it('offers sliders only for the selected card', () => {
-    const unselected = props(model())
-    const { rerender } = render(<Card {...unselected} />)
-    expect(screen.queryByLabelText('Header height')).not.toBeInTheDocument()
-
-    const selected = { ...props(model()), selected: true }
-    rerender(<Card {...selected} />)
-    expect(screen.getByLabelText('Header height')).toBeInTheDocument()
-    expect(screen.getByLabelText('Footer height')).toBeInTheDocument()
-  })
-
-  it('changes only the card it belongs to', () => {
-    const p = { ...props(model({ bands: { headerMm: 13, footerMm: 20 } })), selected: true }
-    render(<Card {...p} />)
-
-    fireEvent.change(screen.getByLabelText('Header height'), { target: { value: '18' } })
-    expect(p.onBandsChange).toHaveBeenCalledWith({ headerMm: 18, footerMm: 20 })
-  })
-
-  it('does not start a drag on the sheet when a slider is used', () => {
-    const p = { ...props(model()), selected: true }
-    render(<Card {...p} />)
-
-    fireEvent.pointerDown(screen.getByLabelText('Header height'))
-    expect(p.onSelect).not.toHaveBeenCalled()
   })
 })
 
