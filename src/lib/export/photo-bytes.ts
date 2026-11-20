@@ -1,4 +1,4 @@
-import type { PhotoSource } from '../../types/edit'
+import type { PhotoSource } from '../../types/card'
 
 /**
  * Turns a stored dish photo into bytes the PDF writer can embed.

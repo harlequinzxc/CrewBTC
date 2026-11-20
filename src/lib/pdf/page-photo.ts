@@ -1,5 +1,5 @@
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist'
-import type { PhotoSource } from '../../types/edit'
+import type { PhotoSource } from '../../types/card'
 import { extractEmbeddedPhoto } from './food-photo'
 import { renderThumbnail } from './thumbnails'
 

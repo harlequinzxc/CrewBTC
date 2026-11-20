@@ -3,10 +3,8 @@ import type { IngestedDocument } from '../../types/document'
 import type { PageRef } from '../../lib/imposition/sheet'
 import { BatchQueue } from './BatchQueue'
 import { DropZone } from './DropZone'
-import { TextTab } from './TextTab'
-import { copyProgress } from './copy-progress'
 
-export type LeftTab = 'files' | 'text'
+export type LeftTab = 'files'
 
 export interface LeftPaneProps {
   readonly tab: LeftTab
@@ -22,15 +20,12 @@ export interface LeftPaneProps {
   readonly busy: boolean
   readonly pages: readonly PageRef[]
   readonly previews: Readonly<Record<string, string>>
-  readonly texts: Readonly<Record<string, string>>
   readonly selectedPage: number
   readonly onSelectPage: (index: number) => void
-  readonly onTextChange: (index: number, text: string) => void
 }
 
 const TABS: readonly { readonly id: LeftTab; readonly label: string }[] = [
   { id: 'files', label: 'Files' },
-  { id: 'text', label: 'Text' },
 ]
 
 /**
@@ -39,7 +34,6 @@ const TABS: readonly { readonly id: LeftTab; readonly label: string }[] = [
  * from the sheet — which is the thing you actually need to see.
  */
 export function LeftPane(props: LeftPaneProps) {
-  const progress = copyProgress(props.pages, props.texts)
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-zinc-950">
@@ -60,11 +54,6 @@ export function LeftPane(props: LeftPaneProps) {
               )}
             >
               {tab.label}
-              {tab.id === 'text' && props.pages.length > 0 ? (
-                <span className="tabular rounded bg-zinc-800 px-1 text-[10px] text-zinc-400">
-                  {progress}
-                </span>
-              ) : null}
             </button>
           )
         })}
@@ -90,16 +79,7 @@ export function LeftPane(props: LeftPaneProps) {
               />
             </div>
           </>
-        ) : (
-          <TextTab
-            pages={props.pages}
-            previews={props.previews}
-            texts={props.texts}
-            selectedPage={props.selectedPage}
-            onSelectPage={props.onSelectPage}
-            onChange={props.onTextChange}
-          />
-        )}
+        ) : null}
       </div>
     </div>
   )

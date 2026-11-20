@@ -158,7 +158,10 @@ export function splitRecipeText(
 }
 
 /** Reads and splits one page. Never throws: an unreadable page yields empty bands. */
-export async function readRecipeText(page: PDFPageProxy): Promise<RecipeText> {
+export async function readRecipeText(
+  page: PDFPageProxy,
+  photoMiddle = 0.5,
+): Promise<RecipeText> {
   try {
     const viewport = page.getViewport({ scale: 1 })
     const content = await page.getTextContent()
@@ -167,7 +170,7 @@ export async function readRecipeText(page: PDFPageProxy): Promise<RecipeText> {
       viewport.width,
       viewport.height,
     )
-    return splitRecipeText(lines)
+    return splitRecipeText(lines, photoMiddle)
   } catch {
     return EMPTY_RECIPE_TEXT
   }

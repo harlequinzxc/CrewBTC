@@ -43,7 +43,7 @@ describe('App shell', () => {
     // The dead-button regression: these must be wired, not decorative.
     expect(screen.getAllByRole('button', { name: /add pdfs/i }).length).toBeGreaterThan(0)
     // The grid engine's result must be visible without any PDF loaded.
-    expect(screen.getByText('3 × 3 = 9 per sheet')).toBeInTheDocument()
+    expect(screen.getByText('3 × 3 = 9 cells')).toBeInTheDocument()
   })
 
   it('renders the reduced-motion switch in Settings and persists the choice', async () => {

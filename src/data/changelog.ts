@@ -8,6 +8,21 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '1.0.0',
+    date: '2026-11-19',
+    title: 'Rebuilt around a three-zone card',
+    highlights: [
+      'Every cell is one card with three zones — top text, photo, bottom text — and each zone is edited in place',
+      'The Text tab and the sheet-wide Card Bands sliders are gone; a card carries its own top and bottom heights, tuned by selecting it',
+      'Upload now reads a page once and returns the dish photo, the name above it and the steps below it together',
+      'The header/instructions split follows where the photo actually sits on the page, so dish notes above a low photo stay with the name instead of becoming steps',
+      'Scanned pages with no text layer are read with OCR, so their cards are not blank; OCR loads only when needed and is never fetched for a normal PDF',
+      'Bold, ink colour and highlighter are per box, applied from a bar that appears under the card being edited',
+      'The exported PDF prints exactly the card: same bold, same colours, same highlights, same band heights, same photo framing',
+      'Fixed: photo placement is read from the PDF’s own transform matrices, which were being composed in the wrong order',
+    ],
+  },
+  {
     version: '0.9.0',
     date: '2026-11-19',
     title: 'Dish photos keep their shape, and can be moved and zoomed',

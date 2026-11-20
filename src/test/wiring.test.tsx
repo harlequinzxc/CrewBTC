@@ -101,9 +101,12 @@ describe('Add PDFs is wired', () => {
       expect(screen.getAllByText('sample.pdf').length).toBeGreaterThan(0)
     })
 
-    // The extracted block now lives in the cell editor, where it can be changed,
-    // rather than in a separate read-only preview pane (removed in v0.5.0).
-    expect(await screen.findByRole('button', { name: /^Cell 1: sample page 1$/ })).toBeInTheDocument()
+    // The placed page now appears as a card on the sheet, with its three zones drawn.
+    // The separate text tab is gone, so the card itself is the editor.
+    await waitFor(() => {
+      expect(document.querySelector('[data-cell]')).not.toBeNull()
+    })
+    expect(document.querySelector('[data-image]')).not.toBeNull()
     expect(screen.queryByText('Nothing selected')).not.toBeInTheDocument()
   })
 

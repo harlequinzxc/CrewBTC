@@ -21,7 +21,6 @@ const presetOptions = SHEET_PRESETS.map((preset) => ({ value: preset.id, label: 
 /** Sheet + cell geometry controls. Every number is millimetres. */
 export function SheetSettings({
   settings,
-  grid,
   errors,
   onChange,
   onReset,
@@ -42,9 +41,7 @@ export function SheetSettings({
       | 'cellWidthMm'
       | 'cellHeightMm'
       | 'gutterMm'
-      | 'marginMm'
-      | 'headerMm'
-      | 'footerMm',
+      | 'marginMm',
     label: string,
     suffix = 'mm',
   ): React.ReactNode => (
@@ -83,34 +80,10 @@ export function SheetSettings({
         {number('marginMm', 'Margin')}
       </div>
 
-      <div>
-        <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-          Card bands
-        </h3>
-        <div className="grid grid-cols-2 gap-3">
-          {number('headerMm', 'Header')}
-          {number('footerMm', 'Footer')}
-        </div>
-        <p className="tabular mt-2 text-[11px] text-zinc-500">
-          Picture gets{' '}
-          {Math.max(0, settings.cellHeightMm - settings.headerMm - settings.footerMm).toFixed(1)} mm
-          of {settings.cellHeightMm} mm — the three bands always fill the card.
-        </p>
-        {errors.footerMm === undefined ? null : (
-          <p className="mt-1 text-[11px] text-red-300">{errors.footerMm}</p>
-        )}
-      </div>
-
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-2.5">
-        <p className="text-[11px] text-zinc-400">Result</p>
-        <p className="tabular text-sm font-medium text-zinc-50">
-          {grid.columns} × {grid.rows} = {grid.cellCount} per sheet
-        </p>
-        <p className="tabular mt-0.5 text-[11px] text-zinc-500">
-          {grid.utilisationPercent}% of paper used
-          {grid.slackRightMm > 0 ? ` · ${grid.slackRightMm} mm slack on the right` : ''}
-        </p>
-      </div>
+      <p className="text-[11px] text-zinc-500">
+        Each card splits into its own three zones. Select a card on the sheet to tune its
+        top and bottom heights.
+      </p>
 
       <Toggle
         label="Rotate cells 90°"

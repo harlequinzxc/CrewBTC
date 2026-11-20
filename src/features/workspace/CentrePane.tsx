@@ -1,11 +1,9 @@
 import { DropZone } from './DropZone'
-import { SheetPreview } from './SheetPreview'
-import { TextStyleBar } from './TextStyleBar'
+import { CardSheet } from './CardSheet'
 import { Button } from '../../components/ui/Button'
 import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
-import { DEFAULT_TEXT_STYLE } from '../../types/edit'
-import type { ImageTransform, PhotoSource, TextStyle } from '../../types/edit'
+import type { Card } from '../../types/card'
 
 export interface CentrePaneProps {
   readonly documentsLoaded: boolean
@@ -16,24 +14,34 @@ export interface CentrePaneProps {
   readonly grid: GridLayout
   readonly pages: readonly PageRef[]
   readonly showCutMarks: boolean
-  readonly photos?: Readonly<Record<string, PhotoSource>> | undefined
-  readonly texts: Readonly<Record<string, string>>
-  readonly images: Readonly<Record<string, ImageTransform>>
+  readonly cards: Readonly<Record<string, Card>>
   readonly selectedCell: number | null
   readonly onSelectCell: (cellIndex: number | null) => void
-  readonly onImageChange: (index: number, image: ImageTransform) => void
-  readonly onResetImage: (index: number) => void
-  readonly styles: Readonly<Record<string, TextStyle>>
-  readonly onStyleChange: (index: number, band: 'header' | 'footer', style: TextStyle) => void
-  readonly onTextChange: (index: number, band: 'header' | 'footer', text: string) => void
+  readonly onCardChange: (key: string, card: Card) => void
 }
 
-/** The sheet, or the drop target when there is nothing to show yet. */
+/**
+ * The sheet, or the drop target when there is nothing to show yet.
+ *
+ * No tabs, no band settings and no separate text editor: everything a card contains is
+ * edited on the card itself.
+ */
 export function CentrePane(props: CentrePaneProps) {
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-zinc-950">
       {!props.documentsLoaded ? (
-        <div className="grid min-h-0 flex-1 place-items-center overflow-hidden p-6">
+        <>
+          {/* The grid's arithmetic shows before any upload: a bad cell size or margin is
+              something you want to notice before dragging a PDF in, not after. */}
+          <div className="flex h-9 shrink-0 items-center gap-3 border-b border-zinc-800 px-3">
+            <span className="tabular whitespace-nowrap text-xs text-zinc-300">
+              {props.grid.columns} × {props.grid.rows} = {props.grid.cellCount} cells
+            </span>
+            <span className="tabular whitespace-nowrap text-xs text-zinc-500">
+              {props.grid.utilisationPercent}% of paper
+            </span>
+          </div>
+          <div className="grid min-h-0 flex-1 place-items-center overflow-hidden p-6">
           <div className="w-full max-w-sm">
             <DropZone onFiles={props.onFiles} disabled={props.busy} />
             <Button
@@ -46,44 +54,23 @@ export function CentrePane(props: CentrePaneProps) {
             >
               Add PDFs
             </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <SheetPreview
-            settings={props.sheet}
-            grid={props.grid}
-            pages={props.pages}
-            showCutMarks={props.showCutMarks}
-            photos={props.photos}
-            texts={props.texts}
-            images={props.images}
-            selectedCell={props.selectedCell}
-            onSelectCell={props.onSelectCell}
-            onImageChange={props.onImageChange}
-            onResetImage={props.onResetImage}
-            styles={props.styles}
-            onStyleChange={props.onStyleChange}
-            onTextChange={props.onTextChange}
-          />
-
-          {props.selectedCell !== null && (
-            <div className="shrink-0 border-t border-zinc-800">
-              {(['header', 'footer'] as const).map((band) => (
-                <TextStyleBar
-                  key={band}
-                  band={band}
-                  style={props.styles[`${props.selectedCell}|${band}`] ?? DEFAULT_TEXT_STYLE}
-                  onChange={(style) => {
-                    if (props.selectedCell !== null) {
-                      props.onStyleChange(props.selectedCell, band, style)
-                    }
-                  }}
-                />
-              ))}
+              <p className="mt-3 text-center text-xs text-zinc-500">
+                Each page becomes one card: dish photo, name, and plating steps.
+              </p>
             </div>
-          )}
-        </div>
+          </div>
+        </>
+      ) : (
+        <CardSheet
+          settings={props.sheet}
+          grid={props.grid}
+          pages={props.pages}
+          cards={props.cards}
+          showCutMarks={props.showCutMarks}
+          selectedCell={props.selectedCell}
+          onSelectCell={props.onSelectCell}
+          onCardChange={props.onCardChange}
+        />
       )}
     </div>
   )

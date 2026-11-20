@@ -11,16 +11,17 @@ import { SettingsView } from './features/settings/SettingsView'
 import { Inspector } from './features/workspace/Inspector'
 import { SheetSettings } from './features/workspace/SheetSettings'
 import { useBatch } from './features/workspace/use-batch'
-import { useCellText } from './features/workspace/use-cell-text'
-import { useAutoCopyFor } from './features/workspace/use-auto-copy'
-import { photosByDocumentPage, photosByPage, textsByPageIndex } from './features/workspace/photos'
+import { useCards, useSeedCards } from './features/workspace/use-cards'
+import type { CardSeed } from './features/workspace/use-cards'
 import { CentrePane } from './features/workspace/CentrePane'
 import { LeftPane } from './features/workspace/LeftPane'
 import type { LeftTab } from './features/workspace/LeftPane'
-import { useExport } from './features/workspace/use-export'
+import { useCardExport } from './features/workspace/use-card-export'
 import { useSheet } from './features/workspace/use-sheet'
 import { toPageRefs } from './lib/pdf/page-refs'
 import { pickFiles } from './lib/files/open-picker'
+import { cardKey } from './types/card'
+import type { Card } from './types/card'
 import { DESKTOP_QUERY, useMediaQuery } from './lib/use-media-query'
 import { readSettings, requestPersistence, writeSettings } from './lib/storage/db'
 import { DEFAULT_PAGE_SETTINGS } from './types/settings'
@@ -56,16 +57,26 @@ function Workspace() {
   const [leftTab, setLeftTab] = useState<LeftTab>('files')
   const [selectedPage, setSelectedPage] = useState(0)
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
-  const cellText = useCellText()
+  const cardStore = useCards()
 
-  // Copy and framing are keyed by page index, which is the order the sheet places them.
-  const textsByPage = useMemo(() => textsByPageIndex(cellText.texts), [cellText.texts])
+  // One seed per placed page: what the upload read, ready to fill a fresh card.
+  const seeds = useMemo<readonly CardSeed[]>(
+    () =>
+      pageRefs.map((page, index) => {
+        const document = batch.documents.find((item) => item.id === page.documentId)
+        const copy = document?.copies[page.pageNumber]
+        return {
+          key: cardKey(index, page.documentId, page.pageNumber),
+          headerText: copy?.header ?? '',
+          bodyText: copy?.footer ?? '',
+          photo: document?.photos[page.pageNumber] ?? null,
+        }
+      }),
+    [pageRefs, batch.documents],
+  )
 
-  // The real embedded dish photo per page, where the upload found one.
-  const photos = useMemo(() => photosByPage(batch.documents), [batch.documents])
-
-  // The same photos keyed by source page, for the exporter.
-  const photosByPageKey = useMemo(() => photosByDocumentPage(batch.documents), [batch.documents])
+  // A page's scan fills its card once, and never overwrites an edit afterwards.
+  useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm)
 
   // One preview per page, for the sketch beside the copy box.
   const previews = useMemo(() => {
@@ -82,16 +93,12 @@ function Workspace() {
 
   // Fill every card's bands from its page as soon as the page is parsed, so an upload
   // never lands in an empty editor. Edits are never overwritten.
-  useAutoCopyFor({ documents: batch.documents, pages: pageRefs, texts: textsByPage, cellText })
-  const exporter = useExport({
+  const exporter = useCardExport({
     settings: sheet.settings,
     grid: sheet.grid,
     pages: pageRefs,
     drawCutMarks: showCutMarks,
-    texts: textsByPage,
-    images: cellText.images,
-    photos: photosByPageKey,
-    styles: cellText.styles,
+    cards: cardStore.cards,
     notify,
   })
 
@@ -112,19 +119,10 @@ function Workspace() {
   // that no longer exist, so the reset happens with the clear rather than after it.
   const clearAll = useCallback(() => {
     batch.clear()
-    cellText.clear()
+    cardStore.reset()
     setSelectedCell(null)
     setSelectedPage(0)
-  }, [batch, cellText])
-
-  const handleTextChange = useCallback(
-    (index: number, text: string) => {
-      const page = pageRefs[index]
-      if (page === undefined) return
-      cellText.setText(index, page.documentId, page.pageNumber, text)
-    },
-    [cellText, pageRefs],
-  )
+  }, [batch, cardStore])
 
   const handlePageSelect = useCallback(
     (index: number) => {
@@ -183,10 +181,8 @@ function Workspace() {
                 busy={batch.busy}
                 pages={pageRefs}
                 previews={previews}
-                texts={textsByPage}
                 selectedPage={safePage}
                 onSelectPage={handlePageSelect}
-                onTextChange={handleTextChange}
               />
             </div>
 
@@ -199,24 +195,10 @@ function Workspace() {
               grid={sheet.grid}
               pages={pageRefs}
               showCutMarks={showCutMarks}
-              photos={photos}
-              texts={textsByPage}
-              images={cellText.images}
+              cards={cardStore.cards}
               selectedCell={selectedCell}
               onSelectCell={setSelectedCell}
-              styles={cellText.styles}
-              onStyleChange={cellText.setStyle}
-              onTextChange={handleTextChange}
-              onImageChange={(index, image) => {
-                const page = pageRefs[index]
-                if (page === undefined) return
-                cellText.setImage(index, page.documentId, page.pageNumber, image)
-              }}
-              onResetImage={(index) => {
-                const page = pageRefs[index]
-                if (page === undefined) return
-                cellText.resetImage(index, page.documentId, page.pageNumber)
-              }}
+              onCardChange={(key, card: Card) => cardStore.setCard(key, card)}
             />
 
             <Inspector
