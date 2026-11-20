@@ -15,8 +15,8 @@ export interface SectionProps {
 
 export function Section({ title, action, children }: SectionProps) {
   return (
-    <section className="border-b border-hairline px-3 py-3 last:border-b-0">
-      <div className="mb-2 flex h-5 items-center justify-between">
+    <section className="border-b border-hairline px-3 py-2.5 last:border-b-0">
+      <div className="mb-1.5 flex h-4 items-center justify-between">
         <h2 className="text-[11px] font-medium uppercase tracking-[0.06em] text-ink-secondary">
           {title}
         </h2>

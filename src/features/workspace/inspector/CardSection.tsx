@@ -9,6 +9,7 @@ import {
   clampTextScale,
 } from '../../../types/card'
 import type { Card, CardBands } from '../../../types/card'
+import type { UnitSystem } from '../../../lib/units'
 import { Section } from './Section'
 
 /**
@@ -23,6 +24,7 @@ export interface CardSectionProps {
   readonly card: Card
   readonly cellIndex: number
   readonly cellHeightMm: number
+  readonly units: UnitSystem
   readonly onBandsChange: (bands: CardBands) => void
   readonly onTextScaleChange: (scale: number) => void
   readonly onReset: () => void
@@ -45,24 +47,24 @@ export function CardSection(props: CardSectionProps) {
       title={`Card ${props.cellIndex + 1}`}
       action={<ResetButton label="Reset card" onClick={props.onReset} />}
     >
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-3 gap-1">
+        {/* The two box heights are geometry, so they follow the document's unit like
+            every other length; the text scale is a percentage and does not. */}
         <NumberField
           label="Top"
-          suffix="mm"
-          value={bands.headerMm}
+          valueMm={bands.headerMm}
+          units={props.units}
           min={BAND_MIN_MM}
           max={ceiling}
-          step={0.5}
-          onChange={(headerMm) => set({ headerMm })}
+          onChangeMm={(headerMm) => set({ headerMm })}
         />
         <NumberField
           label="Bottom"
-          suffix="mm"
-          value={bands.footerMm}
+          valueMm={bands.footerMm}
+          units={props.units}
           min={BAND_MIN_MM}
           max={ceiling}
-          step={0.5}
-          onChange={(footerMm) => set({ footerMm })}
+          onChangeMm={(footerMm) => set({ footerMm })}
         />
         <NumberField
           label="Text"

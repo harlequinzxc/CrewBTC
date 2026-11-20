@@ -25,7 +25,7 @@ const render_ = () => {
 describe('settings', () => {
   it('shows the preferences without the changelog', () => {
     render_()
-    expect(screen.getByText('Print output')).toBeInTheDocument()
+    expect(screen.getByText('Units')).toBeInTheDocument()
     expect(screen.getByText('Reduced motion')).toBeInTheDocument()
 
     const notes = screen.getByRole('button', { name: /what.s new/i })
@@ -34,34 +34,37 @@ describe('settings', () => {
     expect(screen.queryByText(CHANGELOG[0]?.title ?? '')).not.toBeInTheDocument()
   })
 
-  it('orders general preferences above print output', () => {
+  it('puts units first, then motion, then the release notes', () => {
     render_()
-    // Reading order is the contract: the things people open this dialog for come first,
-    // the paper defaults follow, the release notes close it out.
-    const headings = screen.getAllByRole('heading', { level: 3 })
-    expect(headings.map((h) => h.textContent)).toEqual(['General', 'Print output'])
-
-    // Document order, read off the rendered tree rather than guessed at.
     const mark = (node: Element | null): number => {
       if (node === null) throw new Error('missing node')
       return Array.from(document.body.querySelectorAll('*')).indexOf(node)
     }
     const units = mark(screen.getByLabelText('Units'))
     const motion = mark(screen.getByLabelText('Reduced motion'))
-    const print = mark(screen.getByText('Print output'))
     const notes = mark(screen.getByRole('button', { name: /what.s new/i }))
 
     expect(units).toBeGreaterThan(mark(screen.getByText('General')))
     expect(motion).toBeGreaterThan(units)
-    expect(print).toBeGreaterThan(motion)
-    expect(notes).toBeGreaterThan(print)
+    expect(notes).toBeGreaterThan(motion)
   })
 
-  it('says the print fields are global defaults, not sheet values', () => {
+  it('offers millimetres, centimetres and inches', () => {
     render_()
-    // The inspector also offers trim and bleed; this copy is what stops the two panels
-    // reading as two copies of one number.
-    expect(screen.getByText(/global defaults for every sheet/i)).toBeInTheDocument()
+    const select = screen.getByLabelText('Units') as HTMLSelectElement
+    expect([...select.options].map((option) => option.value)).toEqual(['mm', 'cm', 'in'])
+    expect([...select.options].map((option) => option.textContent)).toEqual([
+      'Millimetres (mm)',
+      'Centimetres (cm)',
+      'Inches (in)',
+    ])
+  })
+
+  it('changes only the display unit, never a stored dimension', () => {
+    const { onSettingsChange } = render_()
+    fireEvent.change(screen.getByLabelText('Units'), { target: { value: 'cm' } })
+    // Nothing else moves: the model is millimetres, and a unit is how it is read.
+    expect(onSettingsChange).toHaveBeenCalledWith({ units: 'cm' })
   })
 
   it('names the current version on the closed row', () => {
@@ -91,20 +94,14 @@ describe('settings', () => {
     expect(notes).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('does not duplicate the sheet dimensions the inspector already owns', () => {
+  it('has no trim, bleed or crop-mark controls', () => {
     render_()
-    // A4 is the inspector's business; settings holds trim and bleed only.
-    expect(screen.queryByText(/210\s*×\s*297/)).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Gutter')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Margin')).not.toBeInTheDocument()
-  })
-
-  it('still edits every print field it kept', () => {
-    const { onSettingsChange } = render_()
-    const width = screen.getByLabelText('Trim width')
-    fireEvent.change(width, { target: { value: '205' } })
-    expect(onSettingsChange).toHaveBeenCalled()
-    const sent = onSettingsChange.mock.calls.at(-1)?.[0] as { trimWidthMm: number }
-    expect(sent.trimWidthMm).toBe(205)
+    // These were here and never reached the exporter. A control that cannot change the
+    // output is worse than no control, so none of them should come back by accident.
+    for (const label of ['Print output', 'Bleed', 'Crop-mark margin', 'Trim width', 'Trim height']) {
+      expect(screen.queryByText(label)).not.toBeInTheDocument()
+    }
+    // And the sub-line that only existed to explain them is gone with them.
+    expect(screen.queryByText(/global defaults for every sheet/i)).not.toBeInTheDocument()
   })
 })

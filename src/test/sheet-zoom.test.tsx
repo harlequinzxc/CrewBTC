@@ -27,6 +27,7 @@ function Probe(props: { readonly show: boolean; readonly w: number; readonly h: 
       <span data-testid="scale">{zoom.scale.toFixed(4)}</span>
       <span data-testid="fitting">{String(zoom.fitting)}</span>
       <button type="button" aria-label="step in" onClick={() => zoom.step(1)} />
+      <button type="button" aria-label="pin 2" onClick={() => zoom.setScale(2)} />
       <button type="button" aria-label="fit" onClick={() => zoom.fit()} />
       {props.show ? (
         <div
@@ -66,6 +67,17 @@ describe('sheet zoom', () => {
     rerender(<Probe show w={900} h={1100} />)
     expect(getByTestId('scale').textContent).not.toBe(small)
     expect(getByTestId('fitting').textContent).toBe('true')
+  })
+
+  it('clears Fit the instant a scale is pinned by any route', () => {
+    const { getByTestId, getByRole } = render(<Probe show w={600} h={800} />)
+    expect(getByTestId('fitting').textContent).toBe('true')
+
+    // A pinned scale — what a wheel gesture or a direct set produces — is not a fit,
+    // even if it happens to equal the fitted value. The pressed state must follow the
+    // mode, not the number.
+    act(() => getByRole('button', { name: 'pin 2' }).click())
+    expect(getByTestId('fitting').textContent).toBe('false')
   })
 
   it('lets a manual step win, and re-fitting restores the mode', () => {

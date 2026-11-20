@@ -86,6 +86,25 @@ describe('a short block is centred in its band', () => {
     expect(previewOffset(block + 2 * PAD)).toBeCloseTo(0, 1)
   })
 
+  it('never draws a line outside the box it belongs to', () => {
+    // A band dragged shorter than the type it holds is the case that used to spill: with
+    // centring, an unclamped offset could push the first line above the box, over the
+    // card's top border and into whatever sits above it.
+    const { container } = render(<CardZoneText {...textProps(3)} />)
+    const box = container.querySelector('button') as HTMLElement
+    const boxTop = Number.parseFloat(box.style.top)
+    const boxHeight = Number.parseFloat(box.style.height)
+
+    for (const line of [...box.querySelectorAll(':scope > span')] as HTMLElement[]) {
+      const top = Number.parseFloat(line.style.top)
+      expect(top).toBeGreaterThanOrEqual(boxTop - 0.01)
+      // The clip is the box; nothing should start below its bottom either.
+      expect(top).toBeLessThanOrEqual(boxTop + boxHeight)
+    }
+    // And the box really does clip, so anything past the edge is not painted.
+    expect(box.className).toContain('overflow-hidden')
+  })
+
   it('keeps every exported baseline inside its band', () => {
     // The export draws at `sheetHeight - yMm`; if the offset ever overshot, type would be
     // printed above the card or over the picture. Two dozen cards' worth of band pairs is

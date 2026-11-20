@@ -1,47 +1,28 @@
-export type UnitSystem = 'mm' | 'in'
+import type { UnitSystem } from '../lib/units'
 
-/** Physical output settings. Every export dimension derives from this. */
+/**
+ * The document's preferences.
+ *
+ * There is deliberately nothing here about trim, bleed or crop marks. Those settings
+ * existed and did nothing: the exporter builds every page from the sheet's own dimensions
+ * and has never read a trim box, and the switches that claimed to add bleed and trim marks
+ * were not connected to it. A control that cannot change the output is worse than no
+ * control, so they are gone rather than left to imply a print pipeline that does not
+ * exist. The sheet's size is chosen in the inspector, where its measurements are.
+ *
+ * `units` is a display preference only. Every stored dimension stays in millimetres.
+ */
 export interface PageSettings {
-  /** Trim width in millimetres. */
-  readonly trimWidthMm: number
-  /** Trim height in millimetres. */
-  readonly trimHeightMm: number
-  /** Bleed on all sides in millimetres. `0` disables bleed. */
-  readonly bleedMm: number
-  /** Clear space reserved outside the bleed for crop marks, in millimetres. */
-  readonly markMarginMm: number
   readonly units: UnitSystem
 }
 
-export interface TrimPreset {
-  readonly id: string
-  readonly label: string
-  readonly widthMm: number
-  readonly heightMm: number
-}
-
-export const TRIM_PRESETS: readonly TrimPreset[] = [
-  { id: 'a4', label: 'A4 — 210 × 297 mm', widthMm: 210, heightMm: 297 },
-  { id: 'a5', label: 'A5 — 148 × 210 mm', widthMm: 148, heightMm: 210 },
-  { id: 'a3', label: 'A3 — 297 × 420 mm', widthMm: 297, heightMm: 420 },
-  { id: 'letter', label: 'US Letter — 8.5 × 11 in', widthMm: 215.9, heightMm: 279.4 },
-  { id: 'legal', label: 'US Legal — 8.5 × 14 in', widthMm: 215.9, heightMm: 355.6 },
-  { id: 'square', label: 'Square — 210 × 210 mm', widthMm: 210, heightMm: 210 },
-]
-
 export const DEFAULT_PAGE_SETTINGS: PageSettings = {
-  trimWidthMm: 210,
-  trimHeightMm: 297,
-  bleedMm: 3,
-  markMarginMm: 5,
   units: 'mm',
 }
 
-/** Bounds that keep the export geometry physically meaningful. */
-export const LIMITS = {
-  minTrimMm: 50,
-  maxTrimMm: 1200,
-  maxBleedMm: 20,
-  minMarkMarginMm: 0,
-  maxMarkMarginMm: 20,
-} as const
+/** A settings record read back from storage may predate this shape. */
+export const normalisePageSettings = (value: unknown): PageSettings => {
+  if (typeof value !== 'object' || value === null) return DEFAULT_PAGE_SETTINGS
+  const units = (value as { units?: unknown }).units
+  return { units: units === 'cm' || units === 'in' ? units : 'mm' }
+}

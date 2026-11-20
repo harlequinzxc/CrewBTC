@@ -68,10 +68,17 @@ export function TopBar(props: TopBarProps) {
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-hairline bg-surface-panel px-3">
+      {/* The real app mark, not a stand-in letter: it is the same artwork as the favicon
+          and the installed icon, so the tab, the dock and the window agree. */}
       <div className="flex shrink-0 items-center gap-2">
-        <span aria-hidden="true" className="grid size-6 place-items-center rounded-md bg-accent">
-          <span className="text-[11px] font-bold leading-none text-white">C</span>
-        </span>
+        <img
+          src="/favicon.svg"
+          alt=""
+          width={20}
+          height={20}
+          aria-hidden="true"
+          className="size-5 shrink-0 rounded-[5px]"
+        />
         <span className="text-[13px] font-medium tracking-tight text-ink-primary">{APP_NAME}</span>
       </div>
 

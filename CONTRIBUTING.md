@@ -131,6 +131,29 @@ makes a hand-tuned tall box look deliberate — the slack is split either side i
 pooling under the words. An overflowing block gets zero offset and is clipped at the box
 edge, never lifted over the picture.
 
+## Units
+
+Every dimension in the model and in the PDF is millimetres. `lib/units.ts` is the only
+place that knows otherwise: `fromMm` turns a stored length into the number a field shows,
+`toMm` turns a typed number back, and nothing else in the app does arithmetic on units.
+That is what makes the switch total — `NumberField` takes `valueMm` + `units` and does the
+conversion at its own edge, so the inspector and Settings convert together without either
+of them holding a converted copy of anything. Switching units never writes to the model;
+only typing does, and it writes millimetres.
+
+`NumberField` has two forms, and the distinction matters: a length passes `valueMm`,
+`units` and `onChangeMm`, while a percentage passes plain `value` and `onChange`. The text
+scale is the only plain one, because 100% is not 25.4 of anything.
+
+## What is deliberately not here
+
+There is no bleed, trim box or crop-mark setting, and `lib/trim.ts` is gone. Those
+controls existed in Settings and in the inspector and none of them reached the exporter:
+`writeCards` builds every page at exactly the sheet's own width and height, and the only
+marks it can draw are the cut guides between cells. A trim box and a real bleed are a print
+pipeline, not a label on a form — until one exists, a switch claiming to do it is worse
+than no switch.
+
 Sheet settings persist to `localStorage` under `crewbtc.sheet` and are validated on read
 — a corrupt or out-of-range value falls back to the defaults rather than rendering a
 broken grid.

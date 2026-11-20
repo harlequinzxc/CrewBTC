@@ -1,5 +1,6 @@
 import { NumberField } from '../../../components/ui/NumberField'
 import { cn } from '../../../lib/cn'
+import type { UnitSystem } from '../../../lib/units'
 
 /** A very small select: the preset pickers are two words wide, never a form field. */
 export function Select(props: {
@@ -28,17 +29,16 @@ export function Select(props: {
   )
 }
 
-/** One millimetre figure, right-aligned, with the unit inside the box. */
+/** One figure in the sheet's units, right-aligned, with the unit inside the box. */
 export function SizeField(props: FieldProps) {
   return (
     <NumberField
       label=""
       name={props.name}
-      suffix="mm"
-      value={props.value}
+      valueMm={props.valueMm}
+      units={props.units}
       min={0}
-      step={0.5}
-      onChange={props.onChange}
+      onChangeMm={props.onChangeMm}
       className={cn('w-full', props.error === undefined ? undefined : 'border-accent')}
     />
   )
@@ -46,9 +46,11 @@ export function SizeField(props: FieldProps) {
 
 export interface FieldProps {
   readonly name: string
-  readonly value: number
+  /** Stored millimetres. Display units come from `units`. */
+  readonly valueMm: number
+  readonly units: UnitSystem
   readonly error: string | undefined
-  readonly onChange: (value: number) => void
+  readonly onChangeMm: (valueMm: number) => void
 }
 
 /**
@@ -62,11 +64,10 @@ export function SizePair(props: { readonly first: FieldProps; readonly second: F
       <NumberField
         label="W"
         name={props.first.name}
-        suffix="mm"
-        value={props.first.value}
+        valueMm={props.first.valueMm}
+        units={props.first.units}
         min={0}
-        step={0.5}
-        onChange={props.first.onChange}
+        onChangeMm={props.first.onChangeMm}
         className={cn('w-full', props.first.error === undefined ? undefined : 'border-accent')}
       />
       <span aria-hidden className="text-[10px] text-ink-muted">
@@ -75,11 +76,10 @@ export function SizePair(props: { readonly first: FieldProps; readonly second: F
       <NumberField
         label="H"
         name={props.second.name}
-        suffix="mm"
-        value={props.second.value}
+        valueMm={props.second.valueMm}
+        units={props.second.units}
         min={0}
-        step={0.5}
-        onChange={props.second.onChange}
+        onChangeMm={props.second.onChangeMm}
         className={cn('w-full', props.second.error === undefined ? undefined : 'border-accent')}
       />
     </div>
