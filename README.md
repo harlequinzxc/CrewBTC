@@ -31,28 +31,42 @@ text underneath.
   push the text out of the way. Double-click again, click outside or press `Escape`
   when you are happy — the framing is kept.
 - Each card tunes its own proportions. Drag the boundary lines on a selected card to
-  resize its text boxes, or use the sliders underneath. A **text scale** control makes
-  the type bigger or smaller without shortening the photo.
+  resize its text boxes, or select the card and type exact numbers into **Top**,
+  **Bottom** and **Text** in the inspector. **Text** makes the type bigger or smaller
+  without shortening the photo.
 
 **Prints properly.** Export gives you a real PDF at print resolution. Text is drawn as
 vector text, so it stays crisp at any size, and the sheet comes out exactly as it
 looked on screen — same words, same colours, same photo position — with crop marks
 for cutting.
 
+## The screen
+
+Three columns and a bar across the top:
+
+- **Files** on the left, 220px: your PDFs, one row each, and the single **Add PDFs**
+  button.
+- **The sheet** in the middle, as big as the window allows.
+- **The inspector** on the right, 260px. It shows the document's own settings — sheet
+  size, cell size, gutter, margin, rotation, cut guides, bleed — and when you select a
+  card it puts that card's **Top**, **Bottom** and **Text** numbers above them.
+
+The gear opens settings over the sheet rather than on a page of its own.
+
 ## Zooming the sheet
 
-The toolbar above the sheet has `−`, the current percentage, `+` and **Fit**. **Fit**
+`−`, the current percentage, `+` and **Fit** sit in the middle of the top bar. **Fit**
 keeps the sheet matched to the window as you resize it; step the zoom once and it stays
 where you put it, with scrollbars when the sheet outgrows the pane. `Ctrl`/`Cmd` and the
-scroll wheel over the workspace does the same thing.
+scroll wheel over the sheet does the same thing.
 
 ## Getting started
 
 1. Open CrewBTC in a desktop browser.
 2. Drag PDFs onto the window, or use **Add PDFs**.
 3. Pick a card, then edit its text, colour and photo.
-4. Adjust the top and bottom heights in the band panel under the sheet.
-5. **Export** when you're happy.
+4. Adjust the top and bottom heights in the inspector.
+5. **Export** when you're happy — the arrow beside it offers every sheet as one PDF.
 
 Your sheet settings are remembered between visits.
 

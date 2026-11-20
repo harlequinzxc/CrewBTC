@@ -108,13 +108,15 @@ describe('a page lands on a populated card', () => {
 })
 
 describe('fine-tuning one card', () => {
-  it('offers the sliders once a card is selected', async () => {
+  it('offers the card inspector once a card is selected', async () => {
     const cell = await placeCard()
-    expect(screen.queryByLabelText('Header height')).not.toBeInTheDocument()
+    // Nothing selected: the inspector is about the document, not a card.
+    expect(screen.queryByLabelText('Top')).not.toBeInTheDocument()
 
     fireEvent.pointerDown(cell)
-    expect(await screen.findByLabelText('Header height')).toBeInTheDocument()
-    expect(screen.getByLabelText('Footer height')).toBeInTheDocument()
+    expect(await screen.findByLabelText('Top')).toBeInTheDocument()
+    expect(screen.getByLabelText('Bottom')).toBeInTheDocument()
+    expect(screen.getByLabelText('Text')).toBeInTheDocument()
   })
 
   it('resizes the picture when the top height changes', async () => {
@@ -125,19 +127,20 @@ describe('fine-tuning one card', () => {
     const box = (): string => (document.querySelector('[data-image]') as HTMLElement).style.height
     const before = box()
 
-    fireEvent.change(await screen.findByLabelText('Header height'), { target: { value: '30' } })
+    fireEvent.change(await screen.findByLabelText('Top'), { target: { value: '30' } })
     expect(box()).not.toBe(before)
   })
 
-  it('shows the panel where it cannot be clipped by the sheet edge', async () => {
+  it('writes the card numbers into the inspector, never into the sheet', async () => {
     const cell = await placeCard()
     fireEvent.pointerDown(cell)
 
-    const panel = await screen.findByTestId('band-panel')
-    // Docked, not floating over the sheet: a tuner anchored under the card was cut off
-    // by the sheet's clipped edge on the bottom row.
-    expect(panel.closest('[data-cell]')).toBeNull()
+    const inspector = await screen.findByRole('complementary', { name: 'Inspector' })
+    // The controls live outside the drawn sheet, so they cannot be clipped by a card's
+    // edge on the bottom row — and there are no slider tracks left anywhere on it.
+    expect(inspector.querySelector('input[aria-label="Top"]')).not.toBeNull()
     expect(document.querySelector('[data-cell] input[type="range"]')).toBeNull()
+    expect(document.querySelectorAll('input[type="range"]')).toHaveLength(0)
   })
 
   it('keeps each card’s heights to itself', async () => {
@@ -157,12 +160,14 @@ describe('fine-tuning one card', () => {
     expect(cells.length).toBeGreaterThanOrEqual(2)
 
     fireEvent.pointerDown(cells[0] as HTMLElement)
-    fireEvent.change(await screen.findByLabelText('Header height'), { target: { value: '30' } })
+    fireEvent.change(await screen.findByLabelText('Top'), { target: { value: '30' } })
 
     // Select the second card: it must still be at its default, not the first card's.
     fireEvent.pointerDown(cells[1] as HTMLElement)
-    const header = (await screen.findByLabelText('Header height')) as HTMLInputElement
-    expect(header.value).toBe('10')
+    await waitFor(() => {
+      const top = screen.getByLabelText('Top') as HTMLInputElement
+      expect(Number(top.value)).toBe(10)
+    })
   })
 
   afterEach(() => {

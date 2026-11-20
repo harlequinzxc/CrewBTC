@@ -58,7 +58,7 @@ export function Card(props: CardProps) {
       data-page={props.pageLabel}
       className={cn(
         'absolute overflow-hidden rounded-[1mm] bg-white',
-        selected ? 'outline outline-2 outline-sky-500' : 'outline outline-1 outline-zinc-200',
+        selected ? 'outline outline-2 outline-accent' : 'outline outline-1 outline-zinc-200',
       )}
       style={{
         left: px(cell.xMm),

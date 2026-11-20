@@ -58,10 +58,11 @@ that same output. Nothing re-flows at export time.
 
 ```
 src/
-  components/ui/       design-system primitives (§2)
-  components/layout/   AppShell SidebarNav DesktopOnlyNotice
-  features/workspace/  the card editor — Card, CardSheet, BandPanel, zone components
-  features/settings/   SettingsView, MotionProvider
+  components/ui/       design-system primitives (§2) — NumberField, ResetButton, Toast
+  components/layout/   TopBar, DesktopOnlyNotice
+  features/workspace/  the card editor — Card, CardSheet, the Inspector, zone components
+  features/settings/   SettingsDialog (a native <dialog>), MotionProvider
+  config/theme.ts      the palette and the single accent, as data
   lib/pdf/             extraction: ingest, recipe-text, food-photo, painted-box, ocr
   lib/export/          draw-card (the renderer), write-cards, band-clip, doc-cache
   lib/imposition/      grid + sheet geometry
@@ -123,12 +124,32 @@ Sheet settings persist to `localStorage` under `crewbtc.sheet` and are validated
 — a corrupt or out-of-range value falls back to the defaults rather than rendering a
 broken grid.
 
+## The chrome
+
+The app is one screen: a 48px `TopBar`, a 220px Files rail, the canvas, and a 260px
+`Inspector`. There is no navigation and no bottom drawer — Settings is a `<dialog>` opened
+from the gear, and the card's own controls live in the inspector beside the sheet rather
+than under it.
+
+Colours come from `src/config/theme.ts` and the matching `@theme` block in `index.css`.
+`bg-surface-panel`, `text-ink-secondary`, `border-hairline`, `bg-accent` and friends are
+the only way a surface names a colour, so the palette is one edit rather than forty. There
+is exactly one accent (`#E5484D`), used at three depths: the base for rings and selection,
+`accent-solid` for fills that carry white text (4.72:1), and `accent-bright` for accent
+text on a dark panel. `scripts/check-contrast.mjs` measures all three.
+
+The inspector is contextual: `CardSection` appears when a card is selected, `SheetSection`
+is always there. It does not take a callback from the canvas — `selectedCardKey()` derives
+which card is meant from the selected cell and the sheet plan, so there is only one answer.
+
 ## Workspace zoom
 
-`lib/zoom.ts` holds the ladder and the arithmetic; `SheetToolbar` renders it. `Fit` is a
-mode (`manualScale === null`), not a one-off calculation, so a window resize keeps the
-sheet fitted until the user steps the zoom. Once the sheet is larger than the pane it
-scrolls — it is never silently shrunk.
+`lib/zoom.ts` holds the ladder and the arithmetic. The controls are in the `TopBar`, which
+sits outside the pane the sheet is fitted into, so `useSheetZoom` measures the *canvas*
+region and owns the single value both of them read. `Fit` is a mode
+(`manualScale === null`), not a one-off calculation, so a window resize keeps the sheet
+fitted until the user steps the zoom. Once the sheet is larger than the pane it scrolls —
+it is never silently shrunk.
 
 The wheel listener is attached through `lib/use-wheel.ts`, which binds with
 `{ passive: false }`. React's delegated `wheel` handler is passive, so `preventDefault`

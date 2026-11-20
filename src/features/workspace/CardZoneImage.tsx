@@ -160,7 +160,7 @@ export function CardZoneImage(props: CardZoneImageProps) {
         // While adjusting, the frame is the only cue that the photo — not the text — is
         // about to receive the gesture, so it needs to be unmistakable rather than subtle.
         editing
-          ? 'outline outline-2 -outline-offset-2 outline-sky-400 ring-2 ring-sky-400/40'
+          ? 'outline outline-2 -outline-offset-2 outline-accent ring-2 ring-accent/40'
           : 'outline outline-1 outline-transparent',
       )}
       style={{
@@ -194,7 +194,7 @@ export function CardZoneImage(props: CardZoneImageProps) {
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
           onKeyDown={onKeyDown}
-          className="zone-box absolute inset-0 block size-full cursor-default border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500"
+          className="zone-box absolute inset-0 block size-full cursor-default border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
         >
           <img
             src={photo.dataUrl}

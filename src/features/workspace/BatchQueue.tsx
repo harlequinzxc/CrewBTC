@@ -1,12 +1,17 @@
-import { FilePlus2, FileText, RefreshCw, Trash2 } from 'lucide-react'
-import { Badge } from '../../components/ui/Badge'
-import { Button } from '../../components/ui/Button'
-import { EmptyState } from '../../components/ui/EmptyState'
-import { Spinner } from '../../components/ui/Spinner'
+import { FilePlus2, FileText, RefreshCw, RotateCw, Trash2 } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import type { IngestedDocument } from '../../types/document'
-import { formatBytes } from '../../lib/format'
 
+/**
+ * The file queue: one row per PDF, and one button to add more.
+ *
+ * Rows are a 28px thumbnail and a single truncated name. Status lives in a 6px dot rather
+ * than a badge with its own label. The old rows spent 40px of height and two extra lines
+ * per file saying "Parsed" and "59 KB", neither of which changed what you did next.
+ *
+ * Re-run and clear sit on the queue header as icon actions, which is why there is no
+ * longer a second `Add PDFs` anywhere: one action per area.
+ */
 export interface BatchQueueProps {
   readonly documents: readonly IngestedDocument[]
   readonly activeId: string | null
@@ -17,64 +22,126 @@ export interface BatchQueueProps {
   readonly busy: boolean
 }
 
-function statusOf(document: IngestedDocument): {
-  variant: 'neutral' | 'accent' | 'warning' | 'danger'
-  label: string
-} {
-  if (document.status === 'failed') return { variant: 'danger', label: 'Failed' }
-  if (document.status === 'parsing') return { variant: 'accent', label: 'Parsing' }
-  if (document.regions.length === 0) return { variant: 'warning', label: 'No text found' }
-  return { variant: 'neutral', label: 'Parsed' }
+type Status = 'failed' | 'parsing' | 'empty' | 'parsed'
+
+const DOT: Record<Status, string> = {
+  failed: 'bg-accent',
+  parsing: 'bg-ink-secondary animate-pulse',
+  empty: 'bg-amber-500',
+  parsed: 'bg-emerald-500',
 }
 
-/** Left pane: the batch queue with bulk actions. */
-export function BatchQueue({
-  documents,
-  activeId,
-  onSelect,
-  onAdd,
-  onReRun,
-  onClear,
-  busy,
-}: BatchQueueProps) {
+const STATUS_TEXT: Record<Status, string> = {
+  failed: 'Failed',
+  parsing: 'Parsing',
+  empty: 'No text found',
+  parsed: 'Parsed',
+}
+
+function statusOf(document: IngestedDocument): Status {
+  if (document.status === 'failed') return 'failed'
+  if (document.status === 'parsing') return 'parsing'
+  if (document.regions.length === 0) return 'empty'
+  return 'parsed'
+}
+
+const iconAction = cn(
+  'grid size-6 place-items-center rounded text-ink-muted',
+  'transition-colors duration-150 ease-out',
+  'hover:bg-surface-active hover:text-ink-primary focus-visible:bg-surface-active focus-visible:text-ink-primary',
+  'disabled:opacity-30 disabled:hover:bg-transparent disabled:focus-visible:bg-transparent',
+)
+
+export function BatchQueue(props: BatchQueueProps) {
+  const { documents, busy } = props
+  const empty = documents.length === 0
+
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between gap-2 border-b border-zinc-800 px-3 py-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Queue</h2>
-        <span className="tabular text-xs text-zinc-500">{documents.length}</span>
+      <div className="flex h-9 shrink-0 items-center justify-between border-b border-hairline pl-3 pr-1.5">
+        <h2 className="text-[11px] font-medium uppercase tracking-[0.06em] text-ink-secondary">
+          Files
+        </h2>
+        <div className="flex items-center">
+          <button
+            type="button"
+            data-target="dense"
+            aria-label="Re-run all files"
+            title="Re-run"
+            disabled={busy || empty}
+            onClick={props.onReRun}
+            className={iconAction}
+          >
+            <RefreshCw aria-hidden className="size-3" />
+          </button>
+          <button
+            type="button"
+            data-target="dense"
+            aria-label="Clear all files"
+            title="Clear"
+            disabled={busy || empty}
+            onClick={props.onClear}
+            className={iconAction}
+          >
+            <Trash2 aria-hidden className="size-3" />
+          </button>
+        </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-2">
-        {documents.length === 0 ? (
-          <EmptyState
-            icon={<FileText strokeWidth={2} className="size-6" />}
-            title="No PDFs yet"
-            description="Drop a folder of PDFs to start a batch."
-            action={
-              <Button size="sm" variant="primary" onClick={onAdd} disabled={busy}>
-                Add PDFs
-              </Button>
-            }
-          />
+      <div className="p-1.5">
+        <button
+          type="button"
+          data-target="dense"
+          onClick={props.onAdd}
+          disabled={busy}
+          className={cn(
+            'flex h-7 w-full items-center justify-center gap-1.5 rounded-md',
+            'border border-dashed border-hairline-strong text-[11px] text-ink-secondary',
+            'transition-colors duration-150 ease-out',
+            'hover:border-accent hover:bg-accent/10 hover:text-ink-primary focus-visible:border-accent focus-visible:bg-accent/10 focus-visible:text-ink-primary',
+            'disabled:opacity-40',
+          )}
+        >
+          <FilePlus2 aria-hidden className="size-3.5" />
+          Add PDFs
+        </button>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-1.5">
+        {empty ? (
+          <p className="px-1.5 py-2 text-[11px] text-ink-muted">No files</p>
         ) : (
-          <ul className="flex flex-col gap-0.5">
+          <ul className="flex flex-col gap-px">
             {documents.map((document) => {
-              const badge = statusOf(document)
-              const isActive = document.id === activeId
+              const status = statusOf(document)
+              const isActive = document.id === props.activeId
+              // Only a failed or skipped file gets a per-row action. A healthy row has
+              // nothing to do to it, and a re-run icon on all twelve would put twelve
+              // controls on screen to serve the two that need one.
+              const canRetry = status === 'failed' || status === 'empty'
               return (
-                <li key={document.id}>
-                  <button type="button" data-target="default" aria-current={isActive ? 'true' : undefined} onClick={() => onSelect(document.id)} className={cn(
-                      'flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left',
-                      'transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-red-500',
-                      isActive ? 'bg-zinc-800' : 'hover:bg-zinc-900 focus-visible:bg-zinc-900',
+                <li key={document.id} className="relative">
+                  <button
+                    type="button"
+                    data-target="dense"
+                    aria-current={isActive ? 'true' : undefined}
+                    onClick={() => props.onSelect(document.id)}
+                    className={cn(
+                      'flex h-8 w-full items-center gap-2 rounded px-1.5 text-left',
+                      'transition-colors duration-150 ease-out',
+                      'focus-visible:bg-surface-active',
+                      isActive ? 'bg-accent/12' : 'hover:bg-surface-active focus-visible:bg-surface-active',
                     )}
                   >
                     <span
                       aria-hidden="true"
-                      className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-md border border-zinc-700 bg-zinc-950"
+                      className={cn(
+                        'grid size-7 shrink-0 place-items-center overflow-hidden rounded border bg-surface-canvas',
+                        isActive ? 'border-accent/60' : 'border-hairline',
+                      )}
                     >
                       {document.pagePreviewUrl === null ? (
-                        <FileText strokeWidth={2} className="size-4 text-zinc-500" />
+                        <FileText aria-hidden className="size-3 text-ink-muted" />
                       ) : (
                         <img
                           src={document.pagePreviewUrl}
@@ -83,39 +150,33 @@ export function BatchQueue({
                         />
                       )}
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-xs font-medium text-zinc-100">
-                        {document.fileName}
-                      </span>
-                      <span className="mt-0.5 flex items-center gap-1.5">
-                        <Badge variant={badge.variant}>{badge.label}</Badge>
-                        <span className="tabular text-[10px] text-zinc-500">
-                          {formatBytes(document.byteLength)}
-                        </span>
-                      </span>
+                    <span className="min-w-0 flex-1 truncate text-[11px] text-ink-primary">
+                      {document.fileName}
                     </span>
-                    {document.status === 'parsing' ? <Spinner className="size-4" /> : null}
+                    <span
+                      aria-hidden="true"
+                      title={STATUS_TEXT[status]}
+                      className={cn('size-1.5 shrink-0 rounded-full', DOT[status])}
+                    />
                   </button>
+
+                  {canRetry ? (
+                    <button
+                      type="button"
+                      data-target="dense"
+                      aria-label={`Re-run ${document.fileName}`}
+                      onClick={props.onReRun}
+                      disabled={busy}
+                      className="absolute right-1 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded bg-surface-panel text-ink-secondary transition-colors duration-150 ease-out hover:text-ink-primary focus-visible:text-ink-primary disabled:opacity-30"
+                    >
+                      <RotateCw aria-hidden className="size-2.5" />
+                    </button>
+                  ) : null}
                 </li>
               )
             })}
           </ul>
         )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-1.5 border-t border-zinc-800 p-2">
-        <Button size="sm" variant="secondary" onClick={onAdd} disabled={busy} className="col-span-2">
-          <FilePlus2 aria-hidden="true" strokeWidth={2} className="size-4" />
-          Add more PDFs
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onReRun} disabled={busy || documents.length === 0}>
-          <RefreshCw aria-hidden="true" strokeWidth={2} className="size-4" />
-          Re-run
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onClear} disabled={busy || documents.length === 0}>
-          <Trash2 aria-hidden="true" strokeWidth={2} className="size-4" />
-          Clear
-        </Button>
       </div>
     </div>
   )

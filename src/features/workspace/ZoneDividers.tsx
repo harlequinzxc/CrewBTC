@@ -75,8 +75,8 @@ export function ZoneDividers(props: ZoneDividersProps) {
         onPointerUp={end}
         onPointerCancel={end}
         className={[
-          'zone-box absolute inset-x-0 z-10 cursor-row-resize touch-none border-y border-sky-500/40',
-          dragging === 'header' ? 'bg-sky-500/70' : 'bg-sky-500/30',
+          'zone-box absolute inset-x-0 z-10 cursor-row-resize touch-none border-y border-accent/40',
+          dragging === 'header' ? 'bg-accent/60' : 'bg-accent/25',
         ].join(' ')}
         style={{ top: top - THICKNESS_PX / 2, height: THICKNESS_PX }}
       />
@@ -88,8 +88,8 @@ export function ZoneDividers(props: ZoneDividersProps) {
         onPointerUp={end}
         onPointerCancel={end}
         className={[
-          'zone-box absolute inset-x-0 z-10 cursor-row-resize touch-none border-y border-sky-500/40',
-          dragging === 'footer' ? 'bg-sky-500/70' : 'bg-sky-500/30',
+          'zone-box absolute inset-x-0 z-10 cursor-row-resize touch-none border-y border-accent/40',
+          dragging === 'footer' ? 'bg-accent/60' : 'bg-accent/25',
         ].join(' ')}
         style={{ top: bottom - THICKNESS_PX / 2, height: THICKNESS_PX }}
       />

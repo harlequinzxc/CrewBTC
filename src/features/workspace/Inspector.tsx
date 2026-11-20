@@ -1,148 +1,81 @@
-import { Download, Files } from 'lucide-react'
-import { Badge } from '../../components/ui/Badge'
-import { Button } from '../../components/ui/Button'
-import { Select } from '../../components/ui/Select'
-import { Toggle } from '../../components/ui/Toggle'
-import { DEFAULT_PAGE_SETTINGS, TRIM_PRESETS } from '../../types/settings'
+import { CardSection } from './inspector/CardSection'
+import { SheetSection } from './inspector/SheetSection'
+import type { Card, CardBands } from '../../types/card'
+import type { GridLayout, SheetSettings as SheetSettingsValue } from '../../types/imposition'
 import type { PageSettings } from '../../types/settings'
-import { computePageGeometry } from '../../lib/trim'
 
+/**
+ * The right rail: whatever is selected, nothing more.
+ *
+ * Figma's inspector shows the properties of the selection. When something is selected it
+ * leads with that thing; when nothing is, it shows the document. So this pane is a fixed
+ * 260px column that swaps its top section rather than stacking every control the app has
+ * into one scrolling form — which is what produced the four-column, always-full screen it
+ * replaces.
+ *
+ * Nothing here explains itself. Labels do the work.
+ */
 export interface InspectorProps {
-  readonly settings: PageSettings
-  readonly onSettingsChange: (settings: PageSettings) => void
+  /** The selected card, or null when the sheet itself is the selection. */
+  readonly card: Card | null
+  readonly cellIndex: number | null
+  readonly cellHeightMm: number
+  readonly onBandsChange: (bands: CardBands) => void
+  readonly onTextScaleChange: (scale: number) => void
+  readonly onResetCard: () => void
+
+  readonly showCutMarks: boolean
+  readonly onShowCutMarksChange: (value: boolean) => void
+  readonly sheet: SheetSettingsValue
+  readonly grid: GridLayout
+  readonly sheetErrors: Readonly<Record<string, string>>
+  readonly onSheetChange: (patch: Partial<SheetSettingsValue>) => void
+  readonly onResetSheet: () => void
+
+  readonly page: PageSettings
+  readonly onPageChange: (settings: PageSettings) => void
   readonly includeBleed: boolean
   readonly onIncludeBleedChange: (value: boolean) => void
   readonly drawMarks: boolean
   readonly onDrawMarksChange: (value: boolean) => void
-  readonly hasBatch: boolean
-  readonly onExport: () => void
-  readonly sheetPanel?: React.ReactNode | undefined
-  readonly exporting?: boolean | undefined
+  readonly marksFit: boolean
+  readonly bleedMm: number
 }
 
-const trimOptions = TRIM_PRESETS.map((preset) => ({ value: preset.id, label: preset.label }))
-
-/** Right pane: page setup plus the three export routes. */
-export function Inspector({
-  settings,
-  onSettingsChange,
-  includeBleed,
-  onIncludeBleedChange,
-  drawMarks,
-  onDrawMarksChange,
-  hasBatch,
-  onExport,
-  sheetPanel,
-  exporting = false,
-}: InspectorProps) {
-  const geometry = computePageGeometry(settings)
-  const activePreset =
-    TRIM_PRESETS.find(
-      (preset) =>
-        preset.widthMm === settings.trimWidthMm && preset.heightMm === settings.trimHeightMm,
-    )?.id ?? 'custom'
-
+export function Inspector(props: InspectorProps) {
   return (
-    <aside className="hidden h-full w-[320px] shrink-0 flex-col overflow-y-auto border-l border-zinc-800 bg-zinc-950 xl:flex">
-      {sheetPanel === undefined ? (
-        <div className="border-b border-zinc-800 px-4 py-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            Page setup
-          </h2>
-        </div>
-      ) : (
-        <>
-          <div className="border-b border-zinc-800 px-4 py-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Sheet &amp; cells
-            </h2>
-          </div>
-          {sheetPanel}
-          <div className="border-b border-zinc-800 px-4 py-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Trim &amp; bleed
-            </h2>
-          </div>
-        </>
-      )}
-
-      <div className="flex flex-col gap-4 border-b border-zinc-800 p-4">
-        <Select
-          label="Trim size"
-          value={activePreset}
-          onChange={(event) => {
-            const preset = TRIM_PRESETS.find((item) => item.id === event.target.value)
-            if (preset === undefined) return
-            onSettingsChange({
-              ...DEFAULT_PAGE_SETTINGS,
-              ...settings,
-              trimWidthMm: preset.widthMm,
-              trimHeightMm: preset.heightMm,
-            })
-          }}
-          options={[...trimOptions, { value: 'custom', label: 'Custom' }]}
+    <aside
+      aria-label="Inspector"
+      className="hidden w-[260px] shrink-0 flex-col overflow-y-auto border-l border-hairline bg-surface-panel lg:flex"
+    >
+      {props.card !== null && props.cellIndex !== null ? (
+        <CardSection
+          card={props.card}
+          cellIndex={props.cellIndex}
+          cellHeightMm={props.cellHeightMm}
+          onBandsChange={props.onBandsChange}
+          onTextScaleChange={props.onTextScaleChange}
+          onReset={props.onResetCard}
         />
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-2.5">
-            <p className="text-[11px] text-zinc-400">Media</p>
-            <p className="tabular text-sm font-medium text-zinc-50">
-              {geometry.mediaWidthMm.toFixed(1)} × {geometry.mediaHeightMm.toFixed(1)}
-            </p>
-          </div>
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-2.5">
-            <p className="text-[11px] text-zinc-400">Bleed</p>
-            <p className="tabular text-sm font-medium text-zinc-50">{geometry.bleedMm} mm</p>
-          </div>
-        </div>
-        {geometry.marksFit ? null : (
-          <div className="flex items-start gap-2 rounded-lg border border-amber-800 bg-amber-950/50 p-2.5">
-            <Badge variant="warning">Marks</Badge>
-            <p className="text-xs text-amber-200">
-              Crop marks need at least 4 mm of margin outside the bleed.
-            </p>
-          </div>
-        )}
-      </div>
+      ) : null}
 
-      <div className="flex flex-col gap-3 border-b border-zinc-800 p-4">
-        <Toggle
-          label="Include bleed"
-          description="Extends the page edge by the bleed amount."
-          checked={includeBleed}
-          onChange={onIncludeBleedChange}
-          disabled={geometry.bleedMm === 0}
-        />
-        <Toggle
-          label="Draw trim marks"
-          description="Adds crop marks outside the bleed area."
-          checked={drawMarks}
-          onChange={onDrawMarksChange}
-          disabled={!geometry.marksFit}
-        />
-      </div>
-
-      <div className="flex flex-col gap-2 p-4">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Export</h2>
-        <Button
-          variant="primary"
-          fullWidth
-          disabled={!hasBatch || exporting}
-          loading={exporting}
-          onClick={onExport}
-        >
-          <Download aria-hidden="true" strokeWidth={2} className="size-4" />
-          Export current PDF
-        </Button>
-        <Button variant="secondary" fullWidth disabled={!hasBatch || exporting} onClick={onExport}>
-          <Files aria-hidden="true" strokeWidth={2} className="size-4" />
-          Export all sheets as one PDF
-        </Button>
-        <p className="pt-1 text-[11px] leading-relaxed text-zinc-500">
-          Text is drawn as real vector text, so it stays sharp at any size. Dish photos
-          are embedded at the resolution they were extracted at. One PDF per page is
-          still to come.
-        </p>
-      </div>
+      <SheetSection
+        sheet={props.sheet}
+        grid={props.grid}
+        errors={props.sheetErrors}
+        onChange={props.onSheetChange}
+        onReset={props.onResetSheet}
+        showCutMarks={props.showCutMarks}
+        onShowCutMarksChange={props.onShowCutMarksChange}
+        page={props.page}
+        onPageChange={props.onPageChange}
+        includeBleed={props.includeBleed}
+        onIncludeBleedChange={props.onIncludeBleedChange}
+        drawMarks={props.drawMarks}
+        onDrawMarksChange={props.onDrawMarksChange}
+        marksFit={props.marksFit}
+        bleedMm={props.bleedMm}
+      />
     </aside>
   )
 }

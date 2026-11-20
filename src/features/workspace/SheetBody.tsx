@@ -53,7 +53,7 @@ export function SheetBody(props: SheetBodyProps) {
         type="button"
         data-target="dense"
         aria-label="Sheet preview — deselect card"
-        className="absolute inset-0 z-0 min-h-8 cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
+        className="absolute inset-0 z-0 min-h-8 cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
         onClick={props.onDeselect}
       />
 
