@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { getSource } from '../../lib/export/doc-cache'
 import { downloadBytes } from '../../lib/export/download'
 import { writeCards } from '../../lib/export/write-cards'
+import { planSheets } from '../../lib/imposition/sheet'
 import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import type { ToastInput } from '../../components/ui/use-toasts'
@@ -9,7 +10,12 @@ import type { Card, PhotoSource } from '../../types/card'
 
 export interface CardExportApi {
   readonly busy: boolean
+  /** Every sheet, in order, as one PDF. */
   readonly exportAll: () => void
+  /** Just the sheet being looked at — the first one, since that is the one drawn. */
+  readonly exportCurrent: () => void
+  /** Whether a second sheet exists, and so whether "current" means anything. */
+  readonly hasMoreThanOneSheet: boolean
 }
 
 export interface CardExportOptions {
@@ -32,12 +38,25 @@ export function useCardExport(options: CardExportOptions): CardExportApi {
   const { settings, grid, pages, drawCutMarks, cards, notify } = options
   const [busy, setBusy] = useState(false)
 
-  const exportAll = useCallback(() => {
+  const plans = planSheets(pages, grid)
+  const firstSheetPages = plans[0]?.placements.length ?? 0
+
+  /**
+   * `pages` narrowed to the first sheet.
+   *
+   * The exporter already slices `pages` into sheets itself, so handing it only the pages
+   * that belong to the first sheet produces exactly that sheet — one page of output —
+   * without the export path needing a mode flag.
+   */
+  const currentSheetPages = pages.slice(0, firstSheetPages)
+
+  const run = useCallback(
+    (selection: readonly PageRef[], filename: string) => {
     void (async () => {
       setBusy(true)
       try {
         const sources = new Map<string, ArrayBuffer>()
-        for (const page of pages) {
+        for (const page of selection) {
           if (sources.has(page.documentId)) continue
           const bytes = getSource(page.documentId)
           if (bytes !== null) sources.set(page.documentId, bytes)
@@ -52,7 +71,7 @@ export function useCardExport(options: CardExportOptions): CardExportApi {
         const result = await writeCards({
           settings,
           grid,
-          pages,
+          pages: selection,
           sources,
           drawCutMarks,
           cards,
@@ -64,7 +83,7 @@ export function useCardExport(options: CardExportOptions): CardExportApi {
           return
         }
 
-        downloadBytes(result.bytes, 'crewbtc-cards.pdf')
+        downloadBytes(result.bytes, filename)
         notify({
           variant: 'success',
           title: 'Sheet exported',
@@ -76,7 +95,15 @@ export function useCardExport(options: CardExportOptions): CardExportApi {
         setBusy(false)
       }
     })()
-  }, [settings, grid, pages, drawCutMarks, cards, notify])
+    },
+    [settings, grid, drawCutMarks, cards, notify],
+  )
 
-  return { busy, exportAll }
+  const exportAll = useCallback(() => run(pages, 'crewbtc-cards.pdf'), [run, pages])
+  const exportCurrent = useCallback(
+    () => run(currentSheetPages, 'crewbtc-sheet-1.pdf'),
+    [run, currentSheetPages],
+  )
+
+  return { busy, exportAll, exportCurrent, hasMoreThanOneSheet: plans.length > 1 }
 }

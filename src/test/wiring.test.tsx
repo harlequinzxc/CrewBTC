@@ -119,9 +119,9 @@ describe('Add PDFs is wired', () => {
     await waitFor(() => {
       expect(pickFiles).toHaveBeenCalledTimes(1)
     })
-    // No phantom rows, no error toast.
-    expect(screen.getByText(/no PDFs yet/i)).toBeInTheDocument()
-    expect(screen.getByText('No batch loaded')).toBeInTheDocument()
+    // No phantom rows, no error toast, and the empty sheet still offers its drop target.
+    expect(screen.getByText('No files')).toBeInTheDocument()
+    expect(screen.getByText('Drop PDFs')).toBeInTheDocument()
   })
 
   it('queues multiple files from one pick', async () => {
@@ -134,6 +134,7 @@ describe('Add PDFs is wired', () => {
       expect(screen.getAllByText('one.pdf').length).toBeGreaterThan(0)
     })
     expect(screen.getAllByText('two.pdf').length).toBeGreaterThan(0)
-    expect(screen.getByText('2 PDFs')).toBeInTheDocument()
+    // The queue reports its own size where the files are, not in the header.
+    expect(screen.getByRole('complementary', { name: 'Files' })).toBeInTheDocument()
   })
 })

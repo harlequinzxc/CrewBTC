@@ -6,13 +6,13 @@ import { MonitorUp } from 'lucide-react'
  */
 export function DesktopOnlyNotice() {
   return (
-    <div className="flex min-h-[100svh] items-center justify-center bg-zinc-950 p-6">
-      <div className="max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 p-6 text-center">
-        <span className="mx-auto mb-3 grid size-11 place-items-center rounded-xl bg-zinc-800">
-          <MonitorUp aria-hidden="true" strokeWidth={2} className="size-5 text-red-400" />
+    <div className="flex min-h-[100svh] items-center justify-center bg-surface-canvas p-6">
+      <div className="max-w-sm rounded-xl border border-hairline bg-surface-panel p-6 text-center">
+        <span className="mx-auto mb-3 grid size-11 place-items-center rounded-xl bg-surface-active">
+          <MonitorUp aria-hidden="true" strokeWidth={2} className="size-5 text-accent-bright" />
         </span>
-        <h1 className="text-base font-semibold text-zinc-50">Designed for desktop</h1>
-        <p className="mt-1.5 text-sm text-zinc-400">
+        <h1 className="text-base font-semibold text-ink-primary">Designed for desktop</h1>
+        <p className="mt-1.5 text-sm text-ink-secondary">
           This needs a wider window for the template canvas. Widen this browser window to
           at least 1024 pixels to continue.
         </p>

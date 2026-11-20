@@ -114,7 +114,7 @@ export function CardZoneText(props: CardZoneTextProps) {
           const end = field.selectionEnd
           props.onSelectionChange(end > start ? { start, end } : null)
         }}
-        className="zone-box absolute resize-none overflow-hidden rounded-sm border-0 bg-white/95 p-1 outline outline-2 outline-sky-500"
+        className="zone-box absolute resize-none overflow-hidden rounded-sm border-0 bg-white/95 p-1 outline outline-2 outline-accent"
         style={{
           left: px(xMm),
           top: px(yMm),
@@ -140,7 +140,7 @@ export function CardZoneText(props: CardZoneTextProps) {
         event.stopPropagation()
         props.onBeginEdit()
       }}
-      className="zone-box absolute block cursor-text overflow-hidden border-0 bg-transparent p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
+      className="zone-box absolute block cursor-text overflow-hidden border-0 bg-transparent p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
       style={{
         left: px(xMm),
         top: px(yMm),

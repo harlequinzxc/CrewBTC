@@ -1,15 +1,20 @@
 import { DropZone } from './DropZone'
 import { CardSheet } from './CardSheet'
-import { Button } from '../../components/ui/Button'
 import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import type { Card } from '../../types/card'
 
+/**
+ * The canvas: the sheet, edge to edge.
+ *
+ * No metrics bar over the sheet and no caption under it. The grid arithmetic moved into
+ * the inspector where the numbers that produce it live, and the sheet now gets every pixel
+ * between the top bar and the bottom of the window.
+ */
 export interface CentrePaneProps {
   readonly documentsLoaded: boolean
   readonly busy: boolean
   readonly onFiles: (files: readonly File[]) => void
-  readonly onAdd: () => void
   readonly sheet: SheetSettings
   readonly grid: GridLayout
   readonly pages: readonly PageRef[]
@@ -18,48 +23,26 @@ export interface CentrePaneProps {
   readonly selectedCell: number | null
   readonly onSelectCell: (cellIndex: number | null) => void
   readonly onCardChange: (key: string, card: Card) => void
+  /** Zoom is shared with the top bar, so the sheet and the chrome stay in step. */
+  readonly scale: number
+  readonly fitting: boolean
+  /** Callback ref for the measured canvas region; the top bar's fit depends on it. */
+  readonly paneRef: (node: HTMLDivElement | null) => void
 }
 
-/**
- * The sheet, or the drop target when there is nothing to show yet.
- *
- * No tabs, no band settings and no separate text editor: everything a card contains is
- * edited on the card itself.
- */
 export function CentrePane(props: CentrePaneProps) {
+  // Destructured so the compiler's ref heuristic does not read `props.onFiles` as a ref.
+  const { onFiles, busy, paneRef } = props
+
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-zinc-950">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface-canvas">
       {!props.documentsLoaded ? (
-        <>
-          {/* The grid's arithmetic shows before any upload: a bad cell size or margin is
-              something you want to notice before dragging a PDF in, not after. */}
-          <div className="flex h-9 shrink-0 items-center gap-3 border-b border-zinc-800 px-3">
-            <span className="tabular whitespace-nowrap text-xs text-zinc-300">
-              {props.grid.columns} × {props.grid.rows} = {props.grid.cellCount} cells
-            </span>
-            <span className="tabular whitespace-nowrap text-xs text-zinc-500">
-              {props.grid.utilisationPercent}% of paper
-            </span>
-          </div>
-          <div className="grid min-h-0 flex-1 place-items-center overflow-hidden p-6">
-          <div className="w-full max-w-sm">
-            <DropZone onFiles={props.onFiles} disabled={props.busy} />
-            <Button
-              variant="primary"
-              fullWidth
-              className="mt-3"
-              onClick={props.onAdd}
-              disabled={props.busy}
-              loading={props.busy}
-            >
-              Add PDFs
-            </Button>
-              <p className="mt-3 text-center text-xs text-zinc-500">
-                Each page becomes one card: dish photo, name, and plating steps.
-              </p>
-            </div>
-          </div>
-        </>
+        <div
+          ref={paneRef}
+          className="grid min-h-0 flex-1 place-items-center overflow-hidden p-6"
+        >
+          <DropZone onFiles={onFiles} disabled={busy} />
+        </div>
       ) : (
         <CardSheet
           settings={props.sheet}
@@ -70,6 +53,9 @@ export function CentrePane(props: CentrePaneProps) {
           selectedCell={props.selectedCell}
           onSelectCell={props.onSelectCell}
           onCardChange={props.onCardChange}
+          scale={props.scale}
+          fitting={props.fitting}
+          paneRef={paneRef}
         />
       )}
     </div>

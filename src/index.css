@@ -8,6 +8,27 @@
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
 
+  /**
+   * The palette, declared once. These are the values in `src/config/theme.ts`; a utility
+   * like `bg-surface-panel` is the only way chrome should name a colour, so a palette
+   * change is one edit here rather than forty class strings.
+   */
+  --color-surface-canvas: #0d0e11;
+  --color-surface-panel: #131418;
+  --color-surface-raised: #1a1c22;
+  --color-surface-active: #22252c;
+
+  --color-ink-primary: #f4f4f6;
+  --color-ink-secondary: #a0a5b0;
+  --color-ink-muted: #6e7480;
+
+  --color-accent: #e5484d;
+  --color-accent-solid: #d33a3f;
+  --color-accent-bright: #ff6369;
+
+  --color-hairline: rgba(255, 255, 255, 0.08);
+  --color-hairline-strong: rgba(255, 255, 255, 0.14);
+
   /* Motion tokens (§3) — the only durations used anywhere in the app. */
   --ease-micro: cubic-bezier(0, 0, 0.2, 1);
   --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
@@ -26,7 +47,9 @@
   }
 
   body {
-    @apply bg-zinc-950 text-zinc-50 antialiased;
+    background: var(--color-surface-canvas);
+    color: var(--color-ink-primary);
+    -webkit-font-smoothing: antialiased;
     font-feature-settings: 'cv11', 'ss01';
     font-variant-ligatures: contextual;
     height: 100%;
@@ -43,14 +66,18 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* §3A — never remove a focus ring without a replacement. */
+  /* §3A — never remove a focus ring without a replacement. One accent, everywhere. */
   :focus-visible {
-    @apply outline-none ring-2 ring-red-500 ring-offset-2 ring-offset-zinc-950;
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--color-surface-canvas),
+      0 0 0 4px var(--color-accent);
   }
 
-  /* §4.1 — scrollbars stay visible on every scrollable region. */
+  /* §4.1 — scrollbars stay visible on every scrollable region, and stay quiet. */
   * {
-    scrollbar-color: var(--color-zinc-700) transparent;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
   }
 
   /* §4.1 target ladder — defined once, here, so it cannot drift per call site.
@@ -70,16 +97,31 @@
     height: 32px;
   }
 
+  /* Inputs carrying real numbers are measured against their own row, not the ladder. */
+  input[data-density='compact'] {
+    min-height: 28px;
+    height: 28px;
+  }
+
   /* A sheet card is a picture of paper, not chrome. Its text boxes and photo frames are
      geometry measured in millimetres, so the target ladder must not resize them: a
      global `min-height: 44px` on a 10 mm header band is several times the band's real
-     height, which is what pushed text over the photo and the photo over the footer.
-     The whole card is still one 44px+ target (it is far larger than that in practice),
-     and the click-to-type affordance is preserved — it is simply sized by geometry
-     rather than by the control ladder. */
+     height, which is what pushed text over the photo and the photo over the footer. */
   .zone-box {
     min-height: 0;
     height: auto;
+  }
+
+  /* Number inputs: no spinners, since every field is typed or stepped deliberately. */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
   }
 }
 

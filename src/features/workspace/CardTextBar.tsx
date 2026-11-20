@@ -51,12 +51,12 @@ export function CardTextBar(props: CardTextBarProps) {
   return (
     <div
       data-testid="card-text-bar"
-      className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5"
+      className="flex flex-wrap items-center gap-2"
     >
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+      <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-ink-secondary">
         {label}
       </span>
-      <span className="text-[10px] text-zinc-600">{styled}</span>
+      <span className="text-[10px] text-ink-muted">{styled}</span>
 
       <fieldset className="flex items-center gap-0.5 border-0 p-0">
         <legend className="sr-only">Text weight</legend>
@@ -68,9 +68,9 @@ export function CardTextBar(props: CardTextBarProps) {
           onPointerDown={keepFocus}
           onClick={() => onChange({ ...style, bold: !active.bold })}
           className={cn(
-            'grid h-8 min-h-8 w-7 place-items-center rounded transition-colors duration-150 ease-out',
-            'hover:bg-zinc-700 focus-visible:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-red-500',
-            active.bold ? 'bg-zinc-700 text-zinc-50' : 'text-zinc-400',
+            'grid h-6 min-h-6 w-6 place-items-center rounded transition-colors duration-150 ease-out',
+            'hover:bg-surface-active focus-visible:bg-surface-active',
+            active.bold ? 'bg-surface-active text-ink-primary' : 'text-ink-secondary',
           )}
         >
           <Bold aria-hidden className="size-3.5" />
@@ -79,7 +79,7 @@ export function CardTextBar(props: CardTextBarProps) {
 
       <fieldset className="flex items-center gap-1 border-0 p-0">
         <legend className="sr-only">Text colour</legend>
-        <Type aria-hidden className="size-3 shrink-0 text-zinc-500" />
+        <Type aria-hidden className="size-3 shrink-0 text-ink-muted" />
         {TextControls.map(({ color, label: name }) => (
           <button
             key={color}
@@ -90,11 +90,10 @@ export function CardTextBar(props: CardTextBarProps) {
             onPointerDown={keepFocus}
             onClick={() => onChange({ ...style, color })}
             className={cn(
-              'h-8 min-h-8 w-5 rounded border transition-colors duration-150 ease-out',
-              'focus-visible:ring-2 focus-visible:ring-red-500',
+              'h-6 min-h-6 w-5 rounded-sm border transition-colors duration-150 ease-out',
               active.color === color
-                ? 'border-zinc-50'
-                : 'border-zinc-700 hover:border-zinc-500 focus-visible:border-zinc-300',
+                ? 'border-ink-primary'
+                : 'border-hairline hover:border-hairline-strong focus-visible:border-ink-secondary',
             )}
             style={{ background: color }}
           />
@@ -103,7 +102,7 @@ export function CardTextBar(props: CardTextBarProps) {
 
       <fieldset className="flex items-center gap-1 border-0 p-0">
         <legend className="sr-only">Highlight</legend>
-        <Highlighter aria-hidden className="size-3 shrink-0 text-zinc-500" />
+        <Highlighter aria-hidden className="size-3 shrink-0 text-ink-muted" />
         <button
           type="button"
           data-target="dense"
@@ -112,11 +111,10 @@ export function CardTextBar(props: CardTextBarProps) {
           onPointerDown={keepFocus}
           onClick={() => onChange({ ...style, highlight: null })}
           className={cn(
-            'grid h-8 min-h-8 w-5 place-items-center rounded border text-[10px] transition-colors duration-150 ease-out',
-            'focus-visible:ring-2 focus-visible:ring-red-500',
+            'grid h-6 min-h-6 w-5 place-items-center rounded-sm border text-[10px] transition-colors duration-150 ease-out',
             active.highlight === null
-              ? 'border-zinc-50 text-zinc-200'
-              : 'border-zinc-700 text-zinc-500 hover:border-zinc-500 focus-visible:border-zinc-300',
+              ? 'border-ink-primary text-ink-primary'
+              : 'border-hairline text-ink-muted hover:border-hairline-strong focus-visible:border-ink-secondary',
           )}
         >
           off
@@ -131,11 +129,10 @@ export function CardTextBar(props: CardTextBarProps) {
             onPointerDown={keepFocus}
             onClick={() => onChange({ ...style, highlight: color })}
             className={cn(
-              'h-8 min-h-8 w-5 rounded border transition-colors duration-150 ease-out',
-              'focus-visible:ring-2 focus-visible:ring-red-500',
+              'h-6 min-h-6 w-5 rounded-sm border transition-colors duration-150 ease-out',
               active.highlight === color
-                ? 'border-zinc-50'
-                : 'border-zinc-700 hover:border-zinc-500 focus-visible:border-zinc-300',
+                ? 'border-ink-primary'
+                : 'border-hairline hover:border-hairline-strong focus-visible:border-ink-secondary',
             )}
             style={{ background: color }}
           />

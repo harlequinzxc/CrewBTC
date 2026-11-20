@@ -1,18 +1,24 @@
-import { Card } from '../../components/ui/Card'
-import { Toggle } from '../../components/ui/Toggle'
-import { Input } from '../../components/ui/Input'
-import { Select } from '../../components/ui/Select'
+import { NumberField } from '../../components/ui/NumberField'
+import { Switch } from '../workspace/inspector/Switch'
 import { useMotion } from './use-motion'
 import type { PageSettings } from '../../types/settings'
 import { LIMITS } from '../../types/settings'
 import { validatePageSettings } from '../../lib/trim'
 import { CHANGELOG } from '../../data/changelog'
+import { cn } from '../../lib/cn'
 
 export interface SettingsViewProps {
   readonly settings: PageSettings
   readonly onSettingsChange: (settings: PageSettings) => void
 }
 
+/**
+ * Settings, in the inspector's own language: titled sections, label-left rows, no prose.
+ *
+ * It keeps every control the full-page version had — the four trim figures, units, motion
+ * and the changelog — but reads as one more surface in the same product rather than a
+ * separate settings page with its own card styling.
+ */
 export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) {
   const { choice, setChoice } = useMotion()
   const validation = validatePageSettings(settings)
@@ -21,84 +27,83 @@ export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) 
     key: 'trimWidthMm' | 'trimHeightMm' | 'bleedMm' | 'markMarginMm',
     label: string,
   ): React.ReactNode => (
-    <Input
-      key={key}
-      label={label}
-      type="number"
-      inputMode="decimal"
-      suffix="mm"
-      value={String(settings[key])}
-      error={validation.errors[key]}
-      onChange={(event) => {
-        const next = Number(event.target.value)
-        onSettingsChange({ ...settings, [key]: Number.isFinite(next) ? next : 0 })
-      }}
-    />
+    <div key={key} className="flex flex-col gap-1">
+      <span className="text-[11px] text-ink-secondary">{label}</span>
+      <NumberField
+        label=""
+        name={label}
+        suffix="mm"
+        value={settings[key]}
+        min={0}
+        step={0.5}
+        onChange={(next) => onSettingsChange({ ...settings, [key]: next })}
+        className={cn(validation.errors[key] === undefined ? undefined : 'border-accent')}
+      />
+    </div>
   )
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-5 overflow-y-auto p-6">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight text-zinc-50">Settings</h1>
-        <p className="mt-0.5 text-sm text-zinc-400">
-          Applies to every export in this browser. Stored locally.
-        </p>
-      </div>
-
-      <Card>
-        <h2 className="text-sm font-semibold text-zinc-100">Print output</h2>
-        <div className="mt-4 grid grid-cols-2 gap-4">
+    <div className="flex flex-col">
+      <section className="border-b border-hairline px-4 py-3">
+        <h3 className="mb-2 text-[11px] font-medium uppercase tracking-[0.06em] text-ink-secondary">
+          Print output
+        </h3>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
           {numberField('trimWidthMm', 'Trim width')}
           {numberField('trimHeightMm', 'Trim height')}
           {numberField('bleedMm', 'Bleed')}
           {numberField('markMarginMm', 'Crop-mark margin')}
         </div>
-        <div className="mt-4">
-          <Select
-            label="Units"
+
+        <div className="mt-2 flex min-h-6 items-center justify-between">
+          <span className="text-[11px] text-ink-secondary">Units</span>
+          <select
+            aria-label="Units"
             value={settings.units}
             onChange={(event) =>
-              onSettingsChange({
-                ...settings,
-                units: event.target.value === 'in' ? 'in' : 'mm',
-              })
+              onSettingsChange({ ...settings, units: event.target.value === 'in' ? 'in' : 'mm' })
             }
-            options={[
-              { value: 'mm', label: 'Millimetres' },
-              { value: 'in', label: 'Inches' },
-            ]}
-          />
+            className={cn(
+              'h-6 min-h-6 rounded border border-hairline bg-surface-raised px-1.5',
+              'text-[11px] text-ink-primary focus-visible:border-accent focus-visible:outline-none',
+            )}
+          >
+            <option value="mm">Millimetres</option>
+            <option value="in">Inches</option>
+          </select>
         </div>
-        <p className="mt-3 text-xs text-zinc-500">
-          Trim size is limited to {LIMITS.minTrimMm}–{LIMITS.maxTrimMm} mm per side.
-        </p>
-      </Card>
 
-      <Card>
-        <h2 className="text-sm font-semibold text-zinc-100">Motion</h2>
-        <div className="mt-3">
-          <Toggle
-            label="Reduced motion"
-            description="Removes sliding and scaling. State changes cross-fade instead."
-            checked={choice === 'on'}
-            onChange={(checked) => setChoice(checked ? 'on' : 'off')}
-          />
-        </div>
-      </Card>
+        {validation.ok ? null : (
+          <p role="alert" className="mt-2 text-[11px] text-accent-bright">
+            Trim must be {LIMITS.minTrimMm}–{LIMITS.maxTrimMm} mm per side.
+          </p>
+        )}
+      </section>
 
-      <Card>
-        <h2 className="text-sm font-semibold text-zinc-100">What&rsquo;s new</h2>
-        <ol className="mt-3 flex flex-col gap-3">
+      <section className="flex min-h-9 items-center justify-between border-b border-hairline px-4">
+        <span className="text-[11px] text-ink-secondary">Reduced motion</span>
+        <Switch
+          label="Reduced motion"
+          checked={choice === 'on'}
+          onChange={(checked) => setChoice(checked ? 'on' : 'off')}
+        />
+      </section>
+
+      <section className="px-4 py-3">
+        <h3 className="mb-2 text-[11px] font-medium uppercase tracking-[0.06em] text-ink-secondary">
+          What&rsquo;s new
+        </h3>
+        <ol className="flex flex-col gap-3">
           {CHANGELOG.map((release) => (
             <li key={release.version}>
               <div className="flex items-baseline gap-2">
-                <span className="tabular text-xs font-semibold text-red-400">
+                <span className="tabular text-[11px] font-semibold text-accent-bright">
                   v{release.version}
                 </span>
-                <span className="text-xs text-zinc-500">{release.date}</span>
+                <span className="tabular text-[10px] text-ink-muted">{release.date}</span>
               </div>
-              <p className="text-sm text-zinc-200">{release.title}</p>
-              <ul className="mt-1 list-disc pl-5 text-xs text-zinc-400">
+              <p className="text-[12px] text-ink-primary">{release.title}</p>
+              <ul className="mt-1 list-disc pl-4 text-[11px] text-ink-secondary">
                 {release.highlights.map((highlight) => (
                   <li key={highlight}>{highlight}</li>
                 ))}
@@ -106,7 +111,7 @@ export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) 
             </li>
           ))}
         </ol>
-      </Card>
+      </section>
     </div>
   )
 }

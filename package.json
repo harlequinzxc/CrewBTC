@@ -1,7 +1,7 @@
 {
   "name": "crewbtc",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,12 +14,13 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "gate:contrast": "node scripts/check-contrast.mjs",
+    "gate:theme": "node scripts/check-theme.mjs .",
     "gate:layout": "node scripts/check-layout.mjs src",
     "gate:manifest": "node scripts/check-manifest.mjs public/manifest.json public",
     "gate:placeholders": "bash scripts/check-placeholders.sh",
     "gate:secrets": "bash scripts/check-secrets.sh",
     "gate:bundle": "bash scripts/check-bundle.sh",
-    "gate": "npm run typecheck && npm run lint && npm run lint:types && npm run build && npm run test && npm run gate:contrast && npm run gate:layout && npm run gate:manifest && npm run gate:placeholders && npm run gate:secrets && npm run gate:bundle"
+    "gate": "npm run typecheck && npm run lint && npm run lint:types && npm run build && npm run test && npm run gate:contrast && npm run gate:theme && npm run gate:layout && npm run gate:manifest && npm run gate:placeholders && npm run gate:secrets && npm run gate:bundle"
   },
   "dependencies": {
     "@cantoo/pdf-lib": "^2.11.1",

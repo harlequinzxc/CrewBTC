@@ -1,5 +1,20 @@
 [
   {
+    "version": "1.4.0",
+    "date": "2026-11-20",
+    "title": "One sheet, one bar, one inspector",
+    "highlights": [
+      "The far-left navigation rail and the docked drawer under the sheet are gone: the A4 sheet now runs from the top bar to the bottom of the window",
+      "A single 48px bar holds the logo, \u2212 % + and Fit, the settings gear, and Export with a menu for every sheet as one PDF",
+      "The right rail is a contextual 260px inspector: a card's Top, Bottom and Text numbers when a card is selected, the sheet and print settings otherwise",
+      "Card heights are typed rather than dragged to: compact millimetre fields with arrow-key stepping, in place of the sliders' 6\u201355 mm sweep",
+      "One + Add PDFs button in the Files queue, with compact rows and hover-only retry actions; the duplicate header button, per-row size badges and the one-item tab strip are gone",
+      "One accent across selection, active borders, toggles and the primary button; no browser-blue sliders and no pure black",
+      "Settings opens as a dialog over the sheet instead of replacing the whole screen",
+      "Every explanatory paragraph under the controls is gone \u2014 the labels do the work"
+    ]
+  },
+  {
     "version": "1.3.0",
     "date": "2026-11-19",
     "title": "Zoom into the sheet, and shape a card by dragging it",
