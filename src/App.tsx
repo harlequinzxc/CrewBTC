@@ -12,6 +12,8 @@ import { Inspector } from './features/workspace/Inspector'
 import { SheetSettings } from './features/workspace/SheetSettings'
 import { useBatch } from './features/workspace/use-batch'
 import { useCards, useSeedCards } from './features/workspace/use-cards'
+import { useUpdateNotice } from './features/workspace/use-update-notice'
+import { reloadPage } from './features/workspace/reload-page'
 import type { CardSeed } from './features/workspace/use-cards'
 import { CentrePane } from './features/workspace/CentrePane'
 import { LeftPane } from './features/workspace/LeftPane'
@@ -50,6 +52,19 @@ function Workspace() {
 
   const toasts = useToasts()
   const notify = toasts.show
+  // A new build has taken over: say so, and let the user choose when to reload, so
+  // unexported cards are not thrown away by a background refresh.
+  useUpdateNotice(() => {
+    notify({
+      variant: 'info',
+      title: 'New version ready',
+      description: 'Reload to pick up the latest build. Unsaved cards are kept until you do.',
+      // Reloading is the user's call: the new worker is already serving the new build,
+      // so a refresh loses nothing that has been exported, but it does drop unsaved work.
+      undo: reloadPage,
+      action: 'Reload',
+    })
+  })
   const batch = useBatch({ notify })
   const sheet = useSheet()
   const [showCutMarks, setShowCutMarks] = useState(true)

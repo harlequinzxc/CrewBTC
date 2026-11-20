@@ -8,6 +8,17 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '1.0.2',
+    date: '2026-11-19',
+    title: 'New versions now tell you they are ready',
+    highlights: [
+      'A deployed update used to take effect only after a manual refresh, because the page kept running the JavaScript it had already loaded',
+      'A “New version ready” notice now appears within a second or two of a new build taking over, with a Reload button',
+      'Reloading stays your choice: an automatic refresh would discard unsaved cards, which matters for a tab left open',
+      'The notice is not shown on a first install, and not while the page is still starting up',
+    ],
+  },
+  {
     version: '1.0.1',
     date: '2026-11-19',
     title: 'Fixed: cards arrived empty, and the band sliders were hidden',
