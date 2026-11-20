@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.9.4",
+    "date": "2026-11-20",
+    "title": "A one-click diagnostic for \u201cthe text will not open\u201d",
+    "highlights": [
+      "Added a magnifier button beside the version. Press it, then click a card\u2019s text, and it reports which build is running, which element the browser actually delivered the press to, whether the text box is the height it claims to be, and whether a field opened and kept the caret",
+      "The report now answers the question that decides the fix: \u201cno field\u201d means the press never started an edit, while \u201cfield present, focus is BODY\u201d means it opened and something took the caret. Those are different bugs with different fixes",
+      "Checking every release by rebuilding it and driving a real mouse press confirms 1.7.0 through 1.8.0 work, 1.8.1 does not, and 1.8.2 onwards do. The cause in 1.8.1 was a press that did not suppress the browser\u2019s default handling; adding that one call is what fixes it"
+    ]
+  },
+  {
     "version": "1.9.3",
     "date": "2026-11-20",
     "title": "Clicking a file brings its card into view",
