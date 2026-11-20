@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import type { IngestedDocument } from '../../types/document'
 import { ingestBatch } from '../../lib/pdf/ingest-batch'
 import { keepSource, releaseAll } from '../../lib/export/doc-cache'
-import { fileFromSnapshot } from '../../lib/files/file-from-snapshot'
+import { getProjectSource, putProjectSource } from '../../lib/storage/project-sources'
 import { releaseProxies } from '../../lib/pdf/proxy-cache'
 import type { ToastInput } from '../../components/ui/use-toasts'
 
@@ -23,6 +23,7 @@ export interface BatchApi {
    * one.
    */
   readonly restoreCleared: (documents: readonly IngestedDocument[], activeId: string | null) => void
+  readonly replaceProject: (documents: readonly IngestedDocument[], activeId: string | null) => void
   /**
    * False until the restored batch has been applied (or it was decided there was none).
    *
@@ -100,6 +101,15 @@ export function useBatch({ notify, restore, restoreActiveId }: BatchOptions): Ba
           },
         })
 
+        // Store originals before leaving the busy state. Failure does not discard cards;
+        // Save Project will explicitly report any originals that could not be included.
+        await Promise.all(results.map(async (document) => {
+          const file = sources.current.get(document.id)
+          if (file !== undefined) {
+            try { await putProjectSource(document.id, await file.arrayBuffer()) } catch { /* quota */ }
+          }
+        }))
+
         // Commit the settled results as well as the progressive updates. Relying on
         // the producer's callback alone means a callback change silently empties the
         // queue — the original "Add PDFs does nothing" failure mode.
@@ -135,7 +145,8 @@ export function useBatch({ notify, restore, restoreActiveId }: BatchOptions): Ba
 
   const addFiles = useCallback(
     (files: readonly File[]) => {
-      // Cache the uploads for thumbnails and re-running extraction during this visit.
+      // Disable replacement while the upload bytes are being read.
+      setBusy(true)
       void (async () => {
         const bytes = await Promise.all(
           files.map(async (file) => {
@@ -159,42 +170,28 @@ export function useBatch({ notify, restore, restoreActiveId }: BatchOptions): Ba
   )
 
   const reRun = useCallback(() => {
-    /*
-      A restored batch has no `File` objects — the snapshot stores parsed results, not the
-      uploads, so `sources` is empty after a reload even though every card is on the sheet.
-      Deriving a File from cached bytes keeps re-run working for
-      the rest of the session instead of claiming there is nothing to do.
-
-      When there are no bytes either (an older snapshot, or a file cleared since), the
-      message says what is actually true and what to do about it, rather than "add PDFs
-      first" next to a list of added PDFs.
-    */
-    const pending = documents
-      .map((document) => {
+    // Resolve every source by document identity; never re-run only part of a batch.
+    setBusy(true)
+    void (async () => {
+      const pending = (await Promise.all(documents.map(async (document) => {
         const held = sources.current.get(document.id)
         if (held !== undefined) return held
-        const derived = fileFromSnapshot(document.fileName)
+        const bytes = await getProjectSource(document.id)
+        const derived = bytes === null ? null : new File([bytes], document.fileName, { type: 'application/pdf' })
         if (derived !== null) sources.current.set(document.id, derived)
-        return derived ?? undefined
-      })
-      .filter((file): file is File => file !== undefined)
-    if (pending.length === 0) {
-      notify(
-        documents.length === 0
+        return derived
+      }))).filter((file): file is File => file !== null)
+      if (pending.length !== documents.length || pending.length === 0) {
+        setBusy(false)
+        notify(documents.length === 0
           ? { variant: 'info', title: 'Nothing to re-run', description: 'Add PDFs first.' }
-          : {
-              variant: 'info',
-              title: 'Re-run needs the original files',
-              // Not "nothing to re-run": the queue is full, and the user can see it.
-              description:
-                'This session was restored from a previous visit, so the PDFs are no longer held. Add them again to re-read the text.',
-            },
-      )
-      return
-    }
-    setDocuments([])
-    setActiveId(null)
-    void runIn(pending)
+          : { variant: 'info', title: 'Re-run needs the original files', description: 'Some original PDFs are unavailable. Add them again to re-read the text.' })
+        return
+      }
+      setDocuments([])
+      setActiveId(null)
+      await runIn(pending)
+    })()
   }, [documents, notify, runIn])
 
   const clear = useCallback(() => {
@@ -222,5 +219,10 @@ export function useBatch({ notify, restore, restoreActiveId }: BatchOptions): Ba
     [],
   )
 
-  return { documents, activeId, busy, select, addFiles, reRun, clear, restoreCleared, hydrated }
+  const replaceProject = useCallback((restored: readonly IngestedDocument[], selected: string | null) => {
+    sources.current.clear()
+    setDocuments(restored)
+    setActiveId(selected)
+  }, [])
+  return { documents, activeId, busy, select, addFiles, reRun, clear, restoreCleared, replaceProject, hydrated }
 }

@@ -27,6 +27,9 @@ import { useClearBatch } from './use-clear-batch'
 import { reloadPage } from './reload-page'
 import { SettingsDialog } from '../settings/SettingsDialog'
 import { usePageSettings } from './use-page-settings'
+import { useProject } from './use-project'
+import { useCutGuides } from './use-cut-guides'
+import type { Project } from '../../lib/project/project'
 import type { useToasts } from '../../components/ui/use-toasts'
 
 /** One screen: files, the sheet, the inspector. No view state, no navigation rail. */
@@ -36,12 +39,9 @@ export interface WorkspaceScreenProps {
 
 export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const { settings, update: updateSettings } = usePageSettings()
-  // Cut guides are on by default: the sheet is a cutting template as much as a preview.
-  const [showCutMarks, setShowCutMarks] = useState(true)
+  const [showCutMarks, setShowCutMarks] = useCutGuides()
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  // The two optional rails. Both are open until the user says otherwise, and both are
-  // remembered for the session only: this is a workspace, not a set of preferences.
   const [stripCollapsed, setStripCollapsed] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(true)
 
@@ -55,11 +55,8 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     })
   })
 
-  // `Shift+?` or the top-bar button reports what the next press lands on.
   const probe = useClickProbe(CHANGELOG[0]?.version ?? 'unknown')
 
-  // Read before anything is constructed: the batch and the card store both take their
-  // initial value from it, so the first paint already has the user's cards on their sheet.
   const session = useRestoredSession()
 
   const batch = useBatch({
@@ -72,8 +69,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
   const zoom = useSheetZoom(sheet.settings.sheetWidthMm)
 
-  // Write-side: armed only once the read has finished, so an early frame cannot erase the
-  // session it is about to load. See `use-session-persistence`.
   useSaveSession(session.restored && batch.hydrated, {
     documents: batch.documents,
     cards: cardStore.cards,
@@ -97,7 +92,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const toggleStrip = useCallback(() => setStripCollapsed((collapsed) => !collapsed), [])
   const toggleInspector = useCallback(() => setInspectorOpen((open) => !open), [])
 
-  // Clearing is a transaction with an undo, so it lives in its own hook.
   const clearSelection = useCallback(() => setSelectedCell(null), [])
   const { clearAll } = useClearBatch({
     batch,
@@ -113,10 +107,16 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     })()
   }, [batch])
 
+  const applyProject = useCallback((project: Project) => {
+    batch.replaceProject(project.snapshot.documents, project.snapshot.activeId)
+    cardStore.restoreCards(project.snapshot.cards)
+    sheet.update(project.sheet)
+    updateSettings(project.preferences)
+    setShowCutMarks(project.showCutMarks)
+    setSelectedCell(null)
+  }, [batch, cardStore, sheet, updateSettings, setShowCutMarks])
+  const project = useProject({ documents: batch.documents, cards: cardStore.cards, activeId: batch.activeId, sheet: sheet.settings, preferences: settings, showCutMarks, apply: applyProject, notify })
   const hasBatch = batch.documents.length > 0
-
-  // Which sheet is on screen, and every way to move it, in one place. The canvas and the
-  // strip both read it, which is what keeps the highlight and the scroll from drifting.
   const {
     sheets,
     sheetIndex,
@@ -135,8 +135,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const sheetCount = sheets.length
   const reveal = usePageReveal(pageRefs, sheet.grid, selectCell, goToSheet)
 
-  // The inspector describes a card when one is selected and the document when it is not.
-  // Resolved against the sheet the *selection* came from, since every sheet is drawn.
   const selectionKey = selectedCardKey(
     selectedCell,
     sheet.grid,
@@ -158,6 +156,9 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         onStep={zoom.step}
         onFit={zoom.fit}
         onOpenSettings={() => setSettingsOpen(true)}
+        onSaveProject={project.save}
+        onOpenProject={project.open}
+        projectBusy={project.busy || batch.busy || !session.restored}
         onExportCurrent={exporter.exportCurrent}
         onExportAll={exporter.exportAll}
         hasMoreThanOneSheet={exporter.hasMoreThanOneSheet}
