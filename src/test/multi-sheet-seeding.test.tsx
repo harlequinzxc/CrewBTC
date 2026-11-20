@@ -67,14 +67,31 @@ const desktop = (): void => {
   })
 }
 
-/** The cards currently drawn on the canvas, in cell order. */
-const drawnCards = (): HTMLElement[] =>
-  [...document.querySelectorAll('[data-cell]')] as HTMLElement[]
+/**
+ * The cards drawn on one sheet, in cell order.
+ *
+ * Every sheet is on screen at once now, so "the cards on the canvas" is not a question
+ * with one answer — the sheet is part of the query. `data-sheet` was added for exactly
+ * this: the stack needs a name for each page that is not its position in a scroll offset.
+ */
+const drawnCards = (sheet = 1): HTMLElement[] =>
+  [
+    ...document.querySelectorAll(`[data-sheet="${sheet}"] [data-cell]`),
+  ] as HTMLElement[]
 
 const load = async (): Promise<void> => {
   fireEvent.click(screen.getAllByRole('button', { name: /add pdfs/i })[0]!)
   await waitFor(() => expect(drawnCards().length).toBeGreaterThan(0))
 }
+
+/**
+ * How many sheets the stack is drawing.
+ *
+ * Scrolling replaced navigation, so the assertion that used to be "the strip moved the
+ * canvas" is now "the second sheet is on the page at all". A test that clicked a thumbnail
+ * could not tell a working canvas from one that scrolls a sheet it never drew.
+ */
+const drawnSheetCount = (): number => document.querySelectorAll('[data-sheet]').length
 
 beforeEach(() => {
   pickFiles.mockResolvedValue([new File(['%PDF'], 'book.pdf')])
@@ -87,22 +104,21 @@ describe('a document that spans two sheets', () => {
     await load()
 
     await waitFor(() => {
-      const cards = drawnCards()
+      const cards = drawnCards(1)
       expect(cards.length).toBe(12)
       expect(cards[0]?.textContent).toContain('PAGE-1')
       expect(cards[11]?.textContent).toContain('PAGE-12')
     })
+    // Sheet 2 exists in the same scroll surface, not behind a click.
+    expect(drawnSheetCount()).toBe(2)
   })
 
   it('fills every card on the second sheet', async () => {
     render(<App />)
     await load()
 
-    // Navigate to sheet 2 through the strip.
-    fireEvent.click(await screen.findByRole('button', { name: 'Sheet 2' }))
-
     await waitFor(() => {
-      const cards = drawnCards()
+      const cards = drawnCards(2)
       // Pages 13 and 14 are the whole of sheet 2.
       expect(cards.length).toBe(2)
       expect(cards[0]?.textContent).toContain('PAGE-13')
@@ -113,13 +129,14 @@ describe('a document that spans two sheets', () => {
   it('shows that sheet 2 has its own photos, not the first sheet’s', async () => {
     render(<App />)
     await load()
-    fireEvent.click(await screen.findByRole('button', { name: 'Sheet 2' }))
 
     await waitFor(() => {
-      const first = drawnCards()[0]
+      const first = drawnCards(2)[0]
       const image = first?.querySelector('img')
       expect(image?.getAttribute('src')).toContain('PAGE13')
     })
+    // And sheet 1 has not been overwritten with them.
+    expect(drawnCards(1)[0]?.querySelector('img')?.getAttribute('src')).toContain('PAGE1')
   })
 })
 
@@ -131,16 +148,17 @@ describe('clearing the uploads and loading again', () => {
 
     // Delete all uploads, then load the same file again.
     fireEvent.click(screen.getByRole('button', { name: /clear|delete all|remove all/i }))
-    await waitFor(() => expect(drawnCards().length).toBe(0))
+    await waitFor(() => expect(drawnSheetCount()).toBe(0))
 
     await load()
 
-    // The first sheet has to come back fully populated, not empty.
+    // Both sheets have to come back fully populated, not empty.
     await waitFor(() => {
-      const cards = drawnCards()
+      const cards = drawnCards(1)
       expect(cards.length).toBe(12)
       expect(cards[0]?.textContent).toContain('PAGE-1')
       expect(cards[0]?.querySelector('img')?.getAttribute('src')).toContain('PAGE1')
     })
+    expect(drawnCards(2)[0]?.textContent).toContain('PAGE-13')
   })
 })

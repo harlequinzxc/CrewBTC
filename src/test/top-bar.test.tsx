@@ -21,6 +21,8 @@ const render_ = (overrides: Partial<React.ComponentProps<typeof TopBar>> = {}) =
     onOpenSettings: vi.fn(),
     onExportCurrent: vi.fn(),
     onExportAll: vi.fn(),
+    inspectorOpen: true,
+    onToggleInspector: vi.fn(),
     ...overrides,
   }
   render(<TopBar {...props} />)

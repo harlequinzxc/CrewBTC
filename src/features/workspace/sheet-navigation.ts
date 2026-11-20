@@ -72,3 +72,56 @@ export function placementsForSheet(
 ): readonly Placement[] | undefined {
   return sheets[sheetIndex]?.placements
 }
+
+/**
+ * Where a page landed, as a place on the sheet.
+ *
+ * A file in the rail is a name, and a card on the canvas is a rectangle on a specific
+ * sheet — so "click the file to see its card" needs both halves. Derived from the same
+ * plan the canvas draws, so a re-placement moves the answer too.
+ */
+export interface PagePlacement {
+  readonly sheetIndex: number
+  readonly cellIndex: number
+}
+
+/** Every page's sheet and cell, keyed by `documentId` then page number. */
+export function placementsByPage(
+  pages: readonly PageRef[],
+  grid: GridLayout,
+): ReadonlyMap<string, ReadonlyMap<number, PagePlacement>> {
+  const result = new Map<string, Map<number, PagePlacement>>()
+  planSheets(pages, grid).forEach((sheet, sheetIndex) => {
+    for (const placement of sheet.placements) {
+      let forDocument = result.get(placement.documentId)
+      if (forDocument === undefined) {
+        forDocument = new Map<number, PagePlacement>()
+        result.set(placement.documentId, forDocument)
+      }
+      forDocument.set(placement.pageNumber, { sheetIndex, cellIndex: placement.cellIndex })
+    }
+  })
+  return result
+}
+
+/**
+ * The card a file's *first* placed page sits on.
+ *
+ * First, not last: a 27-page file starts on sheet 1, and that is the page the file's row
+ * is pointing at. Returns null when the file contributed no pages at all — a failed parse
+ * or a file whose pages did not fit — rather than guessing a cell.
+ */
+export function firstPlacementOf(
+  index: ReadonlyMap<string, ReadonlyMap<number, PagePlacement>>,
+  documentId: string,
+): (PagePlacement & { readonly pageNumber: number }) | null {
+  const forDocument = index.get(documentId)
+  if (forDocument === undefined || forDocument.size === 0) return null
+  let best: number | null = null
+  for (const pageNumber of forDocument.keys()) {
+    if (best === null || pageNumber < best) best = pageNumber
+  }
+  if (best === null) return null
+  const placement = forDocument.get(best)
+  return placement === undefined ? null : { ...placement, pageNumber: best }
+}

@@ -10,9 +10,12 @@ import type { GridLayout } from '../../types/imposition'
  * callback from the canvas into the inspector would be a second source of truth that could
  * disagree with it after a re-placement.
  *
- * The *visible* sheet's placements are the ones that answer. Cell 3 holds a different page
- * on every sheet, so resolving against sheet 1 while the canvas shows sheet 2 would put
- * the wrong card's numbers in the inspector — and edit the wrong card.
+ * The sheet the *selection* came from answers. Cell 3 holds a different page on every
+ * sheet, and every sheet is now drawn at once, so "the sheet on screen" is no longer a
+ * single answer — the cell index alone would resolve against sheet 1 and put the wrong
+ * card's numbers in the inspector, then edit the wrong card. `sheetIndex` is therefore
+ * the selection's own sheet, falling back to the first one when nothing has said
+ * otherwise (a card selected before any navigation, or a test rendering one sheet).
  */
 export function selectedCardKey(
   selectedCell: number | null,

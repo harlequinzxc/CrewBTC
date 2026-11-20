@@ -1,6 +1,11 @@
-import { FilePlus2, FileText, RefreshCw, RotateCw, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { FilePlus2, RefreshCw, Search, Trash2, X } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import type { IngestedDocument } from '../../types/document'
+import { firstPlacementOf } from './sheet-navigation'
+import type { PagePlacement } from './sheet-navigation'
+import { FileRow } from './FileRow'
+import { statusOf } from './file-status'
 
 /**
  * The file queue: one row per PDF, and one button to add more.
@@ -8,6 +13,15 @@ import type { IngestedDocument } from '../../types/document'
  * Rows are a 28px thumbnail and a single truncated name. Status lives in a 6px dot rather
  * than a badge with its own label. The old rows spent 40px of height and two extra lines
  * per file saying "Parsed" and "59 KB", neither of which changed what you did next.
+ *
+ * Two things earn the extra furniture now that batches run to 27 files:
+ *
+ * - **A filter**, because a list of 27 names is a haystack and the user knows which file
+ *   they want. Names only: the search box is not a query language, and matching page
+ *   contents would promise a precision this app does not have.
+ * - **A slot marker** (`S2 · 07`), because the question a batch raises is not "which files
+ *   did I add" but "where did *this* one land". It sits right-aligned in the muted scale of
+ *   a coordinate, not in the scale of a label — it is a hint, and the name is the content.
  *
  * Re-run and clear sit on the queue header as icon actions, which is why there is no
  * longer a second `Add PDFs` anywhere: one action per area.
@@ -20,29 +34,10 @@ export interface BatchQueueProps {
   readonly onReRun: () => void
   readonly onClear: () => void
   readonly busy: boolean
-}
-
-type Status = 'failed' | 'parsing' | 'empty' | 'parsed'
-
-const DOT: Record<Status, string> = {
-  failed: 'bg-accent',
-  parsing: 'bg-ink-secondary animate-pulse',
-  empty: 'bg-amber-500',
-  parsed: 'bg-emerald-500',
-}
-
-const STATUS_TEXT: Record<Status, string> = {
-  failed: 'Failed',
-  parsing: 'Parsing',
-  empty: 'No text found',
-  parsed: 'Parsed',
-}
-
-function statusOf(document: IngestedDocument): Status {
-  if (document.status === 'failed') return 'failed'
-  if (document.status === 'parsing') return 'parsing'
-  if (document.regions.length === 0) return 'empty'
-  return 'parsed'
+  /** Where each document's first page landed, for the `S1 · 01` hint. */
+  readonly placements: ReadonlyMap<string, ReadonlyMap<number, PagePlacement>>
+  /** Jump to a document's card. Falls back to selecting it when it has no card. */
+  readonly onReveal: (document: IngestedDocument) => void
 }
 
 const iconAction = cn(
@@ -54,7 +49,14 @@ const iconAction = cn(
 
 export function BatchQueue(props: BatchQueueProps) {
   const { documents, busy } = props
+  const [query, setQuery] = useState('')
   const empty = documents.length === 0
+
+  const shown = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    if (needle === '') return documents
+    return documents.filter((document) => document.fileName.toLowerCase().includes(needle))
+  }, [documents, query])
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -88,7 +90,7 @@ export function BatchQueue(props: BatchQueueProps) {
         </div>
       </div>
 
-      <div className="p-1.5">
+      <div className="flex flex-col gap-1 p-1.5">
         <button
           type="button"
           data-target="dense"
@@ -105,76 +107,73 @@ export function BatchQueue(props: BatchQueueProps) {
           <FilePlus2 aria-hidden className="size-3.5" />
           Add PDFs
         </button>
+
+        {/*
+          A filter, not a search field: it narrows the list already on screen, so it has no
+          button and no results page. `type="search"` is what gives it the clear affordance a
+          browser and a screen reader both understand, and the wrapper keeps that clear
+          button from colliding with the magnifier on a hover.
+        */}
+        <div className="relative flex items-center">
+          <Search
+            aria-hidden
+            className="pointer-events-none absolute left-1.5 size-3 text-ink-muted"
+          />
+          <input
+            type="search"
+            value={query}
+            disabled={empty}
+            aria-label="Filter files by name"
+            placeholder={empty ? 'Filter' : `Filter ${documents.length} files`}
+            onChange={(event) => setQuery(event.target.value)}
+            className={cn(
+              'h-7 w-full rounded-md border border-hairline-strong bg-surface-raised pl-6 pr-6',
+              'text-[11px] text-ink-primary placeholder:text-ink-muted',
+              'transition-colors duration-150 ease-out',
+              'hover:border-ink-muted focus-visible:border-accent focus-visible:outline-none',
+              'disabled:opacity-40',
+              // The native clear button is a second X next to ours, one at each end.
+              '[&::-webkit-search-cancel-button]:appearance-none',
+            )}
+          />
+          {query === '' ? null : (
+            <button
+              type="button"
+              data-target="dense"
+              aria-label="Clear filter"
+              onClick={() => setQuery('')}
+              className="absolute right-1 grid size-5 place-items-center rounded text-ink-muted transition-colors duration-150 ease-out hover:text-ink-primary focus-visible:text-ink-primary"
+            >
+              <X aria-hidden className="size-3" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-1.5">
         {empty ? (
           <p className="px-1.5 py-2 text-[11px] text-ink-muted">No files</p>
+        ) : shown.length === 0 ? (
+          <p className="px-1.5 py-2 text-[11px] text-ink-muted">
+            No file matches “{query.trim()}”.
+          </p>
         ) : (
           <ul className="flex flex-col gap-px">
-            {documents.map((document) => {
-              const status = statusOf(document)
-              const isActive = document.id === props.activeId
-              // Only a failed or skipped file gets a per-row action. A healthy row has
-              // nothing to do to it, and a re-run icon on all twelve would put twelve
-              // controls on screen to serve the two that need one.
-              const canRetry = status === 'failed' || status === 'empty'
-              return (
-                <li key={document.id} className="relative">
-                  <button
-                    type="button"
-                    data-target="dense"
-                    aria-current={isActive ? 'true' : undefined}
-                    onClick={() => props.onSelect(document.id)}
-                    className={cn(
-                      'flex h-8 w-full items-center gap-2 rounded px-1.5 text-left',
-                      'transition-colors duration-150 ease-out',
-                      'focus-visible:bg-surface-active',
-                      isActive ? 'bg-accent/12' : 'hover:bg-surface-active focus-visible:bg-surface-active',
-                    )}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        'grid size-7 shrink-0 place-items-center overflow-hidden rounded border bg-surface-canvas',
-                        isActive ? 'border-accent/60' : 'border-hairline',
-                      )}
-                    >
-                      {document.pagePreviewUrl === null ? (
-                        <FileText aria-hidden className="size-3 text-ink-muted" />
-                      ) : (
-                        <img
-                          src={document.pagePreviewUrl}
-                          alt=""
-                          className="size-full object-cover"
-                        />
-                      )}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-[11px] text-ink-primary">
-                      {document.fileName}
-                    </span>
-                    <span
-                      aria-hidden="true"
-                      title={STATUS_TEXT[status]}
-                      className={cn('size-1.5 shrink-0 rounded-full', DOT[status])}
-                    />
-                  </button>
-
-                  {canRetry ? (
-                    <button
-                      type="button"
-                      data-target="dense"
-                      aria-label={`Re-run ${document.fileName}`}
-                      onClick={props.onReRun}
-                      disabled={busy}
-                      className="absolute right-1 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded bg-surface-panel text-ink-secondary transition-colors duration-150 ease-out hover:text-ink-primary focus-visible:text-ink-primary disabled:opacity-30"
-                    >
-                      <RotateCw aria-hidden className="size-2.5" />
-                    </button>
-                  ) : null}
-                </li>
-              )
-            })}
+            {shown.map((document) => (
+              <FileRow
+                key={document.id}
+                document={document}
+                status={statusOf(document)}
+                active={document.id === props.activeId}
+                busy={busy}
+                placed={firstPlacementOf(props.placements, document.fileName)}
+                onSelect={() => {
+                  props.onSelect(document.id)
+                  props.onReveal(document)
+                }}
+                onReRun={props.onReRun}
+              />
+            ))}
           </ul>
         )}
       </div>

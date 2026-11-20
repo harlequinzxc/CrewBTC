@@ -385,6 +385,68 @@ These pairs are verified against Tailwind's default palette. Do not substitute c
 
 ---
 
+## 8B. Post-Implementation Verification (What to Test, What to Look Out For)
+
+§8A says coverage must be *written*; Appendix D says which commands to *run*. This section is the other half: the defects that pass every gate and still ship. Every item is **`[REVIEW]`** unless marked otherwise — report each as `pass` / `fail` / `not run` with one line of evidence, never as "verified".
+
+### The four questions to ask before calling anything done
+
+1. **What did I change that something else reads?** If a function's signature, a stored shape, a shared component's props, or a `key` changed, grep every caller and every test fixture. A change is not complete until every reader agrees with the writer.
+2. **What happens the second time?** Run the primary action twice, and after clearing. Caches, `useRef` guards, module-level state, `Set`s of "already done", and `once`-registered listeners are the usual suspects. Any state that outlives the data it describes is a bug waiting for a clear-and-retry.
+3. **What happens at the edges?** Empty (zero items), one item, enough to span a boundary (more than a page, more than a screen, more than a column), and maximum (the largest realistic input). Boundaries are where index arithmetic and pagination break.
+4. **What happens at the sizes I did not design for?** Narrow window, zoomed text, long filenames, a translated string. If a container clips, an element is absolutely positioned, or a label has a fixed width, prove it at the extremes.
+
+### Regression classes to actively hunt
+
+Check each of these that your change could plausibly touch. This is a probe list, not a ritual — skip the ones that cannot apply and say so.
+
+| Class | How it fails | What to do |
+|---|---|---|
+| **Writer/reader key drift** | Two call sites derive the same identity by different rules (list ordinal vs. grid index, id vs. file name). Works for the first page, silently breaks every page after | Name the identity in one function, make every reader call it |
+| **State outliving its data** | A cache, ref, or module variable holds "seen" keys; clearing the underlying data does not clear it, so the next load is a no-op | Derive from the source of truth; if caching, clear it in the same action that clears the data |
+| **Pagination / index arithmetic** | `index % pageSize`, `Math.floor`, `slice` off-by-one; off-by-one is invisible for one page | Test with exactly `pageSize`, `pageSize + 1`, and `2 × pageSize` items |
+| **Layout that only works when it fits** | Centring or `justify-between` with an overflowing child clips the top or strands a gap | Test at minimum and maximum content; prefer flow layout over centred overflow |
+| **Unmount as data loss** | A breakpoint, error boundary, or route swap unmounts stateful UI; all in-memory state is gone | Keep mounted and hide, or lift state above the branch |
+| **Stale derived value** | A value computed from a prop that changed but the value did not recompute (missing dep, memo key, or `useRef` initial) | Recompute from the source each render, or fix the dependency list |
+| **Effect loops** | An effect depends on an object/array/function recreated each render; runs forever or re-fires on every render | Memoise the dependency at its source, not at the call site |
+| **Two sources of truth** | A selection, mode, or index stored in state *and* derivable from other state; they disagree after an update | Derive it; if you must store it, define exactly when it is cleared |
+| **Missing `aria-*` on a state change** | A toggle, tab, or panel changes visually but not for assistive tech | Every visual state has a programmatic twin (`aria-pressed`, `aria-expanded`, `aria-current`, `aria-selected`) |
+| **Silent async failure** | A promise rejects, nothing surfaces; the UI looks like it is still loading | Every async path ends in success toast, error toast, or an explicit empty state |
+| **Focus loss on rerender** | A list re-keys, a panel remounts, focus falls to `body` | Keep keys stable; restore focus after destructive or navigational updates |
+| **Budget creep** | One more dependency or one more utility nudges the bundle past budget | Check the budget gate before pushing, not after |
+
+### Behaviour that must be proven by hand, not by a unit test
+
+Unit and integration tests cover logic. These need a human or a rendered browser, because they are about what the user perceives:
+
+- **The primary task, end to end, twice** — including a reload in between. Persistence bugs only appear on the second pass.
+- **Clear, then retry** — every destructive or "reset" action followed by the action it should unblock.
+- **Scroll and navigation parity** — if a control scrolls to something, scrolling manually must update the same indicator, and vice versa. Any two-way binding needs both directions tested.
+- **Empty, loading, error, disabled, success** (§6) — on every view the change touched.
+- **Keyboard-only** — complete the primary task without a mouse; confirm focus is visible and follows reading order.
+- **Narrow and wide** — the breakpoints from Appendix A.2, plus one extreme the design did not target.
+
+### Writing the test so it can fail
+
+A test that passes against the broken implementation is worse than no test, because it certifies the bug.
+
+- **`[GATE]` Prove the test fails first.** For a bug fix: revert the fix (stash it, or comment the one changed line), run the new test, confirm it *fails for the stated reason*, then restore. Paste the failure in the completion report. If you cannot make it fail, the test is not testing what you think.
+- Assert the **user-visible symptom**, not the internal mechanism. `expect(cells[12].textContent).toContain('PAGE-13')` survives a refactor; `expect(store.cards['12|a.pdf|13'])` does not.
+- One assertion per behaviour. A test that checks five things fails with one message and hides four results.
+- Never assert on a value the test itself just set, unless you are testing the setter.
+
+### After you fix one instance of a bug
+
+Ask whether the same defect exists at the other call sites. A key-drift bug in one writer is a key-drift bug in every writer; a cache that outlives its data in one hook is a cache that outlives its data in every hook. **`[REVIEW]`** — grep the pattern across the codebase and report what else you found, even if you fixed only the reported case.
+
+### What to leave in the repo
+
+- A test that would have caught the bug, named after the behaviour ("fills every card on the second sheet"), not after the fix.
+- A one-line comment at the fix naming the *rule* that was broken, not the incident ("the cell is the drawing cell; ordinal position is not it"). Future readers need the invariant, not the bug report.
+- No dead code from the old approach. If a guard or cache is no longer needed, delete it; a commented-out `Set` will be reinstated by the next person who thinks they need it.
+
+---
+
 ## 9. Semantic Versioning (SemVer) for Every Change
 
 Every function creation, bug fix, feature addition, or refactor follows strict Semantic Versioning (`MAJOR.MINOR.PATCH`), reflected in commit messages and `package.json`.
@@ -687,7 +749,8 @@ The ordered pass before reporting a change complete. A.1 items are commands; A.2
 9. **Placeholders & secrets** — the two greps in A.1 → no matches.
 10. **Bundle budget** — the A.1 budget command → under budget (only when the change touches bundle composition).
 11. **Inspection pass (A.2)** — every item marked `pass`, `fail`, or `not run` with one line of evidence. At minimum: focus restore, `aria-live`, keyboard parity, breakpoint ladder, installed mode, repeat-firing lifecycle, and all five interaction states.
-12. **`git status` / `git diff`** — only intended files (§10).
-13. **Completion report** — the five headings from §11, with each command, its real exit code, and every `not run` named.
+12. **Post-implementation pass (§8B)** — the four questions answered, each regression class you touched named or explicitly ruled out, and every new test proved to fail without its fix.
+13. **`git status` / `git diff`** — only intended files (§10).
+14. **Completion report** — the five headings from §11, with each command, its real exit code, and every `not run` named.
 
 If any step did not run, say so in the report. An unreported skipped check is a fabricated pass (§7).

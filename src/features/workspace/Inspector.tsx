@@ -1,3 +1,4 @@
+import { cn } from '../../lib/cn'
 import { CardSection } from './inspector/CardSection'
 import { SheetSection } from './inspector/SheetSection'
 import type { Card, CardBands } from '../../types/card'
@@ -33,13 +34,29 @@ export interface InspectorProps {
   readonly sheetErrors: Readonly<Record<string, string>>
   readonly onSheetChange: (patch: Partial<SheetSettingsValue>) => void
   readonly onResetSheet: () => void
+  /**
+   * Whether the rail is showing.
+   *
+   * Hiding returns the 260px to the sheet, which is what the collapse button beside the
+   * gear is for. Below `lg` the rail is not rendered at all, so this only decides the
+   * width at which it *would* be — the breakpoint still wins, because the breakpoint is
+   * a property of the window and the toggle is a property of the session.
+   */
+  readonly open: boolean
 }
 
 export function Inspector(props: InspectorProps) {
   return (
     <aside
       aria-label="Inspector"
-      className="hidden w-[260px] shrink-0 flex-col overflow-y-auto border-l border-hairline bg-surface-panel lg:flex"
+      hidden={!props.open}
+      className={cn(
+        // `hidden` at the base width is not a duplicate of the `hidden` attribute: below
+        // `lg` the rail is not part of the layout at all, open or closed. Without it the
+        // 260px column would render as a block under 1024px and squeeze the canvas.
+        'hidden w-[260px] shrink-0 flex-col overflow-y-auto border-l border-hairline bg-surface-panel',
+        props.open ? 'lg:flex' : undefined,
+      )}
     >
       {props.card !== null && props.cellIndex !== null ? (
         <CardSection

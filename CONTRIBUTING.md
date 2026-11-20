@@ -174,21 +174,35 @@ key and seeded nothing. Do not reintroduce a cache here; ask the store.
 
 ## Sheets and navigation
 
-`planSheets` splits pages into sheets, twelve to an A4 cell grid. Which one the canvas
-draws is derived, never stored — `sheet-navigation.ts` explains why: cell indices repeat
-on every sheet, so "the sheet containing cell 4" is ambiguous and would always answer
-sheet 1. A navigation target (a thumbnail click) is consulted first, and the caller clears
-it on every selection change so a stale target cannot pin the view.
+`planSheets` splits pages into sheets, twelve to an A4 cell grid. **Every sheet is drawn.**
+`CardSheet` renders the whole column, 24px apart, in one scroll container — the canvas used
+to draw `sheets[0]`, which meant a thirteenth page existed in the export and nowhere on
+screen, and then drew one sheet at a time behind a strip, which made the boundary between
+two sheets something you clicked through.
 
-`CardSheet` takes `sheetIndex` and draws that sheet's placements. It used to hard-code
-`sheets[0]`, which meant a thirteenth page existed in the export and nowhere on screen.
-`selectedCardKey` takes the same index, because cell 3 holds a different page on every
-sheet and resolving against the wrong one would put the wrong card's numbers in the
-inspector — and then edit the wrong card.
+Two consequences worth knowing before touching any of it:
+
+- **"Which sheet" is a measurement, not a choice.** `sheet-stack.ts` owns the arithmetic:
+  where each sheet sits, and which one the viewport is on. The canvas reports that on
+  scroll; the strip only ever draws it. A `useState` holding a current sheet alongside
+  this is the bug this design exists to prevent — they disagree the first time someone
+  scrolls by hand.
+- **Cell indices repeat across sheets.** Cell 3 exists on all of them, so `selectedCell`
+  alone would ring twelve cards. Selection is `(cellIndex, sheet)` — `selectionSheet` in
+  `use-sheet-navigation`, and `selectedCardKey` resolves the inspector's card against it.
+  `SheetPaper` takes a per-sheet `selectionHere`, which is what keeps the ring on one card.
+
+A thumbnail click is a *request* (`scrollTo`), because the canvas owns the scroll
+container and effect ordering is not a contract. The canvas scrolls and clears it. Do not
+turn this into a stored index mirrored in two components.
 
 `SheetThumbnail` is the sheet's own geometry scaled down, not a second renderer: the same
-grid, the same cell rectangles, the same placements, with each card summarised as three
-bands of colour because a card's type is sub-pixel at 44px.
+grid, the same cell rectangles, the same placements. The card's text is **greeked**, not
+set: a 6mm header band at 64px of thumbnail is 3.7 CSS pixels, and a 9pt glyph inside it is
+0.98px — every font size that fits is an unreadable smear, so the band draws one rule per
+line of text, as wide as that line is. The photo is real, because an image survives the
+downscale. Do not "fix" the thumbnail by raising the font size; the geometry is the
+constraint, not the styling.
 
 ## Width-fit zoom
 

@@ -56,10 +56,13 @@ describe('the sheet panel’s numeric rows', () => {
     }
   })
 
-  it('gives every numeric field the same height', () => {
+  it('gives every numeric field the same height, and it is 28px', () => {
+    // 24px was the first pass; at that size the digits sit on the border and the field
+    // reads as a readout rather than as something you can type into. The user ruled 28,
+    // so 28 is what this asserts — `h-7` is 1.75rem.
     renderSection()
     for (const label of ['Spacing', 'Margin', 'Sheet width', 'Cell height']) {
-      expect(shell(label).className).toContain('h-6')
+      expect(shell(label).className).toContain('h-7')
     }
   })
 

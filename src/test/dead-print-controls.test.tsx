@@ -83,6 +83,7 @@ describe('the inspector', () => {
         onResetSheet={() => undefined}
         showCutMarks
         onShowCutMarksChange={() => undefined}
+        open
       />,
     )
     expect(screen.queryByText(/bleed/i)).not.toBeInTheDocument()
