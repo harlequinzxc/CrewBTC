@@ -17,20 +17,50 @@ import { textZones, uploadPdf } from './fixtures'
  * real mousedown → focus → mouseup sequence.
  */
 
-test('one click on a card text band puts a caret in it', async ({ page }) => {
+test('one REAL mouse click on a card text band puts a caret in it', async ({ page }) => {
   await uploadPdf(page)
-  const zone = textZones(page).first()
+  const box = await textZones(page).first().boundingBox()
+  expect(box).not.toBeNull()
 
-  // Exactly one gesture. If the fix regresses this is where it shows.
-  await zone.click()
+  /*
+    A raw mouse press, not `locator.click()`.
+
+    This is the test that should have caught the four releases in which clicking a text
+    box did nothing. It used `locator.click()` and passed, while a user's real press did
+    not — the two are not the same sequence, and the difference was the whole bug. Nothing
+    in this file may use `locator.click()` for the gesture under test.
+  */
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
+  await page.mouse.down()
+  await page.mouse.up()
 
   const field = page.getByLabel('Edit card text')
   await expect(field).toBeVisible()
   await expect(field).toBeFocused()
 
-  // And it is genuinely editable, not merely focused.
-  await page.keyboard.type(' TYPED')
-  await expect(field).toHaveValue(/TYPED/)
+  // And it is genuinely editable, not merely focused: one character into an empty box,
+  // which is the smallest thing that proves a caret is really there.
+  await page.keyboard.type('T')
+  await expect(field).toHaveValue('T')
+})
+
+test('a real press and release opens the field, and the field keeps the caret', async ({
+  page,
+}) => {
+  await uploadPdf(page)
+  const box = await textZones(page).first().boundingBox()
+  expect(box).not.toBeNull()
+
+  // The failing sequence: press, release, then type. A ref callback that re-focuses on
+  // every commit interrupts this between the release and the first keystroke.
+  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2)
+  const field = page.getByLabel('Edit card text')
+  await expect(field).toBeFocused()
+
+  await page.waitForTimeout(400)
+  await expect(field).toBeFocused()
+  await page.keyboard.type('ABC')
+  await expect(field).toHaveValue('ABC')
 })
 
 test('typing into existing text appends instead of replacing it', async ({ page }) => {

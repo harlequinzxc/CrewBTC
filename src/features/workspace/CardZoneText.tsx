@@ -52,16 +52,19 @@ export function CardZoneText(props: CardZoneTextProps) {
   const px = (mm: number): string => `${mm * scale}px`
 
   /**
-   * Focus the field the moment it exists: `editing` turns on during the press, so the
-   * field is in the DOM before the browser would have handled that press, and focusing it
-   * here closes the window in which nothing is focused (a stray `blur` there ended the
-   * edit immediately). The effect covers edits that begin any other way.
+   * Focus the field once per edit, from an effect.
    *
-   * The caret goes to the **end**, not to a selection. It used to `select()` the lot, which
-   * makes the first keystroke replace the whole dish name — type one character into
-   * "Kung Pao Chicken" and you are left with "X". That is indistinguishable from the text
-   * being broken, and it is the reason editing felt like it was not working at all.
-   * Selecting everything is only helpful for an empty box, where there is nothing to lose.
+   * **Not from a ref callback.** A ref callback runs on every commit where the field is
+   * re-attached, and this one called `focus()` when the field was not already focused.
+   * That looks like a harmless guard and is not: it re-focuses the field during renders
+   * the user did not ask for, and the churn is enough that the press never settles into a
+   * caret — clicking the text appeared to do nothing at all. It shipped in v1.8.1 and made
+   * every version after it unable to open a text box, which is exactly what was reported
+   * for four releases running.
+   *
+   * The caret goes to the **end**, not to a selection. `select()` made the first keystroke
+   * replace the whole dish name: type "X" into "Kung Pao Chicken" and you are left with
+   * "X", which reads as the text being broken rather than edited.
    */
   const takeFocus = useCallback((field: HTMLTextAreaElement | null) => {
     if (field === null) return
@@ -132,13 +135,7 @@ export function CardZoneText(props: CardZoneTextProps) {
   if (editing) {
     return (
       <textarea
-        ref={(field) => {
-          fieldRef.current = field
-          // Synchronous with the commit that mounts it: the effect alone left one frame
-          // with nothing focused, long enough for the browser's press handling to focus
-          // whatever sat under the pointer instead.
-          if (field !== null && !field.matches(':focus')) takeFocus(field)
-        }}
+        ref={fieldRef}
         value={text}
         onChange={(event) => props.onChange(event.target.value)}
         onBlur={props.onEndEdit}

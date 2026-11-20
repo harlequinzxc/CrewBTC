@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { firstPlacementOf, placementsByPage } from './sheet-navigation'
+import { scrollCellIntoView } from './scroll-cell-into-view'
 import type { PagePlacement } from './sheet-navigation'
 import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout } from '../../types/imposition'
@@ -26,6 +27,24 @@ export interface PageReveal {
   readonly onReveal: (document: IngestedDocument) => void
 }
 
+/**
+ * The cell element for a cell index on the sheet now in view.
+ *
+ * Cells are identified by `data-cell`, which is the same attribute the canvas already uses
+ * to key cards. Several sheets render the same index, so the *visible* one is chosen rather
+ * than the first in the document: with a stack of sheets, the first match can be off-screen
+ * while the one the user is looking at is further down.
+ */
+function documentElementFor(cellIndex: number): HTMLElement | null {
+  const cells = [...document.querySelectorAll<HTMLElement>(`[data-cell="${cellIndex}"]`)]
+  if (cells.length === 0) return null
+  const onScreen = cells.find((cell) => {
+    const box = cell.getBoundingClientRect()
+    return box.bottom > 0 && box.top < window.innerHeight
+  })
+  return onScreen ?? cells[0] ?? null
+}
+
 export function usePageReveal(
   pageRefs: readonly PageRef[],
   grid: GridLayout,
@@ -49,6 +68,24 @@ export function usePageReveal(
       selectCell(placed.cellIndex, {
         documentId: document.fileName,
         pageNumber: placed.pageNumber,
+      })
+
+      /*
+        Bring the *cell* into view, not just its sheet.
+
+        Scrolling to the sheet's top leaves the card wherever it happens to fall — on a
+        viewport shorter than the page that is often below the fold, which is why clicking
+        a file could leave the ring visible in the rail and invisible on the paper. The
+        ring is drawn by the click; showing it is this.
+
+        Deferred by a frame because the ring is rendered from the selection above: the cell
+        exists already, but its box is only final once the commit that selects it lands.
+        `scrollTo` runs from an effect, so the browser has had its layout pass by the time
+        this frame callback fires.
+      */
+      window.requestAnimationFrame(() => {
+        const cell = documentElementFor(placed.cellIndex)
+        if (cell !== null) scrollCellIntoView(cell)
       })
     },
     [placements, selectCell, goToSheet],

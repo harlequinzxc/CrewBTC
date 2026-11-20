@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.9.3",
+    "date": "2026-11-20",
+    "title": "Clicking a file brings its card into view",
+    "highlights": [
+      "Clicking a file now scrolls its card into view, not just its sheet. A sheet is twelve cells tall, so on a window shorter than the page the card could sit below the fold while its ring was drawn somewhere you could not see",
+      "The card is centred when it fits, aligned to its top when the window is shorter than the card, and the canvas is left alone when the card is already comfortably visible. This works the same whether the thumbnail strip is expanded or collapsed",
+      "Fixed a regression introduced in 1.8.1 and present in every version since: pressing a card\u2019s text did not begin an edit unless the browser\u2019s default press handling was suppressed explicitly. Adding `preventDefault` to the press is what makes a single click work",
+      "The click probe now also reports what happened after the press \u2014 whether a field appeared, and whether anything took the caret away"
+    ]
+  },
+  {
     "version": "1.9.2",
     "date": "2026-11-20",
     "title": "Typing no longer replaces the whole dish name",
