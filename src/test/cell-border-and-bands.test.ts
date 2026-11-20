@@ -56,22 +56,12 @@ async function contentOf(bytes: Uint8Array): Promise<string> {
   return parts.join('\n')
 }
 
-async function sourceBytes(): Promise<ArrayBuffer> {
-  const doc = await PDFDocument.create()
-  doc.addPage([181, 255])
-  const bytes = await doc.save()
-  const copy = new ArrayBuffer(bytes.byteLength)
-  new Uint8Array(copy).set(bytes)
-  return copy
-}
-
 async function exportOne(card: Card, drawCutMarks = false): Promise<string> {
   const key = cardKey(0, 'doc-a', 1)
   const result = await writeCards({
     settings: DEFAULT_SHEET,
     grid,
     pages: [{ documentId: 'doc-a', fileName: 'cards.pdf', pageNumber: 1, widthMm: 181, heightMm: 255 }],
-    sources: new Map([['doc-a', await sourceBytes()]]),
     drawCutMarks,
     cards: { [key]: card },
     photos: card.photo === null ? {} : { [key]: card.photo },

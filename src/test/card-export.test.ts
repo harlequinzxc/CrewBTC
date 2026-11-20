@@ -27,15 +27,6 @@ function png(widthPx: number, heightPx: number): string {
   return `data:image/png;base64,${canvas.toBuffer('image/png').toString('base64')}`
 }
 
-async function sourceBytes(): Promise<ArrayBuffer> {
-  const doc = await PDFDocument.create()
-  doc.addPage([181, 255])
-  const bytes = await doc.save()
-  const copy = new ArrayBuffer(bytes.byteLength)
-  new Uint8Array(copy).set(bytes)
-  return copy
-}
-
 function makeCard(overrides: Partial<Card> = {}): Card {
   return {
     headerText: 'CHK-01\nKung Pao Chicken',
@@ -75,7 +66,6 @@ async function exportOne(card: Card): Promise<string> {
     pages: [
       { documentId: 'doc-a', fileName: 'cards.pdf', pageNumber: 1, widthMm: 181, heightMm: 255 },
     ],
-    sources: new Map([['doc-a', await sourceBytes()]]),
     drawCutMarks: false,
     cards: { [key]: card },
     photos: card.photo === null ? {} : { [key]: card.photo },
@@ -212,4 +202,28 @@ describe('the card prints its own band heights', () => {
     // The three zones tile the card, so the footer sits on the card's floor regardless.
     expect(yOfLastText(tallHeader)).toBeCloseTo(yOfLastText(shortHeader), 1)
   })
+})
+
+describe('unavailable card photos', () => {
+  it('counts a broken photo as incomplete rather than silently claiming success', async () => {
+    const key = cardKey(0, 'doc-a', 1)
+    const photo = { dataUrl: 'data:image/png;base64,not-a-valid-png', widthPx: 10, heightPx: 10 }
+    const result = await writeCards({
+      settings: DEFAULT_SHEET, grid,
+      pages: [{ documentId: 'doc-a', fileName: 'cards.pdf', pageNumber: 1, widthMm: 181, heightMm: 255 }],
+      drawCutMarks: false, cards: { [key]: makeCard({ photo }) }, photos: { [key]: photo },
+    })
+    expect(result.cardsDrawn).toBe(0)
+    expect(result.cardsSkipped).toBe(1)
+  })
+})
+
+it('counts a missing card as skipped', async () => {
+  const result = await writeCards({
+    settings: DEFAULT_SHEET, grid,
+    pages: [{ documentId: 'doc-a', fileName: 'cards.pdf', pageNumber: 1, widthMm: 181, heightMm: 255 }],
+    drawCutMarks: false, cards: {}, photos: {},
+  })
+  expect(result.cardsDrawn).toBe(0)
+  expect(result.cardsSkipped).toBe(1)
 })

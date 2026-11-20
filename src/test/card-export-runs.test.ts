@@ -56,22 +56,12 @@ async function contentOf(bytes: Uint8Array): Promise<string> {
   return parts.join('\n')
 }
 
-async function sourceBytes(): Promise<ArrayBuffer> {
-  const doc = await PDFDocument.create()
-  doc.addPage([181, 255])
-  const bytes = await doc.save()
-  const copy = new ArrayBuffer(bytes.byteLength)
-  new Uint8Array(copy).set(bytes)
-  return copy
-}
-
 async function exportOne(card: Card): Promise<string> {
   const key = cardKey(0, 'doc-a', 1)
   const result = await writeCards({
     settings: DEFAULT_SHEET,
     grid,
     pages: [{ documentId: 'doc-a', fileName: 'cards.pdf', pageNumber: 1, widthMm: 181, heightMm: 255 }],
-    sources: new Map([['doc-a', await sourceBytes()]]),
     drawCutMarks: false,
     cards: { [key]: card },
     photos: card.photo === null ? {} : { [key]: card.photo },
@@ -208,7 +198,7 @@ it('prints the first corner label on following cards rather than their old label
     [cardKey(0, 'doc-a', 1)]: makeCard({ photo: null, cornerLabel: 'AB' }),
     [cardKey(1, 'doc-a', 2)]: makeCard({ photo: null, cornerLabel: 'ZZ' }),
   }
-  const result = await writeCards({ settings: DEFAULT_SHEET, grid, pages, sources: new Map([['doc-a', await sourceBytes()]]), drawCutMarks: false, cards: numberedCards(cards, pages, grid, 0.8) })
+  const result = await writeCards({ settings: DEFAULT_SHEET, grid, pages, drawCutMarks: false, cards: numberedCards(cards, pages, grid, 0.8) })
   const content = await contentOf(result.bytes)
   expect(content.match(/<4142> Tj/g)).toHaveLength(2)
   expect(content).not.toContain('<5A5A> Tj')
@@ -218,7 +208,7 @@ it('prints the first corner label on following cards rather than their old label
 it('prints label changes only on the chosen card and following cards', async () => {
   const pages = [1, 2, 3, 4].map((pageNumber) => ({ documentId: 'doc-a', fileName: 'cards.pdf', pageNumber, widthMm: 181, heightMm: 255 }))
   const cards = Object.fromEntries(pages.map((page, i) => [cardKey(i, 'doc-a', page.pageNumber), makeCard({ photo: null, ...(i === 0 ? { cornerLabelStart: 'TEST' } : {}), ...(i === 2 ? { cornerLabelStart: 'REST' } : {}) })]))
-  const result = await writeCards({ settings: DEFAULT_SHEET, grid, pages, sources: new Map([['doc-a', await sourceBytes()]]), drawCutMarks: false, cards: numberedCards(cards, pages, grid, 0.8) })
+  const result = await writeCards({ settings: DEFAULT_SHEET, grid, pages, drawCutMarks: false, cards: numberedCards(cards, pages, grid, 0.8) })
   const content = await contentOf(result.bytes)
   expect(content.match(/<54455354> Tj/g)).toHaveLength(2)
   expect(content.match(/<52455354> Tj/g)).toHaveLength(2)

@@ -1,9 +1,7 @@
 /**
- * Holds the original bytes of each imported PDF so the exporter can embed real pages
- * (`embedPage`), rather than re-encoding anything. Bytes are released on clear.
- *
- * Keyed by file name because the exporter looks pages up by the id that reaches
- * `PageRef.documentId`.
+ * Holds original PDF bytes in memory for thumbnails and re-running extraction during
+ * the current visit. Bytes are released on clear and are not restored after reload.
+ * Card export instead uses the stored card content and does not need these bytes.
  */
 const sources = new Map<string, ArrayBuffer>()
 

@@ -8,10 +8,9 @@ import { getSource } from '../export/doc-cache'
  * framing. That leaves one gap — actions that genuinely need the bytes again, like
  * re-running extraction.
  *
- * Those bytes are usually still here: `doc-cache` keeps them for the exporter and is what
- * an export embeds either way. This wraps them back into a `File`, so a restored batch
- * behaves like a freshly added one. Returns `null` when the bytes are gone, which the
- * caller has to handle honestly rather than inventing an empty file.
+ * The in-memory cache may still hold bytes during this visit. This wraps them back into a
+ * `File`; after a full reload they are normally gone. Returns `null` in that case, so the
+ * caller can ask for the original file rather than inventing an empty one.
  */
 export function fileFromSnapshot(name: string, type = 'application/pdf'): File | null {
   const bytes = getSource(name)

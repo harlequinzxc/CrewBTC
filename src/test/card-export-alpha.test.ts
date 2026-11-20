@@ -1,5 +1,4 @@
 import { createCanvas } from '@napi-rs/canvas'
-import { PDFDocument } from '@cantoo/pdf-lib'
 import { describe, expect, it } from 'vitest'
 import { writeCards } from '../lib/export/write-cards'
 import { computeGrid } from '../lib/imposition/grid'
@@ -18,15 +17,6 @@ import type { Card } from '../types/card'
 
 const grid = computeGrid(DEFAULT_SHEET)
 const key = cardKey(0, 'doc-a', 1)
-
-async function sourceBytes(): Promise<ArrayBuffer> {
-  const doc = await PDFDocument.create()
-  doc.addPage([181, 255])
-  const bytes = await doc.save()
-  const copy = new ArrayBuffer(bytes.byteLength)
-  new Uint8Array(copy).set(bytes)
-  return copy
-}
 
 function cardWith(photo: Card['photo']): Card {
   return {
@@ -54,8 +44,7 @@ describe('a cut-out photo keeps its transparency in the PDF', () => {
       settings: DEFAULT_SHEET,
       grid,
       pages: [{ documentId: 'doc-a', fileName: 'cards.pdf', pageNumber: 1, widthMm: 181, heightMm: 255 }],
-      sources: new Map([['doc-a', await sourceBytes()]]),
-      drawCutMarks: false,
+        drawCutMarks: false,
       cards: { [key]: cardWith(photo) },
       photos: { [key]: photo },
     })
