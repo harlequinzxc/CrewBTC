@@ -245,6 +245,7 @@ These pairs are verified against Tailwind's default palette. Do not substitute c
 
 - **`[GATE]` Complete PWA assets:** never reference missing icon paths in `manifest.json`. Generate valid matching assets at `192x192`, `512x512`, plus a **maskable** icon and `apple-touch-icon`. Verify `display: "standalone"`. Verify every manifest icon path resolves (Appendix A).
 - **`[REVIEW]` Installed mode is a real mode:** verify at least once in standalone on desktop **and** on mobile. Safe-area, `svh`, and scroll behaviour all change once installed, and a layout that only works in a browser tab is not finished.
+- **`[GATE]` An installed client must be able to learn it is stale:** an installed PWA has no address bar to refresh from, so the §7 update notice is not optional polish in standalone — it is the *only* route to a new build short of reinstalling. Check the notice actually renders in standalone, where the app runs without browser chrome.
 
 ---
 
@@ -313,7 +314,20 @@ These pairs are verified against Tailwind's default palette. Do not substitute c
   }
   ```
   (If you prefer the flat `/(.*)` rewrite, confirm hashed assets still resolve and that no request loops.) Set `build.manifest: true` in `vite.config.ts` so the service worker precaches content-hashed filenames.
-- **`[REVIEW]` Service worker updates** are configured (`registerType: "autoUpdate"`, or `vite-plugin-pwa` with explicit update registration) so a new Vercel deployment invalidates stale assets. Verify by deploying a visible change twice and confirming the second deploy reaches a client that already has the SW installed.
+- **`[GATE]` A deploy must actually reach a running client — cached files are only half the problem.** It is not enough that a new service worker installs and claims control. **A page keeps executing the JavaScript it loaded at first paint**, so with no further wiring the user runs the previous build until they refresh by hand — and a fix that shipped days ago gets reported as broken. Configure **all three**:
+
+  1. **Self-updating worker** — `registerType: "autoUpdate"`, `skipWaiting()` + `clientsClaim()`, and a precache manifest so content-hashed assets are replaced rather than stale.
+  2. **A `controllerchange` listener in the app** — the update is detected client-side, not assumed. Read `navigator.serviceWorker` **once** into a local and guard for `null`/absent: it is missing in some embedded browsers, non-secure contexts, and every test environment, and a stale reference makes cleanup throw.
+  3. **A visible way to adopt the new build** — a reload affordance the user can see.
+
+  **Do not reload automatically by default.** A reload discards everything held in memory: unsaved form state, uploaded files, edits not yet exported. A tab left open overnight would refresh itself and lose that work with no warning. Auto-reload is acceptable **only** when the app provably holds no unsaved state (nothing mounted, nothing pending); otherwise announce and let the user choose. The same reasoning bans "just tell them to hard-refresh" — that is a support burden, not a fix.
+
+  Three conditions must hold before announcing, and each needs a test, because each is a bug the feature itself introduces:
+  - **Not on first install.** No controller means this page *is* the first version; there is nothing newer to announce.
+  - **Not during startup.** An update event in the first second or two fires mid-render, which reads as a crash. Wait for the page to settle.
+  - **Once per new worker.** Repeated lifecycle events must not stack duplicate notices or listeners.
+
+  **`[REVIEW]`** Verify by deploying a visible change twice and confirming the second deploy surfaces a reload affordance **in a client that already has the worker installed** — not by inspecting the cache.
 
 ---
 
@@ -452,7 +466,7 @@ These are real gates but no script proves them. Each must be reported as **`pass
 | Repeat-firing lifecycle (§7) | Open → submit → close → reopen each sheet, modal, toast; no stale values or duplicate listeners |
 | Error boundaries (§5A) | Force a throw in a route; confirm the boundary catches it |
 | Loading/empty/error/disabled/success (§6) | Walk all five states on every view |
-| Service worker update (§7) | Deploy a visible change twice; confirm the second reaches an installed client |
+| Service worker update reaches a running client (§7) | Deploy a visible change twice; confirm the second surfaces a reload affordance in a client that already has the worker — not merely that the cache updated. Also confirm the notice does **not** appear on a first install, or during the first seconds of load |
 | SPA rewrite doesn't swallow assets (§7) | Deep-link to a nested route, confirm hashed assets still resolve |
 | Safe-area insets (§4.3) | Inspect in installed mode on a notched device |
 | `forced-colors` (§3A) | Enable forced-colors and confirm control boundaries survive |
