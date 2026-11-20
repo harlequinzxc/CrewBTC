@@ -23,6 +23,8 @@ const renderBar = () =>
       onOpenSettings={() => undefined}
       onExportCurrent={() => undefined}
       onExportAll={() => undefined}
+      inspectorOpen
+      onToggleInspector={() => undefined}
       hasMoreThanOneSheet={false}
       exporting={false}
       hasBatch={false}

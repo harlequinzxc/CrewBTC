@@ -1,6 +1,8 @@
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { SheetBody } from '../features/workspace/SheetBody'
+import { SheetPaper } from '../features/workspace/SheetPaper'
+import { cutMarksFor } from '../lib/imposition/sheet'
 import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
 import { planSheets } from '../lib/imposition/sheet'
@@ -73,6 +75,55 @@ describe('the sheet on the canvas', () => {
     expect(labels[0]).toBe('dish.pdf#1')
     expect(labels).toHaveLength(12)
     expect(container.querySelectorAll('.group.absolute').length).toBe(0)
+  })
+
+  it('draws the selected ring on one sheet only', () => {
+    // Every sheet is on screen at once and cell 0 exists on both, so a bare cell index
+    // would ring two cards and the inspector would describe neither of them. `SheetBody`
+    // takes the answer per sheet instead.
+    const marks = cutMarksFor(grid)
+    const renderPaper = (planIndex: number, selectionHere: boolean) => {
+      const plan = sheets[planIndex]
+      if (plan === undefined) throw new Error('fixture needs a sheet')
+      return (
+        <SheetPaper
+          plan={plan}
+          index={planIndex}
+          sheetIndex={1}
+          settings={DEFAULT_SHEET}
+          grid={grid}
+          scale={2}
+          marks={marks}
+          cards={{}}
+          selectedCell={0}
+          selectionHere={selectionHere}
+          activeZone={null}
+          editing={null}
+          pictureEditing={null}
+          showCutMarks={false}
+          onSelectCell={() => undefined}
+          onDeselect={() => undefined}
+          onBeginTextEdit={() => undefined}
+          onEndEdit={() => undefined}
+          onSelectionChange={() => undefined}
+          onTextChange={() => undefined}
+          onStyleChange={() => undefined}
+          onBeginPictureEdit={() => undefined}
+          onEndPictureEdit={() => undefined}
+          onImageChange={() => undefined}
+          onBandsChange={() => undefined}
+        />
+      )
+    }
+
+    const wrong = render(renderPaper(0, false))
+    expect(wrong.container.querySelectorAll('.outline-accent').length).toBe(0)
+    wrong.unmount()
+
+    const right = render(renderPaper(1, true))
+    expect(right.container.querySelectorAll('[data-cell="0"].outline-accent').length).toBe(1)
+    // And nothing else on that sheet picked it up.
+    expect(right.container.querySelectorAll('.outline-accent').length).toBe(1)
   })
 
   it('shows sheet 2 pages — a different set — when given sheet 2', () => {

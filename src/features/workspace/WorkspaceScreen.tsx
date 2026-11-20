@@ -3,7 +3,7 @@ import { TopBar } from '../../components/layout/TopBar'
 import { Inspector } from './Inspector'
 import { useBatch } from './use-batch'
 import { useCards, useSeedCards } from './use-cards'
-import type { CardSeed } from './use-cards'
+import { useCardSeeds } from './use-card-seeds'
 import { CentrePane } from './CentrePane'
 import { LeftPane } from './LeftPane'
 import { useCardExport } from './use-card-export'
@@ -11,14 +11,13 @@ import { useSheet } from './use-sheet'
 import { useSheetZoom } from './use-sheet-zoom'
 import { selectedCardKey } from './selected-card'
 import { useSheetNavigation } from './use-sheet-navigation'
-import { planSheets } from '../../lib/imposition/sheet'
-import { bandsInto, resetProportions, textScaleInto } from './card-edits'
+import { useCardInspector } from './use-card-inspector'
 import { SheetStripSlot } from './SheetStripSlot'
 import { toPageRefs } from '../../lib/pdf/page-refs'
 import { pickFiles } from '../../lib/files/open-picker'
-import { cardKey } from '../../types/card'
-import type { Card, CardBands } from '../../types/card'
+import type { Card } from '../../types/card'
 import { useUpdateNotice } from './use-update-notice'
+import { usePageReveal } from './use-page-reveal'
 import { reloadPage } from './reload-page'
 import { SettingsDialog } from '../settings/SettingsDialog'
 import { usePageSettings } from './use-page-settings'
@@ -43,7 +42,10 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const [showCutMarks, setShowCutMarks] = useState(true)
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // The two optional rails. Both are open until the user says otherwise, and both are
+  // remembered for the session only: this is a workspace, not a set of preferences.
   const [stripCollapsed, setStripCollapsed] = useState(false)
+  const [inspectorOpen, setInspectorOpen] = useState(true)
 
   useUpdateNotice(() => {
     notify({
@@ -62,35 +64,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
 
   const zoom = useSheetZoom(sheet.settings.sheetWidthMm)
 
-  /**
-   * One seed per *placed* page, keyed the way the canvas will look it up.
-   *
-   * The key has to be built from `placement.cellIndex`, not from the page's position in
-   * the flattened list: ordinal 12 is cell 0 of sheet 2, so a positional key populated the
-   * first sheet and left every sheet after it blank. The plan is the only thing that knows
-   * which cell a page really landed in, so it is what seeds are built from.
-   */
-  const seeds = useMemo<readonly CardSeed[]>(
-    () =>
-      planSheets(pageRefs, sheet.grid).flatMap((plan) =>
-        plan.placements.map((placement) => {
-          // `documentId` is the *file name* (the exporter resolves source bytes by it),
-          // not the internal id.
-          const document = batch.documents.find(
-            (item) => item.fileName === placement.documentId,
-          )
-          const copy = document?.copies[placement.pageNumber]
-          return {
-            key: cardKey(placement.cellIndex, placement.documentId, placement.pageNumber),
-            headerText: copy?.header ?? '',
-            bodyText: copy?.footer ?? '',
-            photo: document?.photos[placement.pageNumber] ?? null,
-          }
-        }),
-      ),
-    [pageRefs, batch.documents, sheet.grid],
-  )
-
+  const seeds = useCardSeeds(pageRefs, sheet.grid, batch.documents)
   useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm, sheet.grid.cellWidthMm)
 
   const exporter = useCardExport({
@@ -102,6 +76,12 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     notify,
   })
 
+  const toggleStrip = useCallback(() => setStripCollapsed((collapsed) => !collapsed), [])
+  const toggleInspector = useCallback(() => setInspectorOpen((open) => !open), [])
+
+  // Clearing the files has to clear the cards too: a card with no page behind it would
+  // survive a reload as a ghost, which is the bug the seeding fix removed from the other
+  // direction.
   const clearAll = useCallback(() => {
     batch.clear()
     cardStore.reset()
@@ -117,44 +97,37 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
 
   const hasBatch = batch.documents.length > 0
 
-  // Which sheet is on the canvas, and every way to move it, in one place.
-  const { sheets, sheetIndex, selectCell, goToSheet } = useSheetNavigation({
+  // Which sheet is on screen, and every way to move it, in one place. The canvas and the
+  // strip both read it, which is what keeps the highlight and the scroll from drifting.
+  const {
+    sheets,
+    sheetIndex,
+    selectionSheet,
+    selectCell,
+    goToSheet,
+    setVisibleSheet,
+    scrollTo,
+    clearScrollTo,
+  } = useSheetNavigation({
     pages: pageRefs,
     grid: sheet.grid,
     activeDocumentId: batch.activeId,
     setSelectedCell,
   })
   const sheetCount = sheets.length
+  const reveal = usePageReveal(pageRefs, sheet.grid, selectCell)
 
   // The inspector describes a card when one is selected and the document when it is not.
-  const selectionKey = selectedCardKey(selectedCell, sheet.grid, pageRefs, sheetIndex)
+  // Resolved against the sheet the *selection* came from, since every sheet is drawn.
+  const selectionKey = selectedCardKey(
+    selectedCell,
+    sheet.grid,
+    pageRefs,
+    selectionSheet ?? 0,
+  )
   const selectedCard = selectionKey === null ? null : (cardStore.cards[selectionKey] ?? null)
 
-  // One lookup, three patches: the selected card, or nothing if the sheet has no card in
-  // that cell. Repeating the guard in each handler is how they drift apart.
-  const patchSelected = useCallback(
-    (change: (card: Card) => Card) => {
-      if (selectionKey === null) return
-      const card = cardStore.cards[selectionKey]
-      if (card === undefined) return
-      cardStore.setCard(selectionKey, change(card))
-    },
-    [selectionKey, cardStore],
-  )
-
-  const { cellHeightMm } = sheet.grid
-  const handleBands = useCallback(
-    (bands: CardBands) => patchSelected((card) => bandsInto(card, bands, cellHeightMm)),
-    [patchSelected, cellHeightMm],
-  )
-  const handleTextScale = useCallback(
-    (textScale: number) => patchSelected((card) => textScaleInto(card, textScale)),
-    [patchSelected],
-  )
-  const handleResetCard = useCallback(
-    () => patchSelected((card) => resetProportions(card, cellHeightMm)),
-    [patchSelected, cellHeightMm],
-  )
+  const inspectorEdits = useCardInspector(cardStore, selectionKey, sheet.grid.cellHeightMm)
 
   return (
     <div className="flex h-[100svh] max-h-[100svh] w-full flex-col overflow-hidden bg-surface-canvas">
@@ -171,6 +144,8 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         hasMoreThanOneSheet={exporter.hasMoreThanOneSheet}
         exporting={exporter.busy}
         hasBatch={hasBatch}
+        inspectorOpen={inspectorOpen}
+        onToggleInspector={toggleInspector}
       />
 
       <main className="flex min-h-0 flex-1">
@@ -186,6 +161,8 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
             onReRun={batch.reRun}
             onClear={clearAll}
             busy={batch.busy}
+            placements={reveal.placements}
+            onReveal={reveal.onReveal}
           />
         </aside>
 
@@ -199,34 +176,37 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           showCutMarks={showCutMarks}
           cards={cardStore.cards}
           selectedCell={selectedCell}
+          selectionSheet={selectionSheet}
           onSelectCell={selectCell}
           onCardChange={(key, card: Card) => cardStore.setCard(key, card)}
           scale={zoom.scale}
           fitting={zoom.fitting}
           paneRef={zoom.paneRef}
           sheetIndex={sheetIndex}
-          sheets={sheets}
-          renderStrip={(plans) => (
+          onVisibleSheetChange={setVisibleSheet}
+          scrollTo={scrollTo}
+          onScrollToHandled={clearScrollTo}
+          strip={
             <SheetStripSlot
-              sheets={plans}
+              sheets={sheets}
               sheet={sheet.settings}
               grid={sheet.grid}
               cards={cardStore.cards}
               activeIndex={sheetIndex}
               onSelectSheet={goToSheet}
               collapsed={stripCollapsed}
-              onToggleCollapsed={() => setStripCollapsed((collapsed) => !collapsed)}
+              onToggleCollapsed={toggleStrip}
             />
-          )}
+          }
         />
 
         <Inspector
           card={selectedCard}
           cellIndex={selectionKey === null ? null : selectedCell}
           cellHeightMm={sheet.grid.cellHeightMm}
-          onBandsChange={handleBands}
-          onTextScaleChange={handleTextScale}
-          onResetCard={handleResetCard}
+          onBandsChange={inspectorEdits.onBandsChange}
+          onTextScaleChange={inspectorEdits.onTextScaleChange}
+          onResetCard={inspectorEdits.onResetCard}
           units={settings.units}
           sheet={sheet.settings}
           grid={sheet.grid}
@@ -235,6 +215,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           onResetSheet={sheet.reset}
           showCutMarks={showCutMarks}
           onShowCutMarksChange={setShowCutMarks}
+          open={inspectorOpen}
         />
       </main>
 

@@ -28,6 +28,12 @@ export interface SheetBodyProps {
   readonly marks: readonly { readonly x1Mm: number; readonly y1Mm: number; readonly x2Mm: number; readonly y2Mm: number }[]
   readonly cards: Readonly<Record<string, Card>>
   readonly selectedCell: number | null
+  /**
+   * Whether the selection belongs to *this* sheet. False dims the ring without moving the
+   * selection: with every sheet on screen at once, the same cell index exists on several
+   * of them and only one of them is the cell the inspector is describing.
+   */
+  readonly selectionHere?: boolean
   readonly activeZone: CardZone | null
   readonly editingCell: number | null
   readonly pictureKey: string | null
@@ -103,7 +109,7 @@ export function SheetBody(props: SheetBodyProps) {
             scale={scale}
             cellIndex={cell.index}
             pageLabel={`${placement.fileName}#${placement.pageNumber}`}
-            selected={props.selectedCell === cell.index}
+            selected={props.selectionHere !== false && props.selectedCell === cell.index}
             editing={props.editingCell === cell.index ? props.activeZone : null}
             pictureEditing={props.pictureKey === key}
             onSelect={() =>

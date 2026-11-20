@@ -1,7 +1,7 @@
 import { DropZone } from './DropZone'
 import { CardSheet } from './CardSheet'
 import type { ReactNode } from 'react'
-import type { PageRef, SheetPlan } from '../../lib/imposition/sheet'
+import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import type { Card } from '../../types/card'
 
@@ -22,6 +22,7 @@ export interface CentrePaneProps {
   readonly showCutMarks: boolean
   readonly cards: Readonly<Record<string, Card>>
   readonly selectedCell: number | null
+  readonly selectionSheet: number | null
   readonly onSelectCell: (cellIndex: number | null) => void
   readonly onCardChange: (key: string, card: Card) => void
   /** Zoom is shared with the top bar, so the sheet and the chrome stay in step. */
@@ -30,8 +31,11 @@ export interface CentrePaneProps {
   /** Callback ref for the measured canvas region; the top bar's fit depends on it. */
   readonly paneRef: (node: HTMLDivElement | null) => void
   readonly sheetIndex: number
-  readonly sheets: readonly SheetPlan[]
-  readonly renderStrip: (sheets: ReadonlyArray<SheetPlan>) => ReactNode
+  readonly onVisibleSheetChange: (sheetIndex: number) => void
+  readonly scrollTo: number | null
+  readonly onScrollToHandled: () => void
+  /** The strip, already bound to its data. Rendered under the sheet inside this column. */
+  readonly strip: ReactNode
 }
 
 export function CentrePane(props: CentrePaneProps) {
@@ -55,18 +59,22 @@ export function CentrePane(props: CentrePaneProps) {
           cards={props.cards}
           showCutMarks={props.showCutMarks}
           selectedCell={props.selectedCell}
+          selectionSheet={props.selectionSheet}
           onSelectCell={props.onSelectCell}
           onCardChange={props.onCardChange}
           scale={props.scale}
           fitting={props.fitting}
           paneRef={paneRef}
           sheetIndex={props.sheetIndex}
+          onVisibleSheetChange={props.onVisibleSheetChange}
+          scrollTo={props.scrollTo}
+          onScrollToHandled={props.onScrollToHandled}
         />
       )}
 
       {/* Inside the centre column, under the sheet: it steals canvas height, never rail
           width, and collapsing it hands that height straight back. */}
-      {props.renderStrip(props.sheets)}
+      {props.strip}
     </div>
   )
 }

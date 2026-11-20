@@ -63,8 +63,14 @@ export function SheetStrip(props: SheetStripProps) {
 
   return (
     <div className="shrink-0 border-t border-hairline bg-surface-panel">
-      <div className="flex h-7 items-center justify-between px-2">
-        <span className="tabular text-[10px] uppercase tracking-[0.06em] text-ink-muted">
+      {/*
+        The header is inside the strip, not over it, and the strip is inside the centre
+        column: it can only ever take height from the canvas, never cover it. The count is
+        `shrink-0` and the chevron is `shrink-0`, so a long document cannot squeeze either
+        one into the thumbnails and clip them.
+      */}
+      <div className="flex h-7 shrink-0 items-center justify-between px-2">
+        <span className="tabular shrink-0 truncate text-[10px] uppercase tracking-[0.06em] text-ink-muted">
           Sheets ({count})
         </span>
         <button
@@ -74,7 +80,7 @@ export function SheetStrip(props: SheetStripProps) {
           aria-expanded="true"
           onClick={props.onToggleCollapsed}
           className={cn(
-            'grid size-6 place-items-center rounded text-ink-secondary',
+            'grid size-6 shrink-0 place-items-center rounded text-ink-secondary',
             'transition-colors duration-150 ease-out',
             'hover:bg-surface-active hover:text-ink-primary focus-visible:bg-surface-active focus-visible:text-ink-primary',
           )}

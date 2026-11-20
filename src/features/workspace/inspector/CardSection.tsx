@@ -47,33 +47,49 @@ export function CardSection(props: CardSectionProps) {
       title={`Card ${props.cellIndex + 1}`}
       action={<ResetButton label="Reset card" onClick={props.onReset} />}
     >
-      <div className="grid grid-cols-3 gap-1">
+      {/*
+        Three columns, each label stacked above its box rather than sitting inside it.
+        Inline, `Top` + two digits + `mm` is more furniture than figure in 74px, so the
+        number gets whatever the label leaves — which for a three-digit value in
+        centimetres is nothing. Above, each column is a heading and a box that is all
+        number.
+      */}
+      <div className="grid grid-cols-3 gap-1.5">
         {/* The two box heights are geometry, so they follow the document's unit like
             every other length; the text scale is a percentage and does not. */}
         <NumberField
           label="Top"
+          labelAbove
+          groupClassName="w-full"
           valueMm={bands.headerMm}
           units={props.units}
           min={BAND_MIN_MM}
           max={ceiling}
           onChangeMm={(headerMm) => set({ headerMm })}
+          className="w-full"
         />
         <NumberField
           label="Bottom"
+          labelAbove
+          groupClassName="w-full"
           valueMm={bands.footerMm}
           units={props.units}
           min={BAND_MIN_MM}
           max={ceiling}
           onChangeMm={(footerMm) => set({ footerMm })}
+          className="w-full"
         />
         <NumberField
           label="Text"
+          labelAbove
+          groupClassName="w-full"
           suffix="%"
           value={Math.round(textScale * 100)}
           min={Math.round(MIN_TEXT_SCALE * 100)}
           max={Math.round(MAX_TEXT_SCALE * 100)}
           step={5}
           onChange={(percent) => props.onTextScaleChange(clampTextScale(percent / 100))}
+          className="w-full"
         />
       </div>
     </Section>

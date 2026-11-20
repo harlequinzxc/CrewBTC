@@ -1,5 +1,21 @@
 [
   {
+    "version": "1.7.0",
+    "date": "2026-11-20",
+    "title": "All the sheets at once, a strip that looks like the paper, and a rail you can search",
+    "highlights": [
+      "Sheets are now one continuous column: every page of a 27-file batch is stacked in the canvas, 24px apart, and you scroll from the first to the last instead of paging through them",
+      "The sheet strip shows real miniatures \u2014 the dish code, the dish name, the footer text and the dish photo, scaled down \u2014 so a thumbnail is recognisably a page rather than a grey rectangle",
+      "Scrolling the canvas moves the active thumbnail, and clicking a thumbnail scrolls the canvas: one answer to which sheet you are on, whichever way you ask",
+      "Clicking the dark canvas beside the paper, or the white margin around its cells, clears the red selection and puts the right rail back to Sheet & print",
+      "Files gains a filter under Add PDFs for batches too long to scan, and each row shows where its first card landed (S2 \u00b7 07). Clicking a file scrolls to its card and selects it",
+      "The right rail can be collapsed from a button beside the Settings gear, giving its 260px back to the sheet",
+      "Top, Bottom and Text in the card inspector are a three-column grid with their labels stacked above the boxes, so a number is never squeezed between a label and its unit",
+      "Numeric fields are 28px tall rather than 24px: at 24 the digits sat on the border and the field read as a readout instead of something you can type into",
+      "Fixed: the sheet strip\u2019s header could clip against the canvas on a long document"
+    ]
+  },
+  {
     "version": "1.6.1",
     "date": "2026-11-20",
     "title": "Sheet two gets its text and photos, and a cleared document comes back",
@@ -9,7 +25,7 @@
       "The seeding step now asks the card store whether a card exists rather than trusting a cache, which is also what keeps it from overwriting a card you have edited"
     ]
   },
-    {
+  {
     "version": "1.6.0",
     "date": "2026-11-20",
     "title": "Every sheet is reachable, and a narrow window stops eating your work",
@@ -24,7 +40,7 @@
       "Numeric fields use tabular figures, so a unit never shifts sideways as the digits change"
     ]
   },
-    {
+  {
     "version": "1.5.0",
     "date": "2026-11-20",
     "title": "One unit for the whole sheet, and the dead print controls are gone",
@@ -40,7 +56,7 @@
       "The explanatory line under Print output is gone, along with the section it described"
     ]
   },
-    {
+  {
     "version": "1.4.2",
     "date": "2026-11-20",
     "title": "The photo gets the room the words do not need",
@@ -52,7 +68,7 @@
       "Empty cell slots rest as a whisper on the paper and step up only under the pointer or keyboard focus, so an unfilled sheet no longer looks like a list of errors"
     ]
   },
-    {
+  {
     "version": "1.4.1",
     "date": "2026-11-20",
     "title": "The sheet opens fitted, and settings stops burying its own toggles",

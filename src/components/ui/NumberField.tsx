@@ -7,8 +7,7 @@ import type { UnitSystem } from '../../lib/units'
  * A compact numeric field with a unit, meant to sit in a row of three.
  *
  * Not the full-width form `<Input>`: this is inspector furniture, so it has no label above
- * it (the label is the row's own), no hint paragraph, and it is 24px tall against the
- * 44px form ladder. It still edits a real number rather than a slider, because typing
+ * it (the label is the row's own), and it is 28px tall against the 44px form ladder. It still edits a real number rather than a slider, because typing
  * `27.5` is faster and more exact than dragging to find it.
  *
  * Two forms, and the difference is the point:
@@ -30,8 +29,21 @@ import type { UnitSystem } from '../../lib/units'
  *   1.3 mm, rather than 0.5 mm five times over.
  */
 export interface NumberFieldProps {
-  /** Visible label inside the field, e.g. `Top`. Omit for an unlabelled box in a pair. */
+  /**
+   * Visible label inside the field, e.g. `Top`. Omit for an unlabelled box in a pair.
+   * Ignored when `labelAbove` is set.
+   */
   readonly label: string
+  /**
+   * Sets the label above the box instead of inside it.
+   *
+   * Inside, a label competes with the number for the same 40px and the number loses: `Top`
+   * plus `26` plus `mm` in one row leaves two digits of room. Above, the label is free
+   * vertical space and the box is nothing but the figure and its unit.
+   */
+  readonly labelAbove?: boolean | undefined
+  /** Width of the whole labelled group, label included. Only meaningful with `labelAbove`. */
+  readonly groupClassName?: string | undefined
   /** Full accessible name when `label` is a visual abbreviation or absent. */
   readonly name?: string | undefined
   /** The value in millimetres. Mutually exclusive with `value`. */
@@ -57,7 +69,28 @@ export interface NumberFieldProps {
 }
 
 export function NumberField(props: NumberFieldProps) {
-  const { label, suffix, min, max, disabled, className, units = 'mm' } = props
+  const {
+    label,
+    labelAbove = false,
+    groupClassName,
+    suffix,
+    min,
+    max,
+    disabled,
+    className,
+    units = 'mm',
+  } = props
+  const aside = label === '' ? null : (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'shrink-0 text-[10px] text-ink-secondary',
+        labelAbove ? 'mb-0.5 block leading-none' : 'text-center',
+      )}
+    >
+      {label}
+    </span>
+  )
   const spec = UNITS[units]
   const name = props.name ?? label
   const id = useId()
@@ -107,12 +140,13 @@ export function NumberField(props: NumberFieldProps) {
     setDraft(format(next))
   }
 
-  return (
+  const field = (
     <div
       className={cn(
-        // No vertical padding and a 24px box: the number and its suffix are the whole
-        // content, so anything else is a void inside a field.
-        'flex h-6 min-h-6 items-center gap-1 rounded-md border bg-surface-raised px-1.5',
+        // No vertical padding and a 28px box: the number and its suffix are the whole
+        // content, so anything else is a void inside a field. 28 rather than 24 because
+        // at 24 the digits sit on the border and the field reads as a readout.
+        'flex h-7 min-h-7 items-center gap-1 rounded-md border bg-surface-raised px-1.5',
         'border-hairline-strong',
         'transition-colors duration-150 ease-out',
         'hover:border-ink-muted focus-within:border-accent',
@@ -120,11 +154,7 @@ export function NumberField(props: NumberFieldProps) {
         className,
       )}
     >
-      {label === '' ? null : (
-        <span aria-hidden="true" className="shrink-0 text-[10px] text-ink-secondary">
-          {label}
-        </span>
-      )}
+      {labelAbove ? null : aside}
       <input
         id={id}
         type="number"
@@ -156,12 +186,22 @@ export function NumberField(props: NumberFieldProps) {
           }
         }}
         className={cn(
-          'tabular h-5 w-full min-w-0 border-0 bg-transparent p-0 text-right text-[12px] leading-none text-ink-primary',
+          'tabular h-6 w-full min-w-0 border-0 bg-transparent p-0 text-right text-[12px] leading-none text-ink-primary',
           'focus-visible:shadow-none focus-visible:outline-none',
         )}
       />
       <UnitLabel text={suffix ?? (inMm ? spec.suffix : '')} />
     </div>
+  )
+
+  // No wrapper when unlabelled above: a `div` around a `div` would change every existing
+  // layout that measures the field itself, for nothing.
+  if (!labelAbove) return field
+  return (
+    <label className={cn('block min-w-0', groupClassName)}>
+      {aside}
+      {field}
+    </label>
   )
 }
 

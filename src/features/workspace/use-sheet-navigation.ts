@@ -5,27 +5,41 @@ import type { GridLayout } from '../../types/imposition'
 import { resolveSheetIndex, sheetIndexOfPage } from './sheet-navigation'
 
 /**
- * Which sheet is on the canvas, and every way to move it.
+ * Which sheet is on screen, and every way to move it.
  *
- * Kept in a hook rather than inline in `WorkspaceScreen` because the screen was already at
- * its line budget and this is the one piece of it with a real state machine: a navigation
- * target that must be cleared on selection changes, a selection that must move the canvas
- * when the card it picked is on another sheet, and a file choice in the rail that counts
- * as navigation too.
+ * The canvas draws *every* sheet in one column, so this is no longer "which sheet is
+ * rendered" — it is "which sheet is highlighted, and where should the column scroll to".
+ * Both answers come from one value, `sheetIndex`, and the two ways of changing it are the
+ * two things a user can do: scroll, or click a thumbnail.
  *
- * The target is the only stored value, and it is cleared the moment the selection moves —
- * that is what stops a sheet you visited from pinning the view while you work on another.
+ * `scrollTo` is that second one, expressed as a request rather than an imperative call:
+ * the canvas owns the scroll container, so it owns the scroll. A request that has been
+ * serviced is cleared, which is what keeps a scroll the user then performs by hand from
+ * being fought by a navigation that happened a minute ago.
  */
 export interface SheetNavigation {
   readonly sheets: readonly SheetPlan[]
   readonly sheetIndex: number
-  /** Select a cell, moving the canvas to the sheet that cell's page lives on. */
+  /**
+   * The sheet the *selected cell* lives on, which is not the same as the sheet on screen.
+   *
+   * Every sheet is drawn at once, and cell 3 exists on all of them, so a bare cell index
+   * would put a red ring on twelve cards at once. Selection is a place, and a place on a
+   * stack of sheets needs both coordinates.
+   */
+  readonly selectionSheet: number | null
+  /** Scroll the stack to a sheet, without changing the selection. */
+  readonly goToSheet: (sheetIndex: number) => void
+  /** Report the sheet the viewport has arrived at — the scroll drives the highlight. */
+  readonly setVisibleSheet: (sheetIndex: number) => void
+  /** A pending scroll request, or null. */
+  readonly scrollTo: number | null
+  readonly clearScrollTo: () => void
+  /** Select a cell, scrolling its sheet into view. */
   readonly selectCell: (
     cellIndex: number | null,
     page?: { readonly documentId: string; readonly pageNumber: number },
   ) => void
-  /** Move the canvas without touching the selection. */
-  readonly goToSheet: (sheetIndex: number) => void
 }
 
 export function useSheetNavigation(input: {
@@ -36,41 +50,75 @@ export function useSheetNavigation(input: {
 }): SheetNavigation {
   const { pages, grid, activeDocumentId, setSelectedCell } = input
   const [target, setTarget] = useState<number | null>(null)
+  const [visible, setVisible] = useState<number | null>(null)
+  const [scrollTo, setScrollTo] = useState<number | null>(null)
+  const [selectionSheet, setSelectionSheet] = useState<number | null>(null)
 
   const sheets = useMemo(() => planSheets(pages, grid), [pages, grid])
 
+  /**
+   * Scrolling is the most recent thing the user did to the view, so it wins over a target
+   * set by a click that has already been serviced — but not over a target that has not
+   * been. `resolveSheetIndex` clamps, so a stale index from a longer document cannot point
+   * past the end of a shorter one.
+   */
   const sheetIndex = resolveSheetIndex(pages, grid, {
-    target,
+    target: visible ?? target,
     activeDocumentId,
-    // A target or the active document always decides before this is consulted; it is the
-    // sheet to show when neither has an opinion yet.
     fallback: 0,
   })
 
+  const goToSheet = useCallback((index: number) => {
+    setScrollTo(index)
+    setVisible(index)
+    setTarget(index)
+  }, [])
+
+  const setVisibleSheet = useCallback(
+    (index: number) => {
+      setVisible((current) => (current === index ? current : index))
+      // The scroll itself is the navigation; a leftover target from an earlier click must
+      // not keep re-resolving the highlight against where the canvas *was*.
+      setTarget((current) => (current === index ? current : null))
+    },
+    [],
+  )
+
+  const clearScrollTo = useCallback(() => setScrollTo(null), [])
+
   /**
    * Selecting a cell also has to move the canvas when the card is on another sheet — a
-   * selection the user cannot see is a bug, and the strip is the only thing that can say
-   * where it went. Deselecting clears the target so the next view is free to follow.
+   * selection the user cannot see is a bug, and the scroll is the only thing that can say
+   * where it went. A file chosen in the rail navigates the same way, through the same
+   * scroll request.
    */
   const selectCell = useCallback(
-    (cellIndex: number | null, page?: { readonly documentId: string; readonly pageNumber: number }) => {
+    (
+      cellIndex: number | null,
+      page?: { readonly documentId: string; readonly pageNumber: number },
+    ) => {
       if (cellIndex === null) {
-        setTarget(null)
+        setSelectionSheet(null)
         setSelectedCell(null)
         return
       }
-      setTarget(
-        page === undefined ? null : sheetIndexOfPage(pages, grid, page.documentId, page.pageNumber),
-      )
+      const sheet =
+        page === undefined ? null : sheetIndexOfPage(pages, grid, page.documentId, page.pageNumber)
+      setSelectionSheet(sheet)
+      if (sheet !== null) goToSheet(sheet)
       setSelectedCell(cellIndex)
     },
-    [pages, grid, setSelectedCell],
+    [pages, grid, setSelectedCell, goToSheet],
   )
 
-  // Navigating moves the page, never the selection: the card whose numbers are in the
-  // inspector stays selected, so looking at sheet 2 does not discard what you were
-  // editing on sheet 1.
-  const goToSheet = useCallback((index: number) => setTarget(index), [])
-
-  return { sheets, sheetIndex, selectCell, goToSheet }
+  return {
+    sheets,
+    sheetIndex,
+    selectionSheet,
+    goToSheet,
+    setVisibleSheet,
+    scrollTo,
+    clearScrollTo,
+    selectCell,
+  }
 }

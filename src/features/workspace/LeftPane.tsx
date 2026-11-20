@@ -1,5 +1,6 @@
 import { BatchQueue } from './BatchQueue'
 import type { IngestedDocument } from '../../types/document'
+import type { PagePlacement } from './sheet-navigation'
 
 /**
  * The Files queue, as a panel rather than a tab strip.
@@ -16,6 +17,8 @@ export interface LeftPaneProps {
   readonly onReRun: () => void
   readonly onClear: () => void
   readonly busy: boolean
+  readonly placements: ReadonlyMap<string, ReadonlyMap<number, PagePlacement>>
+  readonly onReveal: (document: IngestedDocument) => void
 }
 
 export function LeftPane(props: LeftPaneProps) {
@@ -29,6 +32,8 @@ export function LeftPane(props: LeftPaneProps) {
         onReRun={props.onReRun}
         onClear={props.onClear}
         busy={props.busy}
+        placements={props.placements}
+        onReveal={props.onReveal}
       />
     </div>
   )

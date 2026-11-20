@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { cutMarksFor, planSheets } from '../../lib/imposition/sheet'
 import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
@@ -6,9 +6,11 @@ import { clampBands } from '../../types/card'
 import { cn } from '../../lib/cn'
 import type { Card } from '../../types/card'
 import { CardTextBar } from './CardTextBar'
-import { SheetBody } from './SheetBody'
+import { SheetPaper } from './SheetPaper'
 import { blankCard } from './use-cards'
 import { CANVAS_PADDING } from './use-sheet-zoom'
+import { sheetOffsets } from './sheet-stack'
+import { useSheetScroll } from './use-sheet-scroll'
 import { activeStyle, styleInto, styleSelection, textInto } from './card-edits'
 import type { CardZone } from './Card'
 
@@ -19,14 +21,21 @@ export interface CardSheetProps {
   readonly cards: Readonly<Record<string, Card>>
   readonly showCutMarks: boolean
   readonly selectedCell: number | null
+  /** The sheet holding the selected cell, so only that sheet draws the ring. */
+  readonly selectionSheet: number | null
   readonly onSelectCell: (cellIndex: number | null) => void
   readonly onCardChange: (key: string, card: Card) => void
   /** Owned by the workspace, because the top bar draws the same number. */
   readonly scale: number
   readonly fitting: boolean
   readonly paneRef: (node: HTMLDivElement | null) => void
-  /** Which sheet of the plan the canvas is showing. Zero-based. */
+  /** Which sheet is highlighted in the strip. Zero-based. */
   readonly sheetIndex: number
+  /** Called as the user scrolls the stack, so the strip can follow. */
+  readonly onVisibleSheetChange: (sheetIndex: number) => void
+  /** Set when something asked to navigate; the stack scrolls to it and clears it. */
+  readonly scrollTo: number | null
+  readonly onScrollToHandled: () => void
 }
 
 interface EditState {
@@ -36,7 +45,18 @@ interface EditState {
 }
 
 /**
- * The A4 sheet, drawn at true physical proportions.
+ * The sheets, stacked, drawn at true physical proportions.
+ *
+ * Every sheet sits under the one before it, 24px apart, in **one** scroll container. That
+ * is not a layout preference: page three of a twelve-card document is the first row of
+ * sheet 2, and a viewer that shows one sheet at a time makes the boundary between them a
+ * thing you have to click through instead of scroll past. A batch of 27 files is the same
+ * problem three times over.
+ *
+ * So there is no "current sheet" governing what is drawn — every sheet is drawn. The
+ * one thing that survives is *which one you are looking at*, and that is measured from
+ * this container's own scroll position rather than stored: scrolling *is* the navigation,
+ * and a thumbnail click is the same act, performed by setting `scrollTop`.
  *
  * Every cell holds a `Card`: three zones, its own bands, its own type and framing. This
  * component owns only *which* thing is being edited; the content lives in the card store,
@@ -53,9 +73,13 @@ export function CardSheet(props: CardSheetProps) {
     scale,
     fitting,
     selectedCell,
+    selectionSheet,
     onSelectCell,
     paneRef,
     sheetIndex,
+    onVisibleSheetChange,
+    scrollTo,
+    onScrollToHandled,
   } = props
   const [editing, setEditing] = useState<EditState | null>(null)
   const [pictureEditing, setPictureEditing] = useState<string | null>(null)
@@ -67,11 +91,21 @@ export function CardSheet(props: CardSheetProps) {
   } | null>(null)
 
   const sheets = planSheets(pages, grid)
-  // The sheet on the canvas, not necessarily the first: the strip switches which one this
-  // is, and everything drawn below — placements, cut marks, the empty-cell numerals —
-  // belongs to it.
-  const current = sheets[sheetIndex] ?? sheets[0]
   const marks = showCutMarks ? cutMarksFor(grid) : []
+  const offsets = sheetOffsets(sheets.length, settings.sheetHeightMm, scale)
+
+  const scroll = useSheetScroll({
+    offsets,
+    scrollTo,
+    onScrolled: onVisibleSheetChange,
+    onScrollHandled: onScrollToHandled,
+  })
+
+  // A shorter document must not open half way down a longer one's leftovers.
+  const resetStack = scroll.reset
+  useEffect(() => {
+    resetStack()
+  }, [sheets.length, resetStack])
 
   const apply = useCallback(
     (key: string, change: (card: Card) => Card) => {
@@ -120,8 +154,22 @@ export function CardSheet(props: CardSheetProps) {
       ) : null}
 
       <div
-        ref={paneRef}
+        ref={(element) => {
+          paneRef(element)
+          scroll.ref(element)
+        }}
         data-testid="sheet-pane"
+        onScroll={scroll.onScroll}
+        /*
+          The ground, not the paper. A pointer-down that reaches this element has missed
+          every card, every sheet and the strip, which is the definition of "deselect" —
+          and it has to be pointer-down rather than click so it behaves like the click on
+          a card that it replaces, instead of waiting for a release that may land on a
+          different element.
+        */
+        onPointerDown={(event) => {
+          if (event.target === event.currentTarget) onSelectCell(null)
+        }}
         className={cn(
           'min-h-0 flex-1 overflow-auto',
           // Width-fit makes the sheet as wide as the pane and taller than it, so the pane
@@ -132,56 +180,55 @@ export function CardSheet(props: CardSheetProps) {
         )}
         style={{ padding: CANVAS_PADDING }}
       >
-        <div
-          className="relative shrink-0 bg-white shadow-2xl shadow-black/60"
-          style={{
-            width: `${settings.sheetWidthMm * scale}px`,
-            height: `${settings.sheetHeightMm * scale}px`,
-            margin: fitting ? undefined : '0 auto',
-          }}
-        >
-          <SheetBody
-            grid={grid}
-            scale={scale}
-            placements={current?.placements}
-            marks={marks}
-            cards={cards}
-            selectedCell={selectedCell}
-            activeZone={activeZone}
-            editingCell={editing?.cellIndex ?? null}
-            pictureKey={pictureEditing}
-            onDeselect={() => {
-              setEditing(null)
-              setPictureEditing(null)
-              onSelectCell(null)
-            }}
-            onSelectCell={onSelectCell}
-            onBeginTextEdit={(cellIndex, key, zone) => {
-              props.onSelectCell(cellIndex)
-              setSelection(null)
-              setEditing({ cellIndex, key, zone })
-            }}
-            onEndEdit={() => {
-              setSelection(null)
-              setEditing(null)
-            }}
-            onSelectionChange={(zone, next) => setSelection(zone === editing?.zone ? next : null)}
-            onTextChange={(key, zone, text) => apply(key, (current) => textInto(current, zone, text))}
-            onStyleChange={(key, zone, style) =>
-              apply(key, (current) => styleInto(current, zone, style))
-            }
-            onBeginPictureEdit={(cellIndex, key) => {
-              props.onSelectCell(cellIndex)
-              setPictureEditing(key)
-            }}
-            onEndPictureEdit={() => setPictureEditing(null)}
-            onImageChange={(key, transform) =>
-              apply(key, (current) => ({ ...current, imageTransform: transform }))
-            }
-            onBandsChange={(key, bands) =>
-              apply(key, (current) => ({ ...current, bands: clampBands(bands, grid.cellHeightMm) }))
-            }
-          />
+        <div className="flex w-full flex-col items-center">
+          {sheets.map((plan, index) => (
+            <SheetPaper
+              key={plan.sheetNumber}
+              plan={plan}
+              index={index}
+              sheetIndex={sheetIndex}
+              settings={settings}
+              grid={grid}
+              scale={scale}
+              marks={marks}
+              cards={cards}
+              selectedCell={selectedCell}
+              selectionHere={selectionSheet === index}
+              activeZone={activeZone}
+              editing={editing}
+              pictureEditing={pictureEditing}
+              showCutMarks={showCutMarks}
+              onSelectCell={onSelectCell}
+              onDeselect={() => {
+                setEditing(null)
+                setPictureEditing(null)
+                onSelectCell(null)
+              }}
+              onBeginTextEdit={(cellIndex, key, zone) => {
+                props.onSelectCell(cellIndex)
+                setSelection(null)
+                setEditing({ cellIndex, key, zone })
+              }}
+              onEndEdit={() => {
+                setSelection(null)
+                setEditing(null)
+              }}
+              onSelectionChange={(zone, next) => setSelection(zone === editing?.zone ? next : null)}
+              onTextChange={(key, zone, text) => apply(key, (current) => textInto(current, zone, text))}
+              onStyleChange={(key, zone, style) => apply(key, (current) => styleInto(current, zone, style))}
+              onBeginPictureEdit={(cellIndex, key) => {
+                props.onSelectCell(cellIndex)
+                setPictureEditing(key)
+              }}
+              onEndPictureEdit={() => setPictureEditing(null)}
+              onImageChange={(key, transform) =>
+                apply(key, (current) => ({ ...current, imageTransform: transform }))
+              }
+              onBandsChange={(key, bands) =>
+                apply(key, (current) => ({ ...current, bands: clampBands(bands, grid.cellHeightMm) }))
+              }
+            />
+          ))}
         </div>
       </div>
     </div>

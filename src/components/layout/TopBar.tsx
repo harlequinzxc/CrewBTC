@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, Download, Maximize2, Minus, Plus, Settings2 } from 'lucide-react'
+import { Maximize2, Minus, PanelRightClose, PanelRightOpen, Plus, Settings2 } from 'lucide-react'
 import { cn } from '../../lib/cn'
+import { ExportControl } from './ExportControl'
 import { APP_NAME } from '../../config/brand'
 import { MAX_ZOOM, MIN_ZOOM, zoomPercent } from '../../lib/zoom'
 
@@ -27,6 +27,9 @@ export interface TopBarProps {
   readonly hasMoreThanOneSheet: boolean
   readonly exporting: boolean
   readonly hasBatch: boolean
+  /** Whether the right rail is showing. It mirrors the Files rail: give the sheet width back. */
+  readonly inspectorOpen: boolean
+  readonly onToggleInspector: () => void
 }
 
 const iconButton = cn(
@@ -37,29 +40,7 @@ const iconButton = cn(
 )
 
 export function TopBar(props: TopBarProps) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
   const { scale } = props
-
-  // A click anywhere else closes the sheet menu, and Escape does the same.
-  useEffect(() => {
-    if (!menuOpen) return
-    const onDown = (event: PointerEvent): void => {
-      if (menuRef.current !== null && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false)
-      }
-    }
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') setMenuOpen(false)
-    }
-    document.addEventListener('pointerdown', onDown, true)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onDown, true)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [menuOpen])
-
   // The paper and how many of it. The grid arithmetic lives in the inspector, beside the
   // numbers that produce it, so neither place repeats the other.
   const summary = `${props.paper.widthMm} × ${props.paper.heightMm} mm · ${props.sheetCount} ${
@@ -98,11 +79,9 @@ export function TopBar(props: TopBarProps) {
         >
           <Minus aria-hidden className="size-3.5" />
         </button>
-        {/*
-          The real scale, always — a percentage is how you know whether you are zoomed in
-          for detail. It is labelled as fitted while the sheet is following the window,
-          so "283%" never reads as a scale the user chose.
-        */}
+        {/* The real scale, always: a percentage is how you know you are zoomed in for
+            detail. Labelled as fitted while it follows the window, so "283%" never reads
+            as a scale the user chose. */}
         <span
           aria-live="polite"
           aria-label={props.fitting ? 'Zoom level, fitted to width' : 'Zoom level'}
@@ -146,6 +125,22 @@ export function TopBar(props: TopBarProps) {
       <button
         type="button"
         data-target="dense"
+        aria-label={props.inspectorOpen ? 'Hide inspector' : 'Show inspector'}
+        aria-pressed={props.inspectorOpen}
+        title={props.inspectorOpen ? 'Hide inspector' : 'Show inspector'}
+        onClick={props.onToggleInspector}
+        className={cn(iconButton, 'hidden lg:grid')}
+      >
+        {props.inspectorOpen ? (
+          <PanelRightClose aria-hidden className="size-3.5" />
+        ) : (
+          <PanelRightOpen aria-hidden className="size-3.5" />
+        )}
+      </button>
+
+      <button
+        type="button"
+        data-target="dense"
         aria-label="Settings"
         onClick={props.onOpenSettings}
         className={iconButton}
@@ -153,77 +148,13 @@ export function TopBar(props: TopBarProps) {
         <Settings2 aria-hidden className="size-3.5" />
       </button>
 
-      <div ref={menuRef} className="relative flex shrink-0">
-        <button
-          type="button"
-          data-target="dense"
-          aria-label="Export PDF"
-          disabled={!props.hasBatch || props.exporting}
-          onClick={props.onExportCurrent}
-          className={cn(
-            'flex h-7 items-center gap-1.5 rounded-l-md bg-accent-solid pl-2.5 pr-2 text-[12px] font-medium text-white',
-            'transition-colors duration-150 ease-out',
-            'hover:bg-accent-bright focus-visible:bg-accent-bright',
-            'disabled:opacity-40 disabled:hover:bg-accent-solid disabled:focus-visible:bg-accent-solid',
-          )}
-        >
-          <Download aria-hidden className="size-3.5" />
-          Export
-        </button>
-        <button
-          type="button"
-          data-target="dense"
-          aria-label="Export options"
-          aria-expanded={menuOpen}
-          aria-haspopup="menu"
-          disabled={!props.hasBatch || props.exporting}
-          onClick={() => setMenuOpen((open) => !open)}
-          className={cn(
-            'grid h-7 w-6 place-items-center rounded-r-md border-l border-black/25 bg-accent-solid text-white',
-            'transition-colors duration-150 ease-out',
-            'hover:bg-accent-bright focus-visible:bg-accent-bright',
-            'disabled:opacity-40 disabled:hover:bg-accent-solid disabled:focus-visible:bg-accent-solid',
-          )}
-        >
-          <ChevronDown aria-hidden className="size-3" />
-        </button>
-
-        {menuOpen ? (
-          <div
-            role="menu"
-            className="absolute right-0 top-8 z-20 w-52 overflow-hidden rounded-lg border border-hairline bg-surface-raised shadow-xl shadow-black/50"
-          >
-            <button
-              type="button"
-              role="menuitem"
-              data-target="dense"
-              onClick={() => {
-                setMenuOpen(false)
-                props.onExportCurrent()
-              }}
-              className="block min-h-7 w-full px-3 py-2 text-left text-[12px] text-ink-primary hover:bg-surface-active focus-visible:bg-surface-active"
-            >
-              This sheet
-            </button>
-            {/* Shown only when it would produce something different. A menu item that
-                duplicates the button above it is the thing this redesign removed. */}
-            {props.hasMoreThanOneSheet ? (
-              <button
-                type="button"
-                role="menuitem"
-                data-target="dense"
-                onClick={() => {
-                  setMenuOpen(false)
-                  props.onExportAll()
-                }}
-                className="block min-h-7 w-full px-3 py-2 text-left text-[12px] text-ink-primary hover:bg-surface-active focus-visible:bg-surface-active"
-              >
-                All sheets
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+      <ExportControl
+        hasBatch={props.hasBatch}
+        hasMoreThanOneSheet={props.hasMoreThanOneSheet}
+        exporting={props.exporting}
+        onExportCurrent={props.onExportCurrent}
+        onExportAll={props.onExportAll}
+      />
     </header>
   )
 }
