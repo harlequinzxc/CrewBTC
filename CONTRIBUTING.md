@@ -158,6 +158,20 @@ Sheet settings persist to `localStorage` under `crewbtc.sheet` and are validated
 — a corrupt or out-of-range value falls back to the defaults rather than rendering a
 broken grid.
 
+## Card identity and seeding
+
+A card's key is `cellIndex|fileName|pageNumber` — `cardKey` in `types/card.ts`. The cell is
+the drawing cell, and every reader must agree: the canvas, the exporter, the strip and the
+inspector all key off `placement.cellIndex`. Seeding used to key off the page's ordinal in
+the flattened page list, which is correct only while there is one sheet: page 13 is cell 0
+of sheet 2, not cell 12 of anything. The cards were written, just somewhere nothing reads.
+
+`useSeedCards` walks every seed on every change rather than remembering what it has done.
+`seedCard` refuses to overwrite an existing card, so re-running is free — and a cache would
+be a second source of truth that outlives the cards it describes. It did: a `Set` of seeded
+keys survived `cardStore.reset()`, so clearing the uploads and loading again matched every
+key and seeded nothing. Do not reintroduce a cache here; ask the store.
+
 ## Sheets and navigation
 
 `planSheets` splits pages into sheets, twelve to an A4 cell grid. Which one the canvas

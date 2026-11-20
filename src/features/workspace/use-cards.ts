@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   cardKey,
   clampBands,
@@ -85,7 +85,12 @@ export function useCards(): CardStore {
 
   const reset = useCallback(() => setCards({}), [])
 
-  return { cards, setCard, seedCard, setText, setStyle, setImage, setBands, reset }
+  // Memoised because `seedCard` is an effect dependency downstream: a fresh object each
+  // render would re-run the seeding effect on every render for no reason at all.
+  return useMemo(
+    () => ({ cards, setCard, seedCard, setText, setStyle, setImage, setBands, reset }),
+    [cards, setCard, seedCard, setText, setStyle, setImage, setBands, reset],
+  )
 }
 
 /** A card that has never been scanned: empty boxes, default bands, ready to type into. */
@@ -123,15 +128,20 @@ export function useSeedCards(
   cellHeightMm: number,
   cellWidthMm: number,
 ): void {
-  // Only seeds never seen before are worth writing, and the ref survives re-renders.
-  const seeded = useRef<Set<string>>(new Set())
-
+  /**
+   * `seedCard` only writes where no card exists, so re-running over a seed that is already
+   * in the store is free.
+   *
+   * There used to be a `Set` of seeded keys in a ref here as a shortcut. It outlived the
+   * cards: clearing the uploads emptied the store but not the set, so the next upload
+   * matched every key and seeded nothing — one clear was enough to leave the whole
+   * document blank for the rest of the session. The store is the source of truth for
+   * whether a card exists, so ask it rather than caching the answer.
+   */
   useEffect(() => {
-    const fresh = seeds.filter((seed) => !seeded.current.has(seed.key))
-    if (fresh.length === 0) return
-    for (const seed of fresh) seeded.current.add(seed.key)
+    if (seeds.length === 0) return
 
-    for (const seed of fresh) {
+    for (const seed of seeds) {
       // The split follows the text, so a short title does not hold ten millimetres of
       // blank paper away from its photo. Edits are never re-seeded, so a card the user has
       // tuned keeps its tuned bands.
