@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.8.2",
+    "date": "2026-11-20",
+    "title": "A real browser in the loop, and one focus fix behind it",
+    "highlights": [
+      "Added a Playwright suite that runs against the production build, covering the three things jsdom cannot see: whether a click actually lands on the text, whether the canvas moves when editing starts, and whether the edited text stays put when the formatting bar appears",
+      "Fixed: focus was taken in an effect, one frame after the field mounted. In that window the browser\u2019s own press handling focused whatever sat under the pointer, so the caret landed wherever the mouse was rather than at the start of the text",
+      "The press now suppresses the browser\u2019s default press behaviour and focus is taken in the same commit that mounts the field, so there is no unfocused frame",
+      "Escape now closes the editor from the text itself, because the formatting bar floats over the pane and can sit between the key and the field"
+    ]
+  },
+  {
     "version": "1.8.1",
     "date": "2026-11-20",
     "title": "One click on a card\u2019s text now edits it",
