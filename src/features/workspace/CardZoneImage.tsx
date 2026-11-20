@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import { usePhotoDismissal, usePhotoNudge } from './use-photo-keys'
 import { Sparkles } from 'lucide-react'
+import { PhotoCutoutControls } from './PhotoCutoutControls'
 import { useNonPassiveWheel } from '../../lib/use-wheel'
 import { cn } from '../../lib/cn'
 import { containRectMm, MAX_IMAGE_SCALE, MIN_IMAGE_SCALE } from '../../types/card'
@@ -17,6 +19,8 @@ export interface CardZoneImageProps {
   readonly onChange: (transform: ImageTransform) => void
   /** Applies this card's bands to every card. Absent when there is nothing to copy to. */
   readonly onMatchBands?: (() => void) | undefined
+  /** Replaces the photo's pixels. Used by the cut-out, and by its undo. */
+  readonly onPhotoReplace?: ((photo: PhotoSource) => void) | undefined
 }
 
 const ZOOM_STEP = 0.08
@@ -41,38 +45,9 @@ export function CardZoneImage(props: CardZoneImageProps) {
     null,
   )
   const rootRef = useRef<HTMLDivElement>(null)
-  // Dragging renders on every pointermove; the listeners below read this ref rather than
-  // depending on `props`, or they would re-subscribe mid-gesture. Set in an effect
-  // because writing a ref during render is unsafe under concurrent rendering.
-  const endEditRef = useRef(props.onEndEdit)
-  useEffect(() => {
-    endEditRef.current = props.onEndEdit
-  }, [props.onEndEdit])
+  usePhotoDismissal(editing, props.onEndEdit, rootRef)
 
   const px = (mm: number): string => `${mm * scale}px`
-
-  useEffect(() => {
-    if (!editing) return
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape' || event.key === 'Enter') {
-        event.preventDefault()
-        endEditRef.current()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [editing])
-
-  // A press outside the box leaves adjust mode, as in any picture editor.
-  useEffect(() => {
-    if (!editing) return
-    const onDown = (event: PointerEvent): void => {
-      const root = rootRef.current
-      if (root !== null && !root.contains(event.target as Node)) endEditRef.current()
-    }
-    document.addEventListener('pointerdown', onDown, true)
-    return () => document.removeEventListener('pointerdown', onDown, true)
-  }, [editing])
 
   const shapeUnknown = photo !== null && (photo.widthPx <= 0 || photo.heightPx <= 0)
   const drawn =
@@ -98,7 +73,30 @@ export function CardZoneImage(props: CardZoneImageProps) {
   )
 
   const onPointerDown = (event: React.PointerEvent<HTMLButtonElement>): void => {
-    if (!editing) return
+    if (event.button !== 0) return
+    /*
+      One press both enters adjust mode and begins the drag.
+
+      Adjust mode used to be entered by a double-click, so the first press of a drag could
+      only select the card and the user had to click twice and *then* drag — a gesture the
+      photograph did not look like it had. Entering on the same press means the pointer is
+      already captured when the drag starts, so the framing moves under the hand from the
+      first pixel.
+
+      `preventDefault` only once adjusting, because before this press the button is not the
+      control the user is aiming at: the card's own selection has to happen first, and
+      suppressing the default there stopped the card being selected at all.
+    */
+    if (!editing) {
+      /*
+        Do not stop propagation here. The card's own press handler is what selects the
+        card, and the dividers only exist on the selected one — swallowing the event left
+        the photo adjusted but its card unselected, so the margins could not be dragged at
+        the very moment the user had just opened the frame to drag them.
+      */
+      props.onBeginEdit()
+      return
+    }
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.setPointerCapture?.(event.pointerId)
@@ -121,6 +119,14 @@ export function CardZoneImage(props: CardZoneImageProps) {
     })
   }
 
+  const onKeyDown = usePhotoNudge(editing, NUDGE_MM, (dxMm, dyMm) => {
+    props.onChange({
+      ...transform,
+      offsetXMm: transform.offsetXMm + dxMm,
+      offsetYMm: transform.offsetYMm + dyMm,
+    })
+  })
+
   const endDrag = (event: React.PointerEvent<HTMLButtonElement>): void => {
     if (origin.current === null) return
     origin.current = null
@@ -128,25 +134,6 @@ export function CardZoneImage(props: CardZoneImageProps) {
     if (event.currentTarget.hasPointerCapture?.(event.pointerId) === true) {
       event.currentTarget.releasePointerCapture?.(event.pointerId)
     }
-  }
-
-  const onKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>): void => {
-    if (!editing) return
-    const step = event.shiftKey ? NUDGE_MM * 4 : NUDGE_MM
-    const moves: Record<string, readonly [number, number]> = {
-      ArrowLeft: [-step, 0],
-      ArrowRight: [step, 0],
-      ArrowUp: [0, -step],
-      ArrowDown: [0, step],
-    }
-    const move = moves[event.key]
-    if (move === undefined) return
-    event.preventDefault()
-    props.onChange({
-      ...transform,
-      offsetXMm: transform.offsetXMm + move[0],
-      offsetYMm: transform.offsetYMm + move[1],
-    })
   }
 
   return (
@@ -182,16 +169,17 @@ export function CardZoneImage(props: CardZoneImageProps) {
         <button
           type="button"
           data-target="dense"
-          aria-label="Dish photo — double-click to move and zoom"
+          aria-label="Dish photo — click to move and zoom"
           data-adjusting={editing ? 'true' : 'false'}
           aria-roledescription="movable photo"
           tabIndex={editing ? 0 : -1}
-          onDoubleClick={(event) => {
-            event.stopPropagation()
-            // Toggle: the same gesture that enters adjust mode leaves it again.
-            if (props.editing) props.onEndEdit()
-            else props.onBeginEdit()
-          }}
+          /*
+            A click only stops the sheet seeing it. It must not leave adjust mode: the
+            press that entered the mode is the first half of this same click, so toggling
+            on click would enter and leave in one gesture and nothing would ever stay open.
+            Escape and Enter leave, via the key handler above.
+          */
+          onClick={(event) => event.stopPropagation()}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}
@@ -227,6 +215,10 @@ export function CardZoneImage(props: CardZoneImageProps) {
         decision is made while looking at one card's framing, and appearing only in adjust
         mode means it cannot be pressed by accident while panning.
       */}
+      {editing && props.onPhotoReplace !== undefined && props.photo !== null ? (
+        <PhotoCutoutControls photo={props.photo} onReplace={props.onPhotoReplace} />
+      ) : null}
+
       {editing && props.onMatchBands !== undefined ? (
         <button
           type="button"

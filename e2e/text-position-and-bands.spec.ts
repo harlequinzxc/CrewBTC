@@ -1,13 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { textZones, uploadPdf } from './fixtures'
-
-/**
- * This round's promises, checked where the user can see them.
- *
- * The vertical alignment and the square corners are measured off the rendered DOM rather
- * than asserted from the code that sets them: a comment cannot go stale, a computed style
- * can.
- */
+import { inkShift, textZones, uploadPdf } from './fixtures'
 
 test('the steps box keeps its slack below the words, not above them', async ({ page }) => {
   await uploadPdf(page)
@@ -87,13 +79,19 @@ test('the sparkles button copies this card’s margins to every card', async ({ 
   expect(Math.abs(dragged - otherCardBefore)).toBeGreaterThan(10)
 
   // The button lives inside the photo frame, so it appears only while that photo is being
-  // adjusted — which is also the moment the decision is made.
+  // adjusted — which is also the moment the decision is made. Adjust mode opens on a single
+  // click: a double-click would be one click in and the second one straight back out.
   await expect(page.getByRole('button', { name: 'Use these margins for all cards' })).toHaveCount(0)
-  await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height * 0.45)
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.45)
   await page.waitForTimeout(300)
 
+  // One click, not two: the button has to be reachable from the frame the user sees, and a
+  // second gesture to reveal it was the thing this round removed.
   const sparkles = page.getByRole('button', { name: 'Use these margins for all cards' })
   await expect(sparkles).toHaveCount(1)
+
+  // And that same click selected the card, or the margins could not be dragged at all.
+  await expect(page.locator('[data-divider="header"]')).toHaveCount(1)
   await sparkles.click()
   await page.waitForTimeout(300)
 
@@ -106,4 +104,23 @@ test('the sparkles button is not there when nothing is being adjusted', async ({
   await uploadPdf(page)
   // Nothing selected, nothing editing: the frame is not active, so its button is absent.
   await expect(page.getByRole('button', { name: 'Use these margins for all cards' })).toHaveCount(0)
+})
+
+/**
+ * The last of this round's promises: the words must not move when the box is clicked.
+ *
+ * Measured in pixels rather than from the DOM, because that is the only place the claim
+ * means anything — the drawn line and the field are different elements whose rectangle tops
+ * were never going to agree, since a drawn span's top is its line box and a textarea insets
+ * its text by its own. Screenshotting both states and comparing the first row of real ink
+ * checks the thing the user sees; the line was 3px low before this round.
+ */
+test('clicking a text box does not move the words', async ({ page }) => {
+  await uploadPdf(page)
+
+  for (const index of [0, 1]) {
+    const { drawn, editing } = await inkShift(page, index)
+    expect(drawn, `zone ${index} has no ink to measure`).toBeGreaterThanOrEqual(0)
+    expect(editing, `zone ${index} moved its first line`).toBe(drawn)
+  }
 })

@@ -91,3 +91,53 @@ export async function uploadPdf(page: Page): Promise<void> {
 export function textZones(page: Page) {
   return page.getByRole('button', { name: /card text:/i })
 }
+
+/**
+ * The first row of a screenshot carrying near-black ink.
+ *
+ * Deliberately strict about what counts as ink: the accent outline round a focused field and
+ * the placeholder's grey each appear in one state and not the other, and treating either as
+ * "the text" would measure the wrong thing. Comparing this row across the two states asks
+ * the only question that matters — did the words move when the box was clicked — which no
+ * rectangle comparison can answer, because a drawn span and a textarea build their line
+ * boxes differently and are supposed to.
+ */
+export async function firstInkRow(png: Buffer): Promise<number> {
+  const { createCanvas, loadImage } = await import('@napi-rs/canvas')
+  const image = await loadImage(png)
+  const canvas = createCanvas(image.width, image.height)
+  const context = canvas.getContext('2d')
+  context.drawImage(image, 0, 0)
+  const { data } = context.getImageData(0, 0, image.width, image.height)
+  for (let y = 0; y < image.height; y += 1) {
+    for (let x = 0; x < image.width; x += 1) {
+      const i = (y * image.width + x) * 4
+      if ((data[i] ?? 255) < 120 && (data[i + 1] ?? 255) < 120 && (data[i + 2] ?? 255) < 120) return y
+    }
+  }
+  return -1
+}
+
+/**
+ * Types the same black text into one band, then returns where its ink starts in both
+ * states — drawn and while focused.
+ */
+export async function inkShift(page: Page, index: number): Promise<{ drawn: number; editing: number }> {
+  const zones = textZones(page)
+  const box = (await zones.nth(index).boundingBox())!
+  const clip = { x: box.x + 2, y: box.y, width: box.width - 4, height: box.height - 2 }
+
+  await zones.nth(index).click()
+  await page.waitForTimeout(250)
+  await page.keyboard.type('HAMBURGER')
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(350)
+  const drawn = await firstInkRow(await page.screenshot({ clip }))
+
+  await zones.nth(index).click()
+  await page.waitForTimeout(350)
+  const editing = await firstInkRow(await page.screenshot({ clip }))
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(300)
+  return { drawn, editing }
+}

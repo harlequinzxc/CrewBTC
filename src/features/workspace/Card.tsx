@@ -29,6 +29,8 @@ export interface CardProps {
   readonly onBeginPictureEdit: () => void
   readonly onEndPictureEdit: () => void
   readonly onImageChange: (transform: Card['imageTransform']) => void
+  /** Replaces the photo's pixels — the cut-out, and its undo. */
+  readonly onPhotoReplace?: ((photo: Card['photo']) => void) | undefined
   /** The sheet's shared press gesture for text boxes. */
   readonly gesture: TextEditGesture
   /** Present only on the selected card: dividers are a pointer gesture on that one card. */
@@ -109,6 +111,7 @@ export function Card(props: CardProps) {
           props.onMatchBands === undefined ? undefined : () => props.onMatchBands?.(card.bands)
         }
         onChange={props.onImageChange}
+        onPhotoReplace={props.onPhotoReplace}
       />
 
       <CardZoneText

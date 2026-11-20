@@ -226,6 +226,11 @@ export function CardSheet(props: CardSheetProps) {
               onImageChange={(key, transform) =>
                 apply(key, (current) => ({ ...current, imageTransform: transform }))
               }
+              // A cut photo is new pixels, so it goes through the same card writer as
+              // everything else and the exporter needs no knowledge of how it was made.
+              onPhotoReplace={(key, photo) =>
+                apply(key, (current) => ({ ...current, photo }))
+              }
               // Every card takes this one's split. Driven through `onCardChange`, which the
               // sheet already has, so the workspace stays the only writer.
               onMatchBands={(bands) => {

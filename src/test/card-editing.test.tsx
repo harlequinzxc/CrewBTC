@@ -110,11 +110,11 @@ describe('typing into a card', () => {
 describe('moving the photo', () => {
   const photo = { dataUrl: 'data:image/png;base64,PIC', widthPx: 400, heightPx: 300 }
 
-  it('enters adjust mode on double-click', () => {
+  it('enters adjust mode on a single click', () => {
     const p = props(model({ photo }))
     render(<Card gesture={textEditGestureStub} {...p} />)
 
-    fireEvent.doubleClick(screen.getByRole('button', { name: /Dish photo/ }))
+    fireEvent.pointerDown(screen.getByRole('button', { name: /Dish photo/ }), { button: 0 })
     expect(p.onBeginPictureEdit).toHaveBeenCalled()
   })
 
