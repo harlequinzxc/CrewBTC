@@ -49,7 +49,11 @@ export interface SheetBodyProps {
     cellIndex: number,
     page?: { readonly documentId: string; readonly pageNumber: number },
   ) => void
-  readonly onBeginTextEdit: (cellIndex: number, key: string, zone: 'header' | 'body') => void
+  readonly onBeginTextEdit: (
+    cellIndex: number,
+    key: string,
+    zone: 'header' | 'body',
+  ) => void
   readonly onEndEdit: () => void
   readonly onSelectionChange: (zone: 'header' | 'body', selection: { readonly start: number; readonly end: number } | null) => void
   readonly onTextChange: (key: string, zone: 'header' | 'body', text: string) => void

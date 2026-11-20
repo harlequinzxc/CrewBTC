@@ -127,6 +127,63 @@ describe('the sheet on the canvas', () => {
     expect(right.container.querySelectorAll('.outline-accent').length).toBe(1)
   })
 
+  /*
+    The same rule as the ring, for the editor — and this one was actually broken.
+
+    `editing` was passed to every sheet as a bare cell index, so opening cell 0 on a
+    two-sheet document mounted an editor on both. Two fields then take focus from each
+    other continuously, which the user reported as the text box "flickering very fast".
+
+    `CardSheet` now packages the sheet into the edit state and hands each sheet only its
+    own; this asserts the rendering half of that, which is that a sheet given `editing`
+    opens the field and a sheet not given it does not.
+  */
+  it('opens the editor on one sheet only', () => {
+    const marks = cutMarksFor(grid)
+    const renderPaper = (editing: { cellIndex: number; key: string } | null) => {
+      const plan = sheets[0]
+      if (plan === undefined) throw new Error('fixture needs a sheet')
+      return render(
+        <SheetPaper gesture={textEditGestureStub}
+          plan={plan}
+          index={0}
+          sheetIndex={0}
+          settings={DEFAULT_SHEET}
+          grid={grid}
+          scale={2}
+          marks={marks}
+          cards={{}}
+          selectedCell={0}
+          selectionHere
+          activeZone="header"
+          editing={editing}
+          pictureEditing={null}
+          showCutMarks={false}
+          onSelectCell={() => undefined}
+          onDeselect={() => undefined}
+          onBeginTextEdit={() => undefined}
+          onEndEdit={() => undefined}
+          onSelectionChange={() => undefined}
+          onTextChange={() => undefined}
+          onStyleChange={() => undefined}
+          onBeginPictureEdit={() => undefined}
+          onEndPictureEdit={() => undefined}
+          onImageChange={() => undefined}
+          onBandsChange={() => undefined}
+        />,
+      )
+    }
+
+    // Editing cell 0 here: exactly one field.
+    const mine = renderPaper({ cellIndex: 0, key: 'dish.pdf#1' })
+    expect(mine.container.querySelectorAll('textarea[aria-label="Edit card text"]').length).toBe(1)
+    mine.unmount()
+
+    // No edit state: no field at all.
+    const none = renderPaper(null)
+    expect(none.container.querySelectorAll('textarea').length).toBe(0)
+  })
+
   it('shows sheet 2 pages — a different set — when given sheet 2', () => {
     const second = sheets[1]
     if (second === undefined) throw new Error('fixture needs a second sheet')

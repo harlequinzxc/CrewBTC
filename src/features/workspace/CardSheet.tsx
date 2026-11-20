@@ -41,6 +41,8 @@ export interface CardSheetProps {
 }
 
 interface EditState {
+  /** Which sheet the card is on. A cell index alone is a shape, not a place. */
+  readonly sheet: number
   readonly cellIndex: number
   readonly key: string
   readonly zone: CardZone
@@ -212,7 +214,7 @@ export function CardSheet(props: CardSheetProps) {
               selectedCell={selectedCell}
               selectionHere={selectionSheet === index}
               activeZone={activeZone}
-              editing={editing}
+              editing={editing?.sheet === index ? editing : null}
               pictureEditing={pictureEditing}
               showCutMarks={showCutMarks}
               onSelectCell={dismissal.selectCell}
@@ -220,7 +222,7 @@ export function CardSheet(props: CardSheetProps) {
               gesture={gesture}
               onBeginTextEdit={(cellIndex, key, zone) => {
                 dismissal.selectCell(cellIndex)
-                setEditing({ cellIndex, key, zone })
+                setEditing({ sheet: index, cellIndex, key, zone })
               }}
               onEndEdit={dismissal.endEdit}
               onSelectionChange={(zone, next) => setSelection(zone === editing?.zone ? next : null)}
