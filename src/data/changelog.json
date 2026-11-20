@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.10.0",
+    "date": "2026-11-19",
+    "title": "Save and open editable projects",
+    "highlights": [
+      "Save an editable project containing cards, photos, labels, sheet settings and available original PDFs; open it on this or another computer.",
+      "Original PDFs are retained locally when storage allows. Older sessions without them can still save their cards, with a warning that re-running extraction needs the originals.",
+      "Opening a project confirms before replacing your current work; damaged or unsupported files leave it untouched."
+    ]
+  },
+  {
     "version": "1.9.8",
     "date": "2026-11-19",
     "title": "Export restored cards after reload",

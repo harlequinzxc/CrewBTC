@@ -1,4 +1,4 @@
-import { Maximize2, Minus, PanelRightClose, PanelRightOpen, Plus, Settings2 } from 'lucide-react'
+import { FolderOpen, Save, Maximize2, Minus, PanelRightClose, PanelRightOpen, Plus, Settings2 } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { ExportControl } from './ExportControl'
 import { CHANGELOG } from '../../data/changelog'
@@ -27,6 +27,9 @@ export interface TopBarProps {
   readonly onProbe?: () => void
   readonly onFit: () => void
   readonly onOpenSettings: () => void
+  readonly onSaveProject?: () => void
+  readonly onOpenProject?: () => void
+  readonly projectBusy?: boolean
   readonly onExportCurrent: () => void
   readonly onExportAll: () => void
   /** False when there is only one sheet, so "all sheets" would do the same thing. */
@@ -154,6 +157,13 @@ export function TopBar(props: TopBarProps) {
           <span className="text-[11px]">Fit</span>
         </button>
       </div>
+
+      <button type="button" data-target="dense" aria-label="Open project" title="Open editable project" onClick={props.onOpenProject} disabled={props.projectBusy} className={cn(iconButton, 'w-auto gap-1 px-1.5 flex')}>
+        <FolderOpen aria-hidden className="size-4" /><span className="text-[11px]">Open</span>
+      </button>
+      <button type="button" data-target="dense" aria-label="Save project" title="Save editable project" onClick={props.onSaveProject} disabled={props.projectBusy || !props.hasBatch} className={cn(iconButton, 'w-auto gap-1 px-1.5 flex')}>
+        <Save aria-hidden className="size-4" /><span className="text-[11px]">Save</span>
+      </button>
 
       <button
         type="button"

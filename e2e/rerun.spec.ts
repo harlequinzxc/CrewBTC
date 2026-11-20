@@ -1,22 +1,19 @@
 import { expect, test } from '@playwright/test'
 import { uploadPdf } from './fixtures'
 
-/**
- * "Re-run all files" on a restored batch.
- *
- * The batch is a saved session: parsed results, cards on the sheet, every file listed on
- * the left. What is *not* saved is the upload — the snapshot deliberately stores results
- * rather than PDFs, because re-parsing cannot reproduce band heights, swapped photos or
- * framing. So in a new session the bytes are gone while the files are visibly present.
- *
- * The old message in that state was "Nothing to re-run — Add PDFs first", next to a list of
- * added PDFs, which is both wrong and unactionable. This pins the honest answer.
- */
+/** Older sessions can lack original PDFs; explain rather than silently dropping files. */
 test('re-run explains itself on a restored batch instead of denying the files exist', async ({
   page,
 }) => {
   await uploadPdf(page)
-  await page.waitForTimeout(1500)
+  await expect(page.getByLabel('Save project')).toBeEnabled()
+  await page.waitForTimeout(1000)
+  // Simulate an older session created before original uploads were retained.
+  await page.evaluate(async () => { await new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase('crewbtc-project-sources')
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(request.error)
+  }) })
   await page.reload()
 
   const rows = page.getByRole('button', { name: /^re-run .+\.pdf$/i })

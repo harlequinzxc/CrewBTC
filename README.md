@@ -58,6 +58,21 @@ every field at once — the inspector, the sheet size, the card boxes. Changing 
 the display and nothing else: the document is stored and printed in millimetres either
 way, so 21 cm and 210 mm are the same sheet.
 
+## Save and open editable projects
+
+Use **Save** in the top bar to download a `.crewbtc` project. It contains your editable
+cards, photos, labels, sheet settings and available original PDFs. **Open** loads that
+file in CrewBTC, including on another computer; it replaces the current workspace after
+confirmation. Export PDF remains the separate print-only action. Save a project again
+when you make changes: the downloaded file does not update automatically.
+
+Original uploads are also kept in browser storage for later project saves and re-runs,
+subject to browser storage limits. Older sessions and storage failures may be missing
+original PDFs; a warning tells you if a saved project is incomplete. The cards and photos
+remain editable and printable, but re-running extraction needs the original PDFs.
+Project files and locally stored originals can contain your source documents: keep them
+private and clear browser site data if you need to remove the local copies.
+
 ## Zooming the sheet
 
 `−`, the current percentage, `+` and **Fit** sit in the middle of the top bar. The sheet
