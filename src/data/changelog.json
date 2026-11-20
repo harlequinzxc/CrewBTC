@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.9.7",
+    "date": "2026-11-20",
+    "title": "The diagnostic stops guessing, and says when it cannot see",
+    "highlights": [
+      "Fixed the diagnostic itself. The line that reported whether the press handler ran was measured in the browser\u2019s very first listen to the press \u2014 before the press had been handed to anything \u2014 so it always answered \u201cdid not run\u201d. A real report was read as if that meant something. The report is now a timeline: each step is recorded at the moment it happens, and a step is only called missing once the whole gesture is over",
+      "The report now answers the question that decides the fix. It can tell whether the press survives as far as the page at all. If it does not, nothing inside the app can ever act on it, and the report says so plainly instead of blaming the text box or the rescue",
+      "Three new browser tests hold the diagnostic to this: a working press, a press stopped part-way down, and a press stopped above the page must each produce a different, correct report"
+    ]
+  },
+  {
     "version": "1.9.6",
     "date": "2026-11-20",
     "title": "The diagnostic now says whether the rescue caught the press",
