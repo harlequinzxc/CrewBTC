@@ -6,22 +6,29 @@ export interface CardZoneTextProps {
   readonly text: string
   /** Pixels per millimetre of the preview. */
   readonly scale: number
+  /** Card-relative geometry of this box. */
   readonly widthMm: number
   readonly heightMm: number
+  readonly xMm: number
+  readonly yMm: number
   readonly style: TextStyle
   readonly editing: boolean
   readonly maxPt: number
   readonly placeholder: string
-  /** Rendered at this size when the real type would be too small to read. */
-  readonly floorPx: number
   readonly onBeginEdit: () => void
   readonly onChange: (text: string) => void
   readonly onEndEdit: () => void
   readonly onStyle: (style: TextStyle) => void
 }
 
+/** Points to millimetres — the one conversion this component needs. */
+const PT_TO_MM = 25.4 / 72
+
+/** Line pitch, matching the exporter so a break lands on the same line in both. */
+const LINE_HEIGHT = 1.25
+
 /** Approximate width of a character at a given size, used for on-screen wrapping only. */
-const measure = (text: string, sizePt: number): number => text.length * sizePt * 0.5 * (25.4 / 72)
+const measure = (text: string, sizePt: number): number => text.length * sizePt * 0.5 * PT_TO_MM
 
 /**
  * One text zone of a card: typeset at its true size, editable in place.
@@ -31,8 +38,9 @@ const measure = (text: string, sizePt: number): number => text.length * sizePt *
  * floor the type is drawn larger rather than as a smudge; the breaks still match.
  */
 export function CardZoneText(props: CardZoneTextProps) {
-  const { text, scale, widthMm, heightMm, style, editing } = props
+  const { text, scale, widthMm, heightMm, xMm, yMm, style, editing } = props
   const fieldRef = useRef<HTMLTextAreaElement>(null)
+  const px = (mm: number): string => `${mm * scale}px`
 
   useEffect(() => {
     if (!editing) return
@@ -42,18 +50,28 @@ export function CardZoneText(props: CardZoneTextProps) {
     field.select()
   }, [editing])
 
+  // `layoutBand` measures down from `boxTopMm`, so the box's own top is passed rather
+  // than a height. This is the same function the exporter calls, which is what keeps a
+  // line break in the same place on screen and on paper.
   const layout = layoutBand(
     text === '' ? props.placeholder : text,
-    heightMm,
+    0,
     widthMm,
     heightMm,
-    9,
-    1.25,
+    props.maxPt,
+    LINE_HEIGHT,
     measure,
   )
-  const realPx = layout.sizePt * scale * (25.4 / 72)
-  const fontSize = Math.max(props.floorPx, realPx)
-  const lineHeight = fontSize * 1.25
+  // Drawn at the size the layout chose, with no legibility floor. A constant floor is
+  // what made a 10 mm header overflow into the photo: at this preview scale a floor of
+  // 9 px is many millimetres of type, and it grew instead of shrinking to fit.
+  const fontSize = Math.max(0, layout.sizePt * scale * PT_TO_MM)
+  const lineHeight = fontSize * LINE_HEIGHT
+
+  // Lines are placed on the band's own rhythm so the drawn block is no taller than the
+  // block `layoutBand` measured — the check that guarantees it fits.
+  const positionPx = (line: (typeof layout.lines)[number]): string =>
+    `${(line.yMm - layout.sizePt * LINE_HEIGHT * PT_TO_MM) * scale}px`
 
   // Placeholder copy is greyed so an empty box reads as empty rather than as content.
   const ink = text === '' ? '#9ca3af' : style.color
@@ -75,8 +93,17 @@ export function CardZoneText(props: CardZoneTextProps) {
           event.stopPropagation()
         }}
         onPointerDown={(event) => event.stopPropagation()}
-        className="absolute inset-0 size-full resize-none rounded-sm border-0 bg-white/95 p-1 outline outline-2 outline-sky-500"
-        style={{ fontSize, lineHeight: `${lineHeight}px`, color: style.color, fontWeight: style.bold ? 700 : 400 }}
+        className="zone-box absolute resize-none overflow-hidden rounded-sm border-0 bg-white/95 p-1 outline outline-2 outline-sky-500"
+        style={{
+          left: px(xMm),
+          top: px(yMm),
+          width: px(widthMm),
+          height: px(heightMm),
+          fontSize,
+          lineHeight: `${lineHeight}px`,
+          color: style.color,
+          fontWeight: style.bold ? 700 : 400,
+        }}
         aria-label="Edit card text"
       />
     )
@@ -90,15 +117,24 @@ export function CardZoneText(props: CardZoneTextProps) {
         event.stopPropagation()
         props.onBeginEdit()
       }}
-      className="absolute inset-0 block size-full min-h-8 cursor-text overflow-hidden border-0 bg-transparent p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
-      style={{ fontSize, lineHeight: `${lineHeight}px`, color: ink, fontWeight: style.bold ? 700 : 400 }}
+      className="zone-box absolute block cursor-text overflow-hidden border-0 bg-transparent p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
+      style={{
+        left: px(xMm),
+        top: px(yMm),
+        width: px(widthMm),
+        height: px(heightMm),
+        fontSize,
+        lineHeight: `${lineHeight}px`,
+        color: ink,
+        fontWeight: style.bold ? 700 : 400,
+      }}
       aria-label={`Card text: ${text === '' ? props.placeholder : text}`}
     >
       {layout.lines.map((line, index) => (
         <span
           key={`${index}-${line.text}`}
-          className="block whitespace-pre"
-          style={{ background: highlight }}
+          className="absolute whitespace-pre"
+          style={{ top: positionPx(line), left: 0, background: highlight }}
         >
           {line.text === '' ? '\u00a0' : line.text}
         </span>

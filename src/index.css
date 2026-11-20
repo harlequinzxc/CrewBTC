@@ -69,6 +69,18 @@
     min-height: 32px;
     height: 32px;
   }
+
+  /* A sheet card is a picture of paper, not chrome. Its text boxes and photo frames are
+     geometry measured in millimetres, so the target ladder must not resize them: a
+     global `min-height: 44px` on a 10 mm header band is several times the band's real
+     height, which is what pushed text over the photo and the photo over the footer.
+     The whole card is still one 44px+ target (it is far larger than that in practice),
+     and the click-to-type affordance is preserved — it is simply sized by geometry
+     rather than by the control ladder. */
+  .zone-box {
+    min-height: 0;
+    height: auto;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -3,6 +3,7 @@ import { cardZones } from '../../types/card'
 import type { Card, RectMm } from '../../types/card'
 import { CardZoneImage } from './CardZoneImage'
 import { CardZoneText } from './CardZoneText'
+import { relativeToCard } from './zone-box'
 
 export type CardZone = 'header' | 'picture' | 'body'
 
@@ -36,7 +37,14 @@ export interface CardProps {
  */
 export function Card(props: CardProps) {
   const { card, cell, scale, selected, editing, pictureEditing } = props
+  // `cardZones` answers in sheet millimetres because the exporter draws on the page.
+  // The card element is `position: relative`, so its children must be positioned from
+  // the card's own corner — otherwise every zone is shifted by the card's offset on the
+  // sheet, which is what let the photo escape its cell.
   const zones = cardZones(cell, card.bands)
+  const header = relativeToCard(zones.header, cell)
+  const picture = relativeToCard(zones.picture, cell)
+  const footer = relativeToCard(zones.footer, cell)
   const px = (mm: number): string => `${mm * scale}px`
 
   return (
@@ -44,7 +52,7 @@ export function Card(props: CardProps) {
       data-cell={props.cellIndex}
       data-page={props.pageLabel}
       className={cn(
-        'absolute rounded-[1mm] bg-white',
+        'absolute overflow-hidden rounded-[1mm] bg-white',
         selected ? 'outline outline-2 outline-sky-500' : 'outline outline-1 outline-zinc-200',
       )}
       style={{
@@ -58,13 +66,14 @@ export function Card(props: CardProps) {
       <CardZoneText
         text={card.headerText}
         scale={scale}
-        widthMm={zones.header.widthMm}
-        heightMm={zones.header.heightMm}
+        xMm={header.xMm}
+        yMm={header.yMm}
+        widthMm={header.widthMm}
+        heightMm={header.heightMm}
         style={card.headerStyle}
         editing={editing === 'header'}
         maxPt={9}
         placeholder="Dish code · Dish name"
-        floorPx={9}
         onBeginEdit={() => props.onBeginTextEdit('header')}
         onChange={(text) => props.onTextChange('header', text)}
         onEndEdit={props.onEndEdit}
@@ -72,7 +81,7 @@ export function Card(props: CardProps) {
       />
 
       <CardZoneImage
-        box={zones.picture}
+        box={picture}
         photo={card.photo}
         transform={card.imageTransform}
         scale={scale}
@@ -85,13 +94,14 @@ export function Card(props: CardProps) {
       <CardZoneText
         text={card.bodyText}
         scale={scale}
-        widthMm={zones.footer.widthMm}
-        heightMm={zones.footer.heightMm}
+        xMm={footer.xMm}
+        yMm={footer.yMm}
+        widthMm={footer.widthMm}
+        heightMm={footer.heightMm}
         style={card.bodyStyle}
         editing={editing === 'body'}
         maxPt={8}
         placeholder="Plating steps"
-        floorPx={8}
         onBeginEdit={() => props.onBeginTextEdit('body')}
         onChange={(text) => props.onTextChange('body', text)}
         onEndEdit={props.onEndEdit}

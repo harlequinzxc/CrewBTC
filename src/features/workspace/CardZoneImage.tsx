@@ -131,8 +131,11 @@ export function CardZoneImage(props: CardZoneImageProps) {
   return (
     <div
       ref={rootRef}
+      // A clipping box, not a control. `zone-box` exempts it from the §4.1 target
+      // floor: a global `min-height` would stretch it past its band and make the photo
+      // overlap the footer.
       className={cn(
-        'absolute overflow-hidden bg-zinc-100',
+        'zone-box absolute overflow-hidden bg-zinc-100',
         // A subtle outline, not a loud one: the photo is the subject, not the frame.
         editing && 'outline outline-2 -outline-offset-2 outline-sky-500',
       )}
@@ -172,7 +175,7 @@ export function CardZoneImage(props: CardZoneImageProps) {
               : undefined
           }
           onKeyDown={onKeyDown}
-          className="absolute inset-0 block size-full min-h-8 cursor-default border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500"
+          className="zone-box absolute inset-0 block size-full cursor-default border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500"
         >
           <img
             src={photo.dataUrl}
