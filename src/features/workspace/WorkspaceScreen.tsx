@@ -18,6 +18,8 @@ import { pickFiles } from '../../lib/files/open-picker'
 import type { Card } from '../../types/card'
 import { useUpdateNotice } from './use-update-notice'
 import { usePageReveal } from './use-page-reveal'
+import { useRestoredSession, useSaveSession } from './use-session-persistence'
+import { useClearBatch } from './use-clear-batch'
 import { reloadPage } from './reload-page'
 import { SettingsDialog } from '../settings/SettingsDialog'
 import { usePageSettings } from './use-page-settings'
@@ -57,12 +59,28 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     })
   })
 
-  const batch = useBatch({ notify })
+  // Read before anything is constructed: the batch and the card store both take their
+  // initial value from it, so the first paint already has the user's cards on their sheet.
+  const session = useRestoredSession()
+
+  const batch = useBatch({
+    notify,
+    restore: session.snapshot?.documents ?? null,
+    restoreActiveId: session.snapshot?.activeId ?? null,
+  })
   const sheet = useSheet()
-  const cardStore = useCards()
+  const cardStore = useCards(session.snapshot?.cards ?? null)
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
 
   const zoom = useSheetZoom(sheet.settings.sheetWidthMm)
+
+  // Write-side: armed only once the read has finished, so an early frame cannot erase the
+  // session it is about to load. See `use-session-persistence`.
+  useSaveSession(session.restored && batch.hydrated, {
+    documents: batch.documents,
+    cards: cardStore.cards,
+    activeId: batch.activeId,
+  })
 
   const seeds = useCardSeeds(pageRefs, sheet.grid, batch.documents)
   useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm, sheet.grid.cellWidthMm)
@@ -79,14 +97,14 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const toggleStrip = useCallback(() => setStripCollapsed((collapsed) => !collapsed), [])
   const toggleInspector = useCallback(() => setInspectorOpen((open) => !open), [])
 
-  // Clearing the files has to clear the cards too: a card with no page behind it would
-  // survive a reload as a ghost, which is the bug the seeding fix removed from the other
-  // direction.
-  const clearAll = useCallback(() => {
-    batch.clear()
-    cardStore.reset()
-    setSelectedCell(null)
-  }, [batch, cardStore])
+  // Clearing is a transaction with an undo, so it lives in its own hook.
+  const clearSelection = useCallback(() => setSelectedCell(null), [])
+  const { clearAll } = useClearBatch({
+    batch,
+    store: cardStore,
+    notify,
+    clearSelection,
+  })
 
   const handleAdd = useCallback(() => {
     void (async () => {
