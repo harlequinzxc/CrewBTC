@@ -62,7 +62,7 @@ describe('chrome geometry', () => {
     render(<App />)
 
     const bar = screen.getByRole('banner')
-    const percent = within(bar).getByLabelText('Zoom level')
+    const percent = within(bar).getByLabelText(/^Zoom level/)
     // Fit is the default, and a fitted sheet is drawn at some positive percentage.
     expect(percent.textContent).toMatch(/^\d+%$/)
     expect(within(bar).getByRole('button', { name: 'Fit to window' })).toHaveAttribute(
@@ -75,7 +75,7 @@ describe('chrome geometry', () => {
     desktop()
     render(<App />)
 
-    const level = screen.getByLabelText('Zoom level')
+    const level = screen.getByLabelText(/^Zoom level/)
     const fitted = level.textContent
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
     expect(level.textContent).not.toBe(fitted)

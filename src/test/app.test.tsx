@@ -47,7 +47,7 @@ describe('App shell', () => {
     expect(screen.getByRole('button', { name: /export pdf/i })).toBeDisabled()
 
     // Zoom lives in the top bar, at the same value the sheet is drawn at.
-    expect(screen.getByLabelText('Zoom level')).toBeInTheDocument()
+    expect(screen.getByLabelText(/^Zoom level/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Fit to window' })).toBeInTheDocument()
   })
 

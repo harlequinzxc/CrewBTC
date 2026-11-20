@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { ChevronRight } from 'lucide-react'
 import { NumberField } from '../../components/ui/NumberField'
 import { Switch } from '../workspace/inspector/Switch'
 import { useMotion } from './use-motion'
@@ -15,13 +17,20 @@ export interface SettingsViewProps {
 /**
  * Settings, in the inspector's own language: titled sections, label-left rows, no prose.
  *
- * It keeps every control the full-page version had — the four trim figures, units, motion
- * and the changelog — but reads as one more surface in the same product rather than a
- * separate settings page with its own card styling.
+ * Two sections are preferences — print output and motion. The changelog is not, so it is a
+ * single collapsed row at the bottom: closed, it costs one line and tells you the version
+ * you are on; open, it is the release history. Putting eight releases above the fold is
+ * what made the dialog need scrolling to reach a toggle that was already visible on screen.
+ *
+ * The sheet's own dimensions are deliberately *not* here. A4, gutter and margin belong to
+ * the thing on screen and live in the inspector beside it; duplicating them in two panels
+ * meant two places to change one number, and two places for them to disagree.
  */
 export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) {
   const { choice, setChoice } = useMotion()
   const validation = validatePageSettings(settings)
+  const [notesOpen, setNotesOpen] = useState(false)
+  const latest = CHANGELOG[0]
 
   const numberField = (
     key: 'trimWidthMm' | 'trimHeightMm' | 'bleedMm' | 'markMarginMm',
@@ -89,28 +98,51 @@ export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) 
         />
       </section>
 
-      <section className="px-4 py-3">
-        <h3 className="mb-2 text-[11px] font-medium uppercase tracking-[0.06em] text-ink-secondary">
-          What&rsquo;s new
-        </h3>
-        <ol className="flex flex-col gap-3">
-          {CHANGELOG.map((release) => (
-            <li key={release.version}>
-              <div className="flex items-baseline gap-2">
-                <span className="tabular text-[11px] font-semibold text-accent-bright">
-                  v{release.version}
-                </span>
-                <span className="tabular text-[10px] text-ink-muted">{release.date}</span>
-              </div>
-              <p className="text-[12px] text-ink-primary">{release.title}</p>
-              <ul className="mt-1 list-disc pl-4 text-[11px] text-ink-secondary">
-                {release.highlights.map((highlight) => (
-                  <li key={highlight}>{highlight}</li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ol>
+      <section>
+        <button
+          type="button"
+          data-target="dense"
+          aria-expanded={notesOpen}
+          onClick={() => setNotesOpen((open) => !open)}
+          className={cn(
+            'flex h-9 w-full items-center gap-1.5 px-4 text-left text-[11px] text-ink-secondary',
+            'transition-colors duration-150 ease-out',
+            'hover:bg-surface-active hover:text-ink-primary focus-visible:bg-surface-active focus-visible:text-ink-primary',
+          )}
+        >
+          <ChevronRight
+            aria-hidden
+            className={cn(
+              'size-3 transition-transform duration-150 ease-out',
+              notesOpen && 'rotate-90',
+            )}
+          />
+          <span>What&rsquo;s new</span>
+          {latest === undefined ? null : (
+            <span className="tabular text-ink-muted">v{latest.version}</span>
+          )}
+        </button>
+
+        {notesOpen ? (
+          <ol className="flex flex-col gap-3 px-4 pb-4 pt-1">
+            {CHANGELOG.map((release) => (
+              <li key={release.version}>
+                <div className="flex items-baseline gap-2">
+                  <span className="tabular text-[11px] font-semibold text-accent-bright">
+                    v{release.version}
+                  </span>
+                  <span className="tabular text-[10px] text-ink-muted">{release.date}</span>
+                </div>
+                <p className="text-[12px] text-ink-primary">{release.title}</p>
+                <ul className="mt-1 list-disc pl-4 text-[11px] text-ink-secondary">
+                  {release.highlights.map((highlight) => (
+                    <li key={highlight}>{highlight}</li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ol>
+        ) : null}
       </section>
     </div>
   )
