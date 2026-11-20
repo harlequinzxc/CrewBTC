@@ -34,6 +34,36 @@ describe('settings', () => {
     expect(screen.queryByText(CHANGELOG[0]?.title ?? '')).not.toBeInTheDocument()
   })
 
+  it('orders general preferences above print output', () => {
+    render_()
+    // Reading order is the contract: the things people open this dialog for come first,
+    // the paper defaults follow, the release notes close it out.
+    const headings = screen.getAllByRole('heading', { level: 3 })
+    expect(headings.map((h) => h.textContent)).toEqual(['General', 'Print output'])
+
+    // Document order, read off the rendered tree rather than guessed at.
+    const mark = (node: Element | null): number => {
+      if (node === null) throw new Error('missing node')
+      return Array.from(document.body.querySelectorAll('*')).indexOf(node)
+    }
+    const units = mark(screen.getByLabelText('Units'))
+    const motion = mark(screen.getByLabelText('Reduced motion'))
+    const print = mark(screen.getByText('Print output'))
+    const notes = mark(screen.getByRole('button', { name: /what.s new/i }))
+
+    expect(units).toBeGreaterThan(mark(screen.getByText('General')))
+    expect(motion).toBeGreaterThan(units)
+    expect(print).toBeGreaterThan(motion)
+    expect(notes).toBeGreaterThan(print)
+  })
+
+  it('says the print fields are global defaults, not sheet values', () => {
+    render_()
+    // The inspector also offers trim and bleed; this copy is what stops the two panels
+    // reading as two copies of one number.
+    expect(screen.getByText(/global defaults for every sheet/i)).toBeInTheDocument()
+  })
+
   it('names the current version on the closed row', () => {
     render_()
     const notes = screen.getByRole('button', { name: /what.s new/i })

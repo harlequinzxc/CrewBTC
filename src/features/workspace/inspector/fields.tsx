@@ -14,7 +14,7 @@ export function Select(props: {
       value={props.value}
       onChange={(event) => props.onChange(event.target.value)}
       className={cn(
-        'h-6 min-h-6 max-w-[120px] truncate rounded border border-hairline bg-surface-raised px-1.5',
+        'h-6 min-h-6 max-w-[120px] truncate rounded border border-hairline-strong bg-surface-raised px-1.5',
         'text-[11px] text-ink-primary',
         'focus-visible:border-accent focus-visible:outline-none',
       )}

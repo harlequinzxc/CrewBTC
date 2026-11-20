@@ -9,6 +9,11 @@ import { cn } from '../../lib/cn'
  * 44px form ladder. It still edits a real number rather than a slider, because typing
  * `27.5` is faster and more exact than dragging to find it.
  *
+ * It is a field, not a readout, and it has to say so: the surface is `surface-raised`
+ * (#1A1C22, a step above the panel it sits on) behind a real 1px border at rest. The old
+ * 8%-white hairline disappeared against #131418, which is why three editable numbers read
+ * as three static labels.
+ *
  * Two behaviours that make it usable rather than merely small:
  * - typing is local state, so a half-typed `2.` or a cleared field does not round-trip
  *   through the model and fight the caret;
@@ -58,8 +63,10 @@ export function NumberField(props: NumberFieldProps) {
   return (
     <div
       className={cn(
-        'flex items-center gap-1 rounded-md border border-hairline bg-surface-raised px-2',
-        'focus-within:border-hairline-strong',
+        'flex items-center gap-1 rounded-md border bg-surface-raised px-2',
+        'border-hairline-strong',
+        'transition-colors duration-150 ease-out',
+        'hover:border-ink-muted focus-within:border-accent',
         disabled === true && 'opacity-50',
         className,
       )}

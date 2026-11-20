@@ -114,11 +114,22 @@ Defaults live in `DEFAULT_SHEET` (`src/types/imposition.ts`):
 | Cell | 52 × 67 mm |
 | Gutter / margin | 4 mm / 4 mm |
 | Grid | 3 × 4 = **12 cells**, 67% coverage |
-| Card zones | derived per card by `defaultBands(cellHeightMm)` |
+| Card zones | derived per seeded card by `bandsForContent` |
+| Fallback zones | `defaultBands(cellHeightMm)` — 10 / 42 / 15 mm |
 
-`defaultBands(67)` gives 10 / 42 / 15 mm. Cards clamp to `BAND_MIN_MM = 6` per text box
-and `PICTURE_MIN_MM = 12` for the photo, so a card can never become two text boxes with
-nothing between them.
+`blankCard` still starts from `defaultBands`, but seeding measures the card's own text
+(`types/band-fit.ts`) and asks for a split that fits it, so the photo gets the surplus
+rather than a fixed 42 mm. The fitter measures with the preview's own approximation
+(`len × size × 0.5`) so the bands match the lines the preview draws, floors each band at
+`BAND_MIN_MM = 6`, and hands the result to `clampBands`, which keeps
+`PICTURE_MIN_MM = 12` for the photo. A card can therefore never become two text boxes
+with nothing between them, and no banner is ever shrunk to make the arithmetic work.
+
+Text is **centred in its band** rather than pinned to the top: `CardZoneText` and
+`drawCard` both offset a block by `max(0, band − 2 × padding − block) / 2`. That is what
+makes a hand-tuned tall box look deliberate — the slack is split either side instead of
+pooling under the words. An overflowing block gets zero offset and is clipped at the box
+edge, never lifted over the picture.
 
 Sheet settings persist to `localStorage` under `crewbtc.sheet` and are validated on read
 — a corrupt or out-of-range value falls back to the defaults rather than rendering a

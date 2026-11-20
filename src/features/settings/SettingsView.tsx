@@ -17,14 +17,16 @@ export interface SettingsViewProps {
 /**
  * Settings, in the inspector's own language: titled sections, label-left rows, no prose.
  *
- * Two sections are preferences — print output and motion. The changelog is not, so it is a
- * single collapsed row at the bottom: closed, it costs one line and tells you the version
- * you are on; open, it is the release history. Putting eight releases above the fold is
- * what made the dialog need scrolling to reach a toggle that was already visible on screen.
+ * General preferences come first, because they are the reason most people open this: the
+ * unit they read every number in, and whether the interface moves. Print output follows —
+ * it changes less often — and the changelog is not a preference at all, so it is a single
+ * collapsed row at the bottom: closed, it costs one line and tells you the version you are
+ * on; open, it is the release history.
  *
- * The sheet's own dimensions are deliberately *not* here. A4, gutter and margin belong to
- * the thing on screen and live in the inspector beside it; duplicating them in two panels
- * meant two places to change one number, and two places for them to disagree.
+ * The print fields are *global defaults*: they set the paper every sheet is built on, and
+ * they are what an export uses. The inspector's sheet panel stays focused on the active
+ * sheet — its gutter and margin — so the two panels never present the same number twice
+ * without saying which is which.
  */
 export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) {
   const { choice, setChoice } = useMotion()
@@ -55,16 +57,10 @@ export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) 
     <div className="flex flex-col">
       <section className="border-b border-hairline px-4 py-3">
         <h3 className="mb-2 text-[11px] font-medium uppercase tracking-[0.06em] text-ink-secondary">
-          Print output
+          General
         </h3>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-          {numberField('trimWidthMm', 'Trim width')}
-          {numberField('trimHeightMm', 'Trim height')}
-          {numberField('bleedMm', 'Bleed')}
-          {numberField('markMarginMm', 'Crop-mark margin')}
-        </div>
 
-        <div className="mt-2 flex min-h-6 items-center justify-between">
+        <div className="flex min-h-6 items-center justify-between">
           <span className="text-[11px] text-ink-secondary">Units</span>
           <select
             aria-label="Units"
@@ -73,7 +69,7 @@ export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) 
               onSettingsChange({ ...settings, units: event.target.value === 'in' ? 'in' : 'mm' })
             }
             className={cn(
-              'h-6 min-h-6 rounded border border-hairline bg-surface-raised px-1.5',
+              'h-6 min-h-6 rounded border border-hairline-strong bg-surface-raised px-1.5',
               'text-[11px] text-ink-primary focus-visible:border-accent focus-visible:outline-none',
             )}
           >
@@ -82,20 +78,33 @@ export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) 
           </select>
         </div>
 
+        <div className="mt-1 flex min-h-6 items-center justify-between">
+          <span className="text-[11px] text-ink-secondary">Reduced motion</span>
+          <Switch
+            label="Reduced motion"
+            checked={choice === 'on'}
+            onChange={(checked) => setChoice(checked ? 'on' : 'off')}
+          />
+        </div>
+      </section>
+
+      <section className="border-b border-hairline px-4 py-3">
+        <h3 className="mb-0.5 text-[11px] font-medium uppercase tracking-[0.06em] text-ink-secondary">
+          Print output
+        </h3>
+        <p className="mb-2 text-[10px] text-ink-muted">Global defaults for every sheet.</p>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+          {numberField('trimWidthMm', 'Trim width')}
+          {numberField('trimHeightMm', 'Trim height')}
+          {numberField('bleedMm', 'Bleed')}
+          {numberField('markMarginMm', 'Crop-mark margin')}
+        </div>
+
         {validation.ok ? null : (
           <p role="alert" className="mt-2 text-[11px] text-accent-bright">
             Trim must be {LIMITS.minTrimMm}–{LIMITS.maxTrimMm} mm per side.
           </p>
         )}
-      </section>
-
-      <section className="flex min-h-9 items-center justify-between border-b border-hairline px-4">
-        <span className="text-[11px] text-ink-secondary">Reduced motion</span>
-        <Switch
-          label="Reduced motion"
-          checked={choice === 'on'}
-          onChange={(checked) => setChoice(checked ? 'on' : 'off')}
-        />
       </section>
 
       <section>

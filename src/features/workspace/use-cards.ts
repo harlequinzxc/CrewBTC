@@ -6,6 +6,7 @@ import {
   DEFAULT_IMAGE_TRANSFORM,
   DEFAULT_TEXT_STYLE,
 } from '../../types/card'
+import { bandsForContent } from '../../types/band-fit'
 import type { Card, CardBands, ImageTransform, PhotoSource, TextStyle } from '../../types/card'
 
 /**
@@ -116,7 +117,12 @@ export interface CardSeed {
  * file cannot overwrite words the user has typed. New cards are seeded, existing ones
  * are left alone.
  */
-export function useSeedCards(store: CardStore, seeds: readonly CardSeed[], cellHeightMm: number): void {
+export function useSeedCards(
+  store: CardStore,
+  seeds: readonly CardSeed[],
+  cellHeightMm: number,
+  cellWidthMm: number,
+): void {
   // Only seeds never seen before are worth writing, and the ref survives re-renders.
   const seeded = useRef<Set<string>>(new Set())
 
@@ -126,14 +132,25 @@ export function useSeedCards(store: CardStore, seeds: readonly CardSeed[], cellH
     for (const seed of fresh) seeded.current.add(seed.key)
 
     for (const seed of fresh) {
+      // The split follows the text, so a short title does not hold ten millimetres of
+      // blank paper away from its photo. Edits are never re-seeded, so a card the user has
+      // tuned keeps its tuned bands.
+      const bands = bandsForContent({
+        headerText: seed.headerText,
+        footerText: seed.bodyText,
+        cellWidthMm,
+        cellHeightMm,
+      })
+
       store.seedCard(seed.key, {
         ...blankCard(cellHeightMm),
+        bands: bands ?? blankCard(cellHeightMm).bands,
         headerText: seed.headerText,
         bodyText: seed.bodyText,
         photo: seed.photo,
       })
     }
-  }, [seeds, store, cellHeightMm])
+  }, [seeds, store, cellHeightMm, cellWidthMm])
 }
 
 export { cardKey }

@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.4.2",
+    "date": "2026-11-20",
+    "title": "The photo gets the room the words do not need",
+    "highlights": [
+      "Card text boxes now size themselves to their own text \u2014 a short dish name hands the surplus to the photo instead of leaving a blank band between the name and the picture, which grows from 63% to about 78% of the card",
+      "Text sits in the middle of its box instead of the top, so raising a box spreads the air on both sides of the words rather than opening one obvious gap beneath them",
+      "Settings opens on General: Units and Reduced motion first, then print output marked as global defaults for every sheet, with What's new still folded away at the bottom",
+      "Inspector numbers are visibly editable again \u2014 the field surface sits a step above the panel behind a real border that answers hover and focus, instead of blending in as static labels",
+      "Empty cell slots rest as a whisper on the paper and step up only under the pointer or keyboard focus, so an unfilled sheet no longer looks like a list of errors"
+    ]
+  },
+    {
     "version": "1.4.1",
     "date": "2026-11-20",
     "title": "The sheet opens fitted, and settings stops burying its own toggles",

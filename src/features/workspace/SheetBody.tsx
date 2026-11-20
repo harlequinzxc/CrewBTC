@@ -67,9 +67,18 @@ export function SheetBody(props: SheetBodyProps) {
         }
 
         if (placement === undefined) {
+          // An empty cell is a place, not a missing thing. At rest it is a whisper of a
+          // rule on the paper and a numeral you only notice when looking for it; the
+          // rules and the numeral step up together on hover and keyboard focus, so the
+          // slots announce themselves when the pointer is hunting for one and stay out
+          // of the way of the twelve cards when it is not.
           return (
-            <div key={cell.index} className="absolute border border-dashed border-zinc-300" style={geometry}>
-              <span className="absolute left-0.5 top-0.5 text-[9px] leading-none text-zinc-400">
+            <div
+              key={cell.index}
+              className="group absolute border border-zinc-200/70 transition-colors duration-150 ease-out hover:border-zinc-400 focus-within:border-zinc-400"
+              style={geometry}
+            >
+              <span className="tabular absolute left-0.5 top-0.5 text-[9px] leading-none text-zinc-300 transition-colors duration-150 ease-out group-hover:text-zinc-500">
                 {cell.index + 1}
               </span>
             </div>

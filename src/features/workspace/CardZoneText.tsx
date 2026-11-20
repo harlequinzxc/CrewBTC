@@ -87,10 +87,23 @@ export function CardZoneText(props: CardZoneTextProps) {
   const fontSize = Math.max(0, layout.sizePt * scale * PT_TO_MM)
   const lineHeight = fontSize * LINE_HEIGHT
 
+  // A block shorter than its band is centred in it rather than pinned to the top. Text is
+  // drawn at the largest size that fits, so a zone taller than it needs is a zone with
+  // room to spare — dividing that room either side is what makes a hand-tuned tall band
+  // look deliberate, instead of leaving one conspicuous gap under the words.
+  const blockMm = layout.lines.length * layout.sizePt * LINE_HEIGHT * PT_TO_MM
+  // Slack is what the inner box has left over, never less than nothing. A block that
+  // overflows (the layout keeps a legibility floor, so a very short band can hold more
+  // than it should) therefore gets no offset at all and is clipped at the box edge, rather
+  // than being lifted until it covers the card above it.
+  const slackMm = Math.max(0, heightMm - 2 * 0.8 - blockMm)
+  const centreMm = slackMm / 2
+
   // Lines are placed on the band's own rhythm so the drawn block is no taller than the
-  // block `layoutBand` measured — the check that guarantees it fits.
+  // block `layoutBand` measured — the check that guarantees it fits. `yMm` is the baseline
+  // and already carries the band's padding, so only the ascent comes off it.
   const positionPx = (line: (typeof layout.lines)[number]): string =>
-    `${(line.yMm - layout.sizePt * LINE_HEIGHT * PT_TO_MM) * scale}px`
+    `${(line.yMm - layout.sizePt * LINE_HEIGHT * PT_TO_MM + centreMm) * scale}px`
 
   if (editing) {
     return (
