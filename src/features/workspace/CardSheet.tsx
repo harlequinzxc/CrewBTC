@@ -12,6 +12,7 @@ import { CANVAS_PADDING } from './use-sheet-zoom'
 import { sheetOffsets } from './sheet-stack'
 import { useSheetScroll } from './use-sheet-scroll'
 import { activeStyle, styleInto, styleSelection, textInto } from './card-edits'
+import { useTextEditGesture } from './use-text-edit-gesture'
 import type { CardZone } from './Card'
 
 export interface CardSheetProps {
@@ -81,6 +82,8 @@ export function CardSheet(props: CardSheetProps) {
     scrollTo,
     onScrollToHandled,
   } = props
+  // One per sheet, never per zone — `use-text-edit-gesture` explains what the other way cost.
+  const gesture = useTextEditGesture()
   const [editing, setEditing] = useState<EditState | null>(null)
   const [pictureEditing, setPictureEditing] = useState<string | null>(null)
   // The caret's selection in the box being edited. Cleared on every edit boundary, so a
@@ -214,6 +217,7 @@ export function CardSheet(props: CardSheetProps) {
                 setPictureEditing(null)
                 onSelectCell(null)
               }}
+              gesture={gesture}
               onBeginTextEdit={(cellIndex, key, zone) => {
                 props.onSelectCell(cellIndex)
                 setSelection(null)

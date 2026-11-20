@@ -2,6 +2,7 @@ import { cn } from '../../lib/cn'
 import { cutMarksFor } from '../../lib/imposition/sheet'
 import { SHEET_GAP } from './sheet-stack'
 import { SheetBody } from './SheetBody'
+import type { TextEditGesture } from './use-text-edit-gesture'
 import type { Card } from '../../types/card'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import type { SheetPlan } from '../../lib/imposition/sheet'
@@ -38,6 +39,7 @@ export interface SheetPaperProps {
     page?: { readonly documentId: string; readonly pageNumber: number },
   ) => void
   readonly onDeselect: () => void
+  readonly gesture: TextEditGesture
   readonly onBeginTextEdit: (cellIndex: number, key: string, zone: 'header' | 'body') => void
   readonly onEndEdit: () => void
   readonly onSelectionChange: (
@@ -114,6 +116,7 @@ export function SheetPaper(props: SheetPaperProps) {
           pictureKey={props.pictureEditing}
           onDeselect={props.onDeselect}
           onSelectCell={props.onSelectCell}
+          gesture={props.gesture}
           onBeginTextEdit={props.onBeginTextEdit}
           onEndEdit={props.onEndEdit}
           onSelectionChange={props.onSelectionChange}

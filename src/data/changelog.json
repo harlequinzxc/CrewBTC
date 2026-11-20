@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.9.5",
+    "date": "2026-11-20",
+    "title": "Opening a card\u2019s text no longer depends on the press arriving",
+    "highlights": [
+      "The text edit now has a second way in. If a press on a text box is stopped before it reaches the box \u2014 by anything between the browser and the page \u2014 the sheet notices and opens the field itself, so the box opens either way",
+      "The rescue is installed once per sheet, not once per text box. The first version put a listener inside every box: a twelve-card sheet installed twenty-four of them, one press ran all of them, they fought, and no field opened at all \u2014 which reproduced the very bug it was meant to cure. A missing wire is now a compile error rather than a box that silently stops opening",
+      "The rescue never runs during a press that is already working. It waits for the press to finish and only steps in if the box\u2019s own handler never ran; otherwise the field would open and close within the same gesture, which is exactly what the first version did",
+      "New browser test severs both of the button\u2019s own ways in and requires the field to still open, exactly once. With the rescue disabled the test fails, so it tests the rescue and not something else"
+    ]
+  },
+  {
     "version": "1.9.4",
     "date": "2026-11-20",
     "title": "A one-click diagnostic for \u201cthe text will not open\u201d",

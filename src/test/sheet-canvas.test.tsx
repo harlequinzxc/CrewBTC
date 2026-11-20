@@ -7,6 +7,7 @@ import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
 import { planSheets } from '../lib/imposition/sheet'
 import type { PageRef } from '../lib/imposition/sheet'
+import { textEditGestureStub } from './gesture-stub'
 
 /**
  * The canvas draws the sheet it is told to.
@@ -29,7 +30,7 @@ const pages = (count: number): PageRef[] =>
 
 const renderBody = (placements: ReturnType<typeof planSheets>[number]['placements']) =>
   render(
-    <SheetBody
+    <SheetBody gesture={textEditGestureStub}
       grid={grid}
       scale={2}
       placements={placements}
@@ -86,7 +87,7 @@ describe('the sheet on the canvas', () => {
       const plan = sheets[planIndex]
       if (plan === undefined) throw new Error('fixture needs a sheet')
       return (
-        <SheetPaper
+        <SheetPaper gesture={textEditGestureStub}
           plan={plan}
           index={planIndex}
           sheetIndex={1}

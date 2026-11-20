@@ -69,6 +69,19 @@ export function useClickProbe(version: string): { readonly arm: () => void } {
           at the one that happens to be easy to measure.
         */
         const seen: string[] = []
+        /*
+          And whether the handler that starts an edit ran at all.
+
+          "No field" has two very different causes: the press never reached the code that
+          opens the box, or it did and the state it set was thrown away. Marking the button
+          from `onPress` distinguishes them without a debugger, which matters when the
+          report comes from a machine I cannot attach to.
+        */
+        seen.push(
+          (press.target as Element | null)?.closest?.('[data-press-handled]') === null
+            ? 'the press handler did not run'
+            : 'the press handler ran',
+        )
         const capture = (): boolean => {
           const field = document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Edit card text"]')
           seen.push(

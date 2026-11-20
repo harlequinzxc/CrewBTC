@@ -16,6 +16,8 @@ export interface DrawnCardTextProps {
   readonly label: string
   readonly onBeginEdit: () => void
   readonly onPress: (event: React.PointerEvent<HTMLButtonElement>) => void
+  /** Lets the sheet-level gesture open this specific box. */
+  readonly attach: (element: HTMLButtonElement | null) => void
   readonly onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void
 }
 
@@ -24,6 +26,7 @@ export function DrawnCardText(props: DrawnCardTextProps) {
     <button
       type="button"
       data-target="dense"
+      ref={(element) => props.attach(element)}
       onPointerDown={props.onPress}
       onClick={(event) => {
         event.stopPropagation()
@@ -40,7 +43,14 @@ export function DrawnCardText(props: DrawnCardTextProps) {
           // A line is a run of segments, each with the style it was measured in. Bold
           // characters are wider, so per-segment styling is what keeps on-screen breaks
           // equal to the ones the exporter computed.
-          className="absolute whitespace-pre"
+          /*
+            `pointer-events-none` on every glyph run. The press must belong to the button,
+            whose handler is the one that starts the edit — a span that receives it is a
+            span that has to be trusted to bubble, and text still has to be selectable.
+            This also makes the target independent of where on the line the pointer lands:
+            a one-pixel-tall glyph and an empty pixel both resolve to the button.
+          */
+          className="pointer-events-none absolute whitespace-pre"
           style={{ top: props.positionPx(line), left: 0, fontWeight: 400 }}
         >
           {line.segments.map((segment, segmentIndex) => (

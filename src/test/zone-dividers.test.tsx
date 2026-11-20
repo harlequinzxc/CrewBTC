@@ -5,6 +5,7 @@ import { CardSection } from '../features/workspace/inspector/CardSection'
 import { BAND_MIN_MM, PICTURE_MIN_MM } from '../types/card'
 import { blankCard } from '../features/workspace/use-cards'
 import type { Card as CardModel, CardBands, RectMm } from '../types/card'
+import { textEditGestureStub } from './gesture-stub'
 
 /**
  * Dragging the boundaries between header, picture and footer.
@@ -51,17 +52,17 @@ const divider = (which: 'header' | 'footer'): HTMLElement =>
 describe('zone dividers', () => {
   it('appears on the selected card only', () => {
     const p = cardProps(model())
-    const { rerender } = render(<Card {...p} selected={false} />)
+    const { rerender } = render(<Card gesture={textEditGestureStub} {...p} selected={false} />)
     expect(document.querySelector('[data-divider]')).toBeNull()
 
-    rerender(<Card {...p} selected />)
+    rerender(<Card gesture={textEditGestureStub} {...p} selected />)
     expect(divider('header')).not.toBeNull()
     expect(divider('footer')).not.toBeNull()
   })
 
   it('grows the header when the top divider is dragged down', () => {
     const onBandsChange = vi.fn()
-    render(<Card {...cardProps(model(), onBandsChange)} />)
+    render(<Card gesture={textEditGestureStub} {...cardProps(model(), onBandsChange)} />)
 
     const handle = divider('header')
     fireEvent.pointerDown(handle, { clientY: 100, pointerId: 1 })
@@ -75,7 +76,7 @@ describe('zone dividers', () => {
 
   it('grows the footer when the bottom divider is dragged up', () => {
     const onBandsChange = vi.fn()
-    render(<Card {...cardProps(model(), onBandsChange)} />)
+    render(<Card gesture={textEditGestureStub} {...cardProps(model(), onBandsChange)} />)
 
     const handle = divider('footer')
     fireEvent.pointerDown(handle, { clientY: 200, pointerId: 1 })
@@ -88,7 +89,7 @@ describe('zone dividers', () => {
 
   it('stops at the minimum that still leaves a picture', () => {
     const onBandsChange = vi.fn()
-    render(<Card {...cardProps(model(), onBandsChange)} />)
+    render(<Card gesture={textEditGestureStub} {...cardProps(model(), onBandsChange)} />)
 
     const handle = divider('header')
     fireEvent.pointerDown(handle, { clientY: 100, pointerId: 1 })
@@ -102,13 +103,13 @@ describe('zone dividers', () => {
 
   it('does not change anything until it is dragged', () => {
     const onBandsChange = vi.fn()
-    render(<Card {...cardProps(model(), onBandsChange)} />)
+    render(<Card gesture={textEditGestureStub} {...cardProps(model(), onBandsChange)} />)
     expect(onBandsChange).not.toHaveBeenCalled()
   })
 
   it('sits at the real boundaries of the zones', () => {
     const card = model()
-    render(<Card {...cardProps(card)} />)
+    render(<Card gesture={textEditGestureStub} {...cardProps(card)} />)
     // The header divider's centre is at the header's height.
     const top = Number.parseFloat(divider('header').style.top)
     const expected = card.bands.headerMm * SCALE

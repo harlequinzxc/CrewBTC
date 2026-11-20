@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { DrawnCardText } from './DrawnCardText'
+import type { TextEditGesture } from './use-text-edit-gesture'
 import { layoutStyledBand } from '../../lib/export/styled-band'
 import type { TextStyle, TextRun } from '../../types/card'
 
@@ -23,6 +24,8 @@ export interface CardZoneTextProps {
   readonly textScale?: number
   readonly placeholder: string
   readonly onBeginEdit: () => void
+  /** The sheet's shared press gesture; see `use-text-edit-gesture`. */
+  readonly gesture: TextEditGesture
   readonly onChange: (text: string) => void
   readonly onEndEdit: () => void
   readonly onStyle: (style: TextStyle) => void
@@ -183,14 +186,11 @@ export function CardZoneText(props: CardZoneTextProps) {
       label={`Card text: ${text === '' ? props.placeholder : text}`}
       onBeginEdit={props.onBeginEdit}
       onPress={(event) => {
-        if (event.button !== 0) return
-        event.stopPropagation()
-        // Suppress the browser's default press handling before the edit begins, so focus
-        // is taken once, here, instead of twice with different ideas of where the caret
-        // should go.
-        event.preventDefault()
-        props.onBeginEdit()
+        // Proof of arrival for the click probe: see `use-click-probe`.
+        ;(event.currentTarget as HTMLElement).dataset.pressHandled = 'true'
+        props.gesture.press(event)
       }}
+      attach={(element) => props.gesture.register(element, props.onBeginEdit)}
       onKeyDown={(event) => {
         // The formatting bar overlays the pane once editing begins, so the field cannot be
         // relied on to receive its own Escape.

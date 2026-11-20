@@ -4,6 +4,7 @@ import type { GridLayout } from '../../types/imposition'
 import { Card as CardView } from './Card'
 import { blankCard } from './use-cards'
 import type { CardZone } from './Card'
+import type { TextEditGesture } from './use-text-edit-gesture'
 
 /**
  * Everything painted on the sheet: the empty-cell guides, every card, and the cut marks.
@@ -37,6 +38,7 @@ export interface SheetBodyProps {
   readonly activeZone: CardZone | null
   readonly editingCell: number | null
   readonly pictureKey: string | null
+  readonly gesture: TextEditGesture
   readonly onDeselect: () => void
   /**
    * A cell was clicked. The page identity travels with it: cell 4 holds a different page
@@ -112,6 +114,7 @@ export function SheetBody(props: SheetBodyProps) {
             selected={props.selectionHere !== false && props.selectedCell === cell.index}
             editing={props.editingCell === cell.index ? props.activeZone : null}
             pictureEditing={props.pictureKey === key}
+            gesture={props.gesture}
             onSelect={() =>
               props.onSelectCell(cell.index, {
                 documentId: placement.documentId,
