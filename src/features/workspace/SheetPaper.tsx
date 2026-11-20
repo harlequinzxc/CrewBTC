@@ -60,6 +60,8 @@ export interface SheetPaperProps {
   readonly onEndPictureEdit: () => void
   readonly onImageChange: (key: string, transform: Card['imageTransform']) => void
   readonly onBandsChange: (key: string, bands: Card['bands']) => void
+  /** Gives every card one card's band split. */
+  readonly onMatchBands?: ((bands: Card['bands']) => void) | undefined
 }
 
 export function SheetPaper(props: SheetPaperProps) {
@@ -130,6 +132,7 @@ export function SheetPaper(props: SheetPaperProps) {
           onEndPictureEdit={props.onEndPictureEdit}
           onImageChange={props.onImageChange}
           onBandsChange={props.onBandsChange}
+          onMatchBands={props.onMatchBands}
         />
       </div>
     </div>

@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.9.1",
+    "date": "2026-11-19",
+    "title": "Square cards that print framed, steps that start at the top, and same margins in one click",
+    "highlights": [
+      "The steps now begin at the top of their box instead of floating in the middle. The name still centres, because it is a heading with nothing under it; a printed step list should start where a reader's eye expects it. The PDF follows the same rule, so a card tall enough to show the difference prints the same way",
+      "New: a sparkles button inside the photo frame, while you are adjusting it, gives every card the margins of the one you are looking at. Adjust one, tag it, done \u2014 rather than dragging twelve dividers to match",
+      "Cell corners are square. A cut card has no radius, and the preview was rounding something the print kept sharp",
+      "The cell border now prints. The preview has drawn one since the sheet existed and the export did not, so a card that looked like a card on screen printed as bare paper with only the registration marks saying where to cut",
+      "The formatting bar no longer says \u201cwhole box\u201d. Every box starts that way, so the label said nothing and took room the presets need; \u201cselection\u201d still appears when a stretch of text is selected, because that is the case worth warning about"
+    ]
+  },
+  {
     "version": "1.9.0",
     "date": "2026-11-19",
     "title": "Callout presets, bold black text, and the selection that was silently dropped",

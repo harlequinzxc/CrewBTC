@@ -39,7 +39,9 @@ const keepFocus = (event: React.PointerEvent): void => event.preventDefault()
 export function CardTextBar(props: CardTextBarProps) {
   const { style, zone, selection, active, onChange } = props
   const label = zone === 'header' ? 'top text' : 'bottom text'
-  const styled = selection !== null ? 'selection' : 'whole box'
+  // Only a selection is announced. "whole box" was a quiet label for the ordinary state —
+  // every box starts that way, so it said nothing and took room from the presets.
+  const styled = selection !== null ? 'selection' : null
   const current = matchingPreset(active)
 
   const buttonClass =
@@ -51,7 +53,9 @@ export function CardTextBar(props: CardTextBarProps) {
       <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-ink-secondary">
         {label}
       </span>
-      <span className="text-[10px] text-ink-muted">{styled}</span>
+      {styled === null ? null : (
+        <span className="text-[10px] text-ink-muted">{styled}</span>
+      )}
 
       <fieldset className="flex items-center gap-1 border-0 p-0">
         <legend className="sr-only">Recipe callout</legend>

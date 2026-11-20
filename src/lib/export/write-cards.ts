@@ -85,6 +85,7 @@ export async function writeCards(input: CardExportInput): Promise<CardExportResu
     }
 
     const canvas: CardCanvas = { page: outPage, regular, bold, sheetHeightPt }
+    const cardBorder = rgb(0.83, 0.83, 0.85)
 
     for (const placement of plan.placements) {
       const cell = grid.cells.find((item) => item.index === placement.cellIndex)
@@ -92,6 +93,26 @@ export async function writeCards(input: CardExportInput): Promise<CardExportResu
         cardsSkipped += 1
         continue
       }
+
+      /*
+        A border around every card, drawn before its contents.
+
+        The preview has shown one since the sheet existed, and the export did not — so a
+        card that looked like a card on screen printed as bare paper, and the only thing
+        saying where to cut was the registration marks. Drawn first so the zones and the
+        photo sit on top of it rather than under a hairline.
+
+        `0.5 pt` at A4 is a hairline that survives a laser printer; the colour is the same
+        zinc-200 the screen uses, light enough that a printed card is not framed in grey.
+      */
+      outPage.drawRectangle({
+        x: mmToPt(cell.rect.xMm),
+        y: sheetHeightPt - mmToPt(cell.rect.yMm) - mmToPt(cell.rect.heightMm),
+        width: mmToPt(cell.rect.widthMm),
+        height: mmToPt(cell.rect.heightMm),
+        borderColor: cardBorder,
+        borderWidth: 0.5,
+      })
 
       const key = cardKey(cell.index, placement.documentId, placement.pageNumber)
       const card = cards[key]

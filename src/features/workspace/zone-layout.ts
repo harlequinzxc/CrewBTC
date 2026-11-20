@@ -41,6 +41,14 @@ export interface ZoneLayoutInput {
   readonly heightMm: number
   readonly maxPt: number
   readonly textScale: number
+  /**
+   * Whether a block shorter than its box is pushed to the middle.
+   *
+   * The name box centres vertically because it is a heading with nothing under it; the
+   * steps box does not, because a printed step list should begin where a reader's eye
+   * expects it to — at the top. Space left over belongs below the words.
+   */
+  readonly centreVertically: boolean
 }
 
 /** A laid-out box, already converted to the pixels the preview draws in. */
@@ -89,17 +97,13 @@ export function layoutZone(input: ZoneLayoutInput, scale: number): ZoneLayout {
   const lineHeight = fontSize * LINE_HEIGHT
 
   /*
-    A block shorter than its band is centred in it rather than pinned to the top. Text is
-    drawn at the largest size that fits, so a zone taller than it needs is a zone with room
-    to spare — dividing that room either side is what makes a hand-tuned tall band look
-    deliberate instead of leaving one conspicuous gap under the words.
-
-    Never negative: a block that overflows gets no offset rather than being lifted until it
+    A block shorter than its box may be centred in it, or pinned to the top. Never
+    negative: a block that overflows gets no offset rather than being lifted until it
     covers the card above it. The box clips it, which is the backstop, not the plan.
   */
   const blockMm = layout.lines.length * layout.sizePt * LINE_HEIGHT * PT_TO_MM
   const innerMm = Math.max(0, input.heightMm - PADDING_MM * 2)
-  const centreMm = Math.max(0, innerMm - blockMm) / 2
+  const centreMm = input.centreVertically ? Math.max(0, innerMm - blockMm) / 2 : 0
 
   return {
     layout,

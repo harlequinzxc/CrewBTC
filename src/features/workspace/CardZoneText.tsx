@@ -23,6 +23,8 @@ export interface CardZoneTextProps {
   /** Multiplier on the size the layout settles on. 1 is unmodified. */
   readonly textScale?: number
   readonly placeholder: string
+  /** Centres a short block in its box. The name box does; the steps box does not. */
+  readonly centreVertically?: boolean
   readonly onBeginEdit: () => void
   /** The sheet's shared press gesture; see `use-text-edit-gesture`. */
   readonly gesture: TextEditGesture
@@ -55,6 +57,8 @@ export function CardZoneText(props: CardZoneTextProps) {
       heightMm,
       maxPt: props.maxPt,
       textScale: props.textScale ?? 1,
+      // The name is a heading and centres in its band; the steps start at the top.
+      centreVertically: props.centreVertically ?? false,
     },
     scale,
   )

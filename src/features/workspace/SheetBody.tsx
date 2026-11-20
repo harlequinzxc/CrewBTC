@@ -62,6 +62,8 @@ export interface SheetBodyProps {
   readonly onEndPictureEdit: () => void
   readonly onImageChange: (key: string, transform: Card['imageTransform']) => void
   readonly onBandsChange: (key: string, bands: Card['bands']) => void
+  /** Gives every card one card's band split. */
+  readonly onMatchBands?: ((bands: Card['bands']) => void) | undefined
 }
 
 export function SheetBody(props: SheetBodyProps) {
@@ -134,6 +136,7 @@ export function SheetBody(props: SheetBodyProps) {
             onEndPictureEdit={props.onEndPictureEdit}
             onImageChange={(transform) => props.onImageChange(key, transform)}
             onBandsChange={(bands) => props.onBandsChange(key, bands)}
+            onMatchBands={props.onMatchBands}
           />
         )
       })}

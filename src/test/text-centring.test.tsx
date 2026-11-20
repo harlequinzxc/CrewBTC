@@ -6,13 +6,12 @@ import { cardZones } from '../types/card'
 import { textEditGestureStub } from './gesture-stub'
 
 /**
- * A block shorter than its band is centred in it, in the preview and in the PDF.
+ * A block shorter than its band **may** be centred in it — the name box is, the steps box
+ * is not — and the preview and the PDF must agree about which.
  *
  * Text is drawn at the largest size that fits, so a band taller than its content would
- * otherwise leave all of its slack below the words — the conspicuous gap between a dish
- * name and its photo. Dividing the slack is what makes a hand-tuned tall band look
- * deliberate. The two renderers compute the offset from the same expression; this pins
- * both so they cannot drift.
+ * otherwise leave all of its slack on one side. The two renderers compute the offset from
+ * the same expression; this pins both so they cannot drift.
  */
 const PT_TO_MM = 25.4 / 72
 const PAD = 0.8
@@ -31,6 +30,8 @@ const textProps = (heightMm: number) => ({
   onSelectionChange: () => undefined,
   maxPt: 9,
   placeholder: '',
+  // The name box opts in; the steps box leaves this off and starts at the top.
+  centreVertically: true,
   onBeginEdit: () => undefined,
   onChange: () => undefined,
   onEndEdit: () => undefined,
@@ -65,6 +66,19 @@ const offsetFor = (text: string, heightMm: number, pt: number): number => {
 }
 
 describe('a short block is centred in its band', () => {
+  it('starts at the top of its box when the box does not ask to centre', () => {
+    // The steps box: same type, a taller band, and the first line does not move.
+    const loose = render(
+      <CardZoneText gesture={textEditGestureStub} {...textProps(20)} centreVertically={false} />,
+    )
+    const tight = render(
+      <CardZoneText gesture={textEditGestureStub} {...textProps(10)} centreVertically={false} />,
+    )
+    const top = (container: HTMLElement): number =>
+      Number.parseFloat((container.querySelector('span') as HTMLElement).style.top)
+    expect(top(loose.container)).toBeCloseTo(top(tight.container), 6)
+  })
+
   it('sits lower in a taller band, by half the extra room', () => {
     const tight = previewOffset(10)
     const tall = previewOffset(20)

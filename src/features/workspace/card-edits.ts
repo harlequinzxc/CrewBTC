@@ -114,6 +114,31 @@ export function textScaleInto(card: Card, textScale: number): Card {
   return { ...card, textScale: clampTextScale(textScale) }
 }
 
+/**
+ * Gives every card the same band split as one chosen card.
+ *
+ * "Margins" here are the two band heights — the boundaries between the name, the photo and
+ * the steps — not a page margin: they are what a drag on the card's dividers changes, and
+ * what has to match for a sheet of cards to look like one set rather than twelve
+ * decisions. Applying one card's split to the others is the tedious part of that.
+ *
+ * Each card is clamped against **its own** height, because cards on the same sheet are all
+ * the same height but a card can be seeded for a different cell, and a split that fits one
+ * card can exceed another's minimum photo. Clamping per card keeps the invariant that
+ * every card keeps a photo band instead of inheriting one that does not fit.
+ */
+export function matchBandsInto(
+  cards: Readonly<Record<string, Card>>,
+  source: CardBands,
+  cellHeightMm: number,
+): Readonly<Record<string, Card>> {
+  const next: Record<string, Card> = {}
+  for (const [key, card] of Object.entries(cards)) {
+    next[key] = { ...card, bands: clampBands(source, cellHeightMm) }
+  }
+  return next
+}
+
 /** Back to the bands a freshly seeded card of this height would get, at 100% type. */
 export function resetProportions(card: Card, cellHeightMm: number): Card {
   return {
