@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import type { IngestedDocument } from '../../types/document'
 import { ingestBatch } from '../../lib/pdf/ingest-batch'
 import { keepSource, releaseAll } from '../../lib/export/doc-cache'
+import { fileFromSnapshot } from '../../lib/files/file-from-snapshot'
 import { releaseProxies } from '../../lib/pdf/proxy-cache'
 import type { ToastInput } from '../../components/ui/use-toasts'
 
@@ -158,11 +159,37 @@ export function useBatch({ notify, restore, restoreActiveId }: BatchOptions): Ba
   )
 
   const reRun = useCallback(() => {
+    /*
+      A restored batch has no `File` objects — the snapshot stores parsed results, not the
+      uploads, so `sources` is empty after a reload even though every card is on the sheet.
+      Deriving a File from the bytes the exporter already holds keeps re-run working for
+      the rest of the session instead of claiming there is nothing to do.
+
+      When there are no bytes either (an older snapshot, or a file cleared since), the
+      message says what is actually true and what to do about it, rather than "add PDFs
+      first" next to a list of added PDFs.
+    */
     const pending = documents
-      .map((document) => sources.current.get(document.id))
+      .map((document) => {
+        const held = sources.current.get(document.id)
+        if (held !== undefined) return held
+        const derived = fileFromSnapshot(document.fileName)
+        if (derived !== null) sources.current.set(document.id, derived)
+        return derived ?? undefined
+      })
       .filter((file): file is File => file !== undefined)
     if (pending.length === 0) {
-      notify({ variant: 'info', title: 'Nothing to re-run', description: 'Add PDFs first.' })
+      notify(
+        documents.length === 0
+          ? { variant: 'info', title: 'Nothing to re-run', description: 'Add PDFs first.' }
+          : {
+              variant: 'info',
+              title: 'Re-run needs the original files',
+              // Not "nothing to re-run": the queue is full, and the user can see it.
+              description:
+                'This session was restored from a previous visit, so the PDFs are no longer held. Add them again to re-read the text.',
+            },
+      )
       return
     }
     setDocuments([])
