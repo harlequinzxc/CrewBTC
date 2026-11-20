@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.9.10",
+    "date": "2026-11-20",
+    "title": "A text box no longer closes because it lost focus",
+    "highlights": [
+      "The actual cause, found at last: something on the machine reporting this takes focus away one frame after any text field appears. The field treated every focus loss as \u201cthe user finished\u201d, so it closed itself a millisecond after opening. The report proved it: \u201ca field WAS rendered\u201d at +15ms, \u201cthe field was removed\u201d at +16ms",
+      "Ignoring only a blur to nothing was not enough, because the blur carries a target and looks exactly like a deliberate move. So focus no longer ends an edit at all. Editing ends when you press Escape, press another card, or press on the canvas around the sheets \u2014 all things you actually did",
+      "The caret is taken back when focus is stolen, because a field that is open but unfocused accepts no typing and looks just as broken as one that never opened",
+      "Fixed a bug this change would otherwise have introduced: pressing the canvas ground called the sheet\u2019s selection directly and stepped over the new dismissal, so it did not close the editor. And pressing another card\u2019s text moves the editor to that card, which the old test misread as a failure because it counted fields instead of asking which card the field was on",
+      "One deliberate trade: a keyboard user pressing Tab out of a text box leaves it open. Closing on focus loss has now been proven, in this app, to close the editor before a caret can be placed in it at all"
+    ]
+  },
+  {
     "version": "1.9.9",
     "date": "2026-11-20",
     "title": "The editor stops closing itself the moment it opens",
