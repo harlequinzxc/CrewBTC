@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.9.2",
+    "date": "2026-11-19",
+    "title": "Cut the background off a dish, adjust a photo in one click, and text that stays put",
+    "highlights": [
+      "New: a cut-out button inside the photo frame removes the background behind the dish, leaving it on a transparent field so the card's own paper shows through \u2014 on screen and in the printed PDF",
+      "The photo frame now opens on a single click. Moving, zooming and the margin buttons are one gesture away instead of two, and the same click still selects the card so its margins can be dragged",
+      "Clicking a text box no longer shifts the words. The first line was landing about 3px low when the field opened, which read as a flinch on every click; top and bottom boxes now begin on the same row in both states",
+      "Removing the background keeps the original: an undo button appears beside the cut-out once it has run, so a busy counter behind a plate can be put back without re-importing the file",
+      "Set the text size instead of it changing on you \u2014 the Text % control is the size knob, and dragging a margin now only re-wraps the words, never shrinks them"
+    ]
+  },
+  {
     "version": "1.9.1",
     "date": "2026-11-19",
     "title": "Square cards that print framed, steps that start at the top, and same margins in one click",

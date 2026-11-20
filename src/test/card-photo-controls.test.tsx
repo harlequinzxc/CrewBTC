@@ -6,7 +6,7 @@ import type { Card as CardModel, RectMm } from '../types/card'
 import { textEditGestureStub } from './gesture-stub'
 
 /**
- * The picture controls: double-click to adjust, then drag to pan and wheel to zoom.
+ * The picture controls: click once to adjust, then drag to pan and wheel to zoom.
  *
  * There is deliberately no floating slider or button bar over the photo — the wheel and
  * the drag are the controls. Every gesture is asserted as the transform handed back to the
@@ -45,20 +45,35 @@ function props(card: CardModel) {
 const photoButton = (): HTMLElement => screen.getByRole('button', { name: /Dish photo/ })
 
 describe('entering and leaving adjust mode', () => {
-  it('enters on double-click', () => {
+  it('enters on a single click', () => {
     const p = props(model({ photo }))
     render(<Card {...p} gesture={textEditGestureStub} />)
-    fireEvent.doubleClick(photoButton())
+    fireEvent.pointerDown(photoButton(), { button: 0 })
     expect(p.onBeginPictureEdit).toHaveBeenCalled()
   })
 
-  it('leaves on double-click when already adjusting', () => {
+  it('stays in adjust mode across the click that entered it', () => {
+    /*
+      The press opens the frame and the release completes a click. If the click also closed
+      it, one gesture would open and shut the frame and the frame would never stay open —
+      which is exactly why the old double-click contract could not simply be loosened.
+    */
     const p = props(model({ photo }))
-    p.pictureEditing = true
+    const { rerender } = render(<Card {...p} gesture={textEditGestureStub} />)
+    fireEvent.pointerDown(photoButton(), { button: 0 })
+    fireEvent.click(photoButton())
+    rerender(<Card {...p} gesture={textEditGestureStub} pictureEditing />)
+    fireEvent.click(photoButton())
+    expect(p.onEndPictureEdit).not.toHaveBeenCalled()
+  })
+
+  it('still selects the card, so its margins can be dragged', () => {
+    // The frame must not swallow the press: selection is the card's own handler, and the
+    // dividers only exist on the selected card.
+    const p = props(model({ photo }))
     render(<Card {...p} gesture={textEditGestureStub} />)
-    fireEvent.doubleClick(photoButton())
-    expect(p.onEndPictureEdit).toHaveBeenCalled()
-    expect(p.onBeginPictureEdit).not.toHaveBeenCalled()
+    fireEvent.pointerDown(photoButton(), { button: 0 })
+    expect(p.onSelect).toHaveBeenCalled()
   })
 
   it('shows the frame as active only while adjusting', () => {

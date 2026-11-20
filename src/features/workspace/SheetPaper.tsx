@@ -62,6 +62,8 @@ export interface SheetPaperProps {
   readonly onBandsChange: (key: string, bands: Card['bands']) => void
   /** Gives every card one card's band split. */
   readonly onMatchBands?: ((bands: Card['bands']) => void) | undefined
+  /** Replaces a card's photo pixels — the cut-out, and its undo. */
+  readonly onPhotoReplace?: ((key: string, photo: Card['photo']) => void) | undefined
 }
 
 export function SheetPaper(props: SheetPaperProps) {
@@ -133,6 +135,7 @@ export function SheetPaper(props: SheetPaperProps) {
           onImageChange={props.onImageChange}
           onBandsChange={props.onBandsChange}
           onMatchBands={props.onMatchBands}
+          onPhotoReplace={props.onPhotoReplace}
         />
       </div>
     </div>

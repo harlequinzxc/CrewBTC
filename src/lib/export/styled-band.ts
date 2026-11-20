@@ -123,23 +123,26 @@ export function layoutStyledBand(
   }
 
   const floorPt = Math.min(MIN_BAND_TEXT_PT, maxPt)
-  let sizePt = Math.max(floorPt, Number.isFinite(maxPt) ? maxPt : floorPt)
+  const sizePt = Math.max(floorPt, Number.isFinite(maxPt) ? maxPt : floorPt)
 
   const linesAt = (size: number): readonly (readonly StyledSegment[])[] =>
     wrapSegments(segments, innerWidth, (text, bold) => measureAt(text, size, bold))
 
   const heightAt = (count: number, size: number): number => count * size * lineHeight * PT_TO_MM
 
-  let wrapped = linesAt(sizePt)
-  while (heightAt(wrapped.length, sizePt) > innerHeight && sizePt > floorPt) {
-    sizePt = Math.max(floorPt, sizePt * 0.95)
-    wrapped = linesAt(sizePt)
-  }
+  /*
+    The size is fixed; only the wrapping responds to the box.
 
+    This used to shrink the type until the block fitted, so dragging a divider quietly
+    changed the font size — the opposite of how a text box behaves anywhere else, and a
+    reason a card could be composed at one size and print at another after an unrelated
+    edit. Now a narrower box wraps onto more lines, and a box too short for its text
+    **clips** rather than shrinking: the size is the user's decision, made with the Text %
+    field, and it is never taken back silently.
+  */
+  const wrapped = linesAt(sizePt)
   const fits = heightAt(wrapped.length, sizePt) <= innerHeight
-  const kept = fits
-    ? wrapped
-    : wrapped.slice(0, Math.max(0, Math.floor(innerHeight / (sizePt * lineHeight * PT_TO_MM))))
+  const kept = wrapped
 
   return {
     sizePt,

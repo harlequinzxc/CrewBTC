@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { textZones, uploadPdf } from './fixtures'
+import { inkShift, textZones, uploadPdf } from './fixtures'
 
 /**
  * Clicking into a text box must change nothing about it except the caret.
@@ -13,9 +13,17 @@ import { textZones, uploadPdf } from './fixtures'
  *
  * These assertions are about computed style and geometry in a real browser: jsdom has
  * neither, so nothing here could be checked any other way.
+ *
+ * Padding is deliberately **not** compared. Matching it was the earlier proxy for "the type
+ * does not move", and it was a good one while both boxes started their text at their padding
+ * top — but a textarea's first line is a line box with leading above it while a positioned
+ * span has none, so matching the padding left the glyphs one line-box apart. The field's top
+ * padding now compensates for that, which means the paddings differ on purpose. The promise
+ * is checked where it actually lives, in `text-position-and-bands.spec.ts`, by comparing the
+ * first row of ink in both states.
  */
 
-const STYLE_PROPS = ['font-size', 'font-weight', 'line-height', 'padding', 'color', 'background-color', 'border-radius'] as const
+const STYLE_PROPS = ['font-size', 'font-weight', 'line-height', 'color', 'background-color', 'border-radius'] as const
 
 test('the box looks the same before and after the caret arrives', async ({ page }) => {
   await uploadPdf(page)
@@ -43,30 +51,20 @@ test('the box looks the same before and after the caret arrives', async ({ page 
   }
 })
 
-test('the type sits on the same pixel in both states', async ({ page }) => {
+test('the first line of type begins on the same row in both states', async ({ page }) => {
   await uploadPdf(page)
-  // Where the text actually begins, borders and padding included.
-  const contentOrigin = (selector: string): Promise<{ x: number; y: number }> =>
-    page.evaluate((sel) => {
-      const el = document.querySelector(sel) as HTMLElement
-      const r = el.getBoundingClientRect()
-      const cs = getComputedStyle(el)
-      return {
-        x: +(r.x + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth)).toFixed(2),
-        y: +(r.y + parseFloat(cs.paddingTop) + parseFloat(cs.borderTopWidth)).toFixed(2),
-      }
-    }, selector)
 
-  const drawn = await contentOrigin('button[aria-label^="Card text:"]')
-  const box = await textZones(page).first().boundingBox()
-  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
-  await page.mouse.down()
-  await page.mouse.up()
-  await expect(page.getByLabel('Edit card text')).toBeFocused()
-  const focused = await contentOrigin('textarea[aria-label="Edit card text"]')
-
-  // Not "close": the same pixel. A half-pixel is a visible wobble on a 1 mm glyph.
-  expect(focused).toEqual(drawn)
+  /*
+    The pixel the type starts on, in each state, measured from ink rather than from the box:
+    the two elements are laid out differently on purpose, so only the glyphs' own position
+    is meaningful. Not "close": the same row. A half-pixel is a visible wobble on a 1 mm
+    glyph, and the drop this guards against was three whole pixels.
+  */
+  for (const index of [0, 1]) {
+    const { drawn, editing } = await inkShift(page, index)
+    expect(drawn, `zone ${index} has no ink`).toBeGreaterThanOrEqual(0)
+    expect(editing, `zone ${index} shifted`).toBe(drawn)
+  }
 })
 
 /**

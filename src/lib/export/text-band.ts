@@ -68,24 +68,24 @@ export function layoutBand(
   }
 
   const floorPt = Math.min(MIN_BAND_TEXT_PT, maxPt)
-  let sizePt = Math.max(floorPt, Number.isFinite(maxPt) ? maxPt : floorPt)
+  const sizePt = Math.max(floorPt, Number.isFinite(maxPt) ? maxPt : floorPt)
 
   const linesAt = (size: number): readonly string[] =>
     paragraphs.flatMap((paragraph) => wrapToWidth(paragraph, innerWidth, (candidate) => measure(candidate, size)))
 
   const heightAt = (lineCount: number, size: number): number => lineCount * size * lineHeight * PT_TO_MM
 
-  // Shrink until the wrapped block fits the band on both axes.
-  let wrapped = linesAt(sizePt)
-  while (heightAt(wrapped.length, sizePt) > innerHeight && sizePt > floorPt) {
-    sizePt = Math.max(floorPt, sizePt * 0.95)
-    wrapped = linesAt(sizePt)
-  }
+  /*
+    No shrinking. The type is set at the size asked for and wraps to the width; a band too
+    short for it clips at the zone edge, which the card's `overflow-hidden` guarantees.
 
+    Auto-shrinking meant the font size changed whenever a divider moved, so the same card
+    could compose at one size and print at another. The size is now the user's, through the
+    Text % field, and only the line breaks respond to the box.
+  */
+  const wrapped = linesAt(sizePt)
   const fits = heightAt(wrapped.length, sizePt) <= innerHeight
-  const kept = fits
-    ? wrapped
-    : wrapped.slice(0, Math.max(0, Math.floor(innerHeight / (sizePt * lineHeight * PT_TO_MM))))
+  const kept = wrapped
 
   const lines: BandLine[] = kept.map((line, index) => ({
     text: line,

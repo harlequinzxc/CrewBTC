@@ -107,11 +107,19 @@ describe('text scale', () => {
     expect(Math.max(...smaller)).toBeLessThan(Math.max(...normal))
   })
 
-  it('still fits the band: a big scale shrinks back to fit rather than overflowing', async () => {
-    // A 14 mm header on a 67 mm card cannot hold 9 pt at 2x, so the layout must give way.
+  it('prints at exactly twice the size when asked for twice, and wraps instead', async () => {
+    /*
+      The inverse of what this test used to assert.
+
+      The layout used to shrink type until the block fitted, so asking for 2x on a short
+      band returned something less than 2x — the size quietly disagreed with the number the
+      user typed. A text box behaves the other way round: the size is the size, and the
+      text wraps or is clipped by the box. So the assertion is now *equality*, and a short
+      band yields more lines rather than smaller type.
+    */
     const huge = sizes(await exportOne(makeCard({ textScale: 2 })))
     const normal = sizes(await exportOne(makeCard({ textScale: 1 })))
-    expect(Math.max(...huge)).toBeLessThan(Math.max(...normal) * 2)
+    expect(Math.max(...huge)).toBeCloseTo(Math.max(...normal) * 2, 1)
   })
 })
 

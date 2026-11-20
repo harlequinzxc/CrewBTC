@@ -21,6 +21,10 @@ export interface TextFieldLayerProps {
   readonly heightMm: number
   readonly fontSize: number
   readonly lineHeight: number
+  /** Centring offset from the drawn box, applied as top padding so the two agree. */
+  readonly centrePx: number
+  /** Where the drawn first line's box starts, so the field's first line can start there too. */
+  readonly textTopPx: number
   readonly px: (mm: number) => string
   readonly onChange: (text: string) => void
   readonly onEndEdit: () => void
@@ -142,7 +146,16 @@ export function TextFieldLayer(props: TextFieldLayerProps) {
         top: px(props.yMm),
         width: px(props.widthMm),
         height: px(props.heightMm),
-        padding: px(PADDING_MM),
+        /*
+          The drawn first line's own top, not the padding plus a correction. A textarea and
+          a positioned span build their line boxes differently, so the only offset that
+          survives is the one measured from where the drawn line starts: matching that
+          makes the glyphs land together in both states, centring included.
+        */
+        paddingTop: `${props.textTopPx}px`,
+        paddingRight: px(PADDING_MM),
+        paddingBottom: px(PADDING_MM),
+        paddingLeft: px(PADDING_MM),
         fontSize: props.fontSize,
         lineHeight: `${props.lineHeight}px`,
         color: style.color,

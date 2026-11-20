@@ -47,7 +47,7 @@ export function CardZoneText(props: CardZoneTextProps) {
   // The typesetting, in millimetres converted to this sheet's pixels. Same function the
   // exporter calls, which is what keeps a line break in the same place on screen and on
   // paper — and now keeps a centred heading centred in both.
-  const { layout, fontSize, lineHeight, positionPx, leftPx, caps } = layoutZone(
+  const { layout, fontSize, lineHeight, positionPx, leftPx, caps, centrePx, textTopPx } = layoutZone(
     {
       text,
       placeholder: props.placeholder,
@@ -76,6 +76,8 @@ export function CardZoneText(props: CardZoneTextProps) {
         heightMm={heightMm}
         fontSize={fontSize}
         lineHeight={lineHeight}
+        centrePx={centrePx}
+        textTopPx={textTopPx}
         px={px}
         onChange={props.onChange}
         onEndEdit={props.onEndEdit}
