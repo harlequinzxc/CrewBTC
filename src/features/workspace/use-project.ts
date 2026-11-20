@@ -6,7 +6,7 @@ import type { SheetSettings } from '../../types/imposition'
 import type { ToastInput } from '../../components/ui/use-toasts'
 import { SNAPSHOT_VERSION } from '../../types/persisted'
 import { pickFiles } from '../../lib/files/open-picker'
-import { getProjectSource, putProjectSource } from '../../lib/storage/project-sources'
+import { getProjectSource, putProjectSource, retireProjectSources, cancelProjectRetirement } from '../../lib/storage/project-sources'
 import { keepSource, releaseAll } from '../../lib/export/doc-cache'
 import { releaseProxies } from '../../lib/pdf/proxy-cache'
 import { decodeSource, encodeSource, parseProject } from '../../lib/project/project'
@@ -64,6 +64,7 @@ export function useProject({ documents, cards, activeId, sheet, preferences, sho
       try {
         const project = parseProject(await file.text())
         if (documents.length > 0 && !window.confirm('Opening a project replaces the current workspace. Save your current project first if you want to keep it. Continue?')) return
+        await cancelProjectRetirement(project.snapshot.documents.map((doc) => doc.id)).catch(() => undefined)
         const decoded = Object.entries(project.sources).map(([id, data]) => [id, decodeSource(data)] as const)
         const persisted = await Promise.all(decoded.map(async ([id, bytes]) => {
           try { await putProjectSource(id, bytes); return true } catch { return false }
@@ -75,6 +76,8 @@ export function useProject({ documents, cards, activeId, sheet, preferences, sho
           if (doc !== undefined) keepSource(doc.fileName, bytes)
         }
         apply(project)
+        const retained = new Set(project.snapshot.documents.map((doc) => doc.id))
+        void retireProjectSources(documents.filter((doc) => !retained.has(doc.id)).map((doc) => doc.id)).catch(() => undefined)
         const missing = project.snapshot.documents.length - decoded.length
         if (missing > 0 || persisted.includes(false)) {
           notify({ variant: 'warning', title: 'Project opened with missing originals', description: 'Cards are editable, but some original PDFs may need to be added again for re-running or saving a complete project.' })
@@ -85,6 +88,6 @@ export function useProject({ documents, cards, activeId, sheet, preferences, sho
         notify({ variant: 'error', title: 'Could not open project', description: 'The file is damaged or is not a supported CrewBTC project. Your current workspace was not changed.' })
       } finally { setBusy(false) }
     })()
-  }, [documents.length, apply, notify])
+  }, [documents, apply, notify])
   return { save, open, busy }
 }

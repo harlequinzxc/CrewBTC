@@ -13,9 +13,9 @@ never leave your computer.
 
 ## What it does
 
-**Reads the PDF for you.** Each page becomes one card. CrewBTC pulls the dish photo
-out of the PDF's own embedded image, takes the title from the text above the photo,
-and the plating steps from the text below — one step per line.
+**Reads the PDF for you.** Each page becomes one card. CrewBTC extracts an embedded
+photo when possible, otherwise crops the page render; it takes the title above the image
+and plating steps below it. Review the results, especially for different source layouts.
 
 **Scanned pages still work.** A page with no text layer is read with OCR instead of
 being left blank. It needs a connection the first time, and it reads English only.
@@ -26,19 +26,21 @@ text underneath.
 - Both text boxes are real text fields. Type in them, add or remove lines, and select
   text to format it. **Bold**, ink colour and a red / green / amber highlight apply to
   whatever you have selected; with nothing selected they set the whole box.
-- The photo is never stretched. Double-click the frame to adjust it: drag to move,
-  scroll to zoom. Anything that spills past the box is clipped, so a tall photo can't
-  push the text out of the way. Double-click again, click outside or press `Escape`
-  when you are happy — the framing is kept.
-- Each card tunes its own proportions. Drag the boundary lines on a selected card to
-  resize its text boxes, or select the card and type exact numbers into **Top**,
-  **Bottom** and **Text** in the inspector. **Text** makes the type bigger or smaller
-  without shortening the photo.
+- The photo is never stretched. Click it to enter adjustment mode, then drag to move it
+  or scroll to zoom. Click outside or press `Escape` when finished. The image is clipped
+  to its box. The scissors remove a plain background locally, with sensitivity and undo;
+  the sparkles copy this card's band heights to the other cards.
+- Drag a selected card's dividers to resize its text boxes. The inspector shows its actual
+  **Top**, **Bottom** and **Text** values; the sheet's **Text size** control changes type
+  for all cards. Both text zones start bold and black; the top is centred, the bottom is
+  top-aligned.
+- Each card has a number and an editable right-hand corner label. Numbers wrap after 40;
+  editing a label applies it from that card onward until another label overrides it.
 
 **Prints properly.** Export gives you a real PDF at print resolution. Text is drawn as
-vector text, so it stays crisp at any size, and the sheet comes out exactly as it
-looked on screen — same words, same colours, same photo position — with the cut guides
-you turned on drawn into the file.
+vector text, so it stays crisp at any size. Cards use the same geometry, styles and
+photo framing as the preview, with optional cut guides. Check the exported PDF for
+clipped text or corner labels before printing.
 
 ## The screen
 
@@ -69,7 +71,9 @@ when you make changes: the downloaded file does not update automatically.
 Original uploads are also kept in browser storage for later project saves and re-runs,
 subject to browser storage limits. Older sessions and storage failures may be missing
 original PDFs; a warning tells you if a saved project is incomplete. The cards and photos
-remain editable and printable, but re-running extraction needs the original PDFs.
+remain editable and printable, but re-running extraction needs the original PDFs. Removed
+originals are reclaimed after the Undo window when local storage is available; older
+retained copies may require clearing browser site data.
 Project files and locally stored originals can contain your source documents: keep them
 private and clear browser site data if you need to remove the local copies.
 
@@ -98,8 +102,8 @@ is on. The active sheet is the one with the accent border.
 1. Open CrewBTC in a desktop browser.
 2. Drag PDFs onto the window, or use **Add PDFs**.
 3. Pick a card, then edit its text, colour and photo.
-4. Adjust the top and bottom heights in the inspector.
-5. **Export** when you're happy — the arrow beside it offers every sheet as one PDF.
+4. Drag the selected card’s dividers; check the heights in the inspector.
+5. **Save** an editable project if needed. **Export** makes a print PDF; the arrow offers all sheets as one PDF.
 
 Your sheet settings are remembered between visits.
 
@@ -124,17 +128,12 @@ won't fit rather than printing a broken sheet.
 
 ### Cards are 52 × 67 mm by default
 
-Each card splits into a top box, a photo, and a bottom box — and the split follows the
-text. A one-line dish name with two bullets gives the photo about **78%** of the card,
-because a box that is taller than its words is paper spent on nothing. A four-bullet
-method buys its lines the room instead, and the type never shrinks to make a box look
-tidy.
-
-That split is a starting point, not a rule: every card has its own, adjustable with two
-fields. Nothing can be tuned into an overlap — there's a minimum for each text box and a
-minimum for the photo, so a card can never become two text boxes with no picture. Text
-sits in the middle of its box rather than at the top, so raising a box spreads the air
-on both sides of the words instead of opening one gap beneath them.
+Each newly extracted card starts with a **7.28 mm top band** and a **35.45 mm bottom
+band**, where the cell has room. Smaller cells clamp the split to preserve photo space.
+Existing cards keep their own measurements. Drag the dividers to adjust individual bands;
+the inspector displays their current heights. Text size starts at **80%** and is set for
+the whole sheet. Text wraps rather than automatically shrinking; content that exceeds a
+band is clipped, so check it before printing.
 
 ## What it won't do
 
@@ -148,6 +147,11 @@ Being straight about the limits is more useful than discovering them at the prin
   one per page, are still to come.
 - **Portable typefaces only.** Print output uses the standard PDF fonts, so nothing
   needs embedding. Uploading a brand font isn't built yet.
+- **This sheet export currently exports the first sheet**, even when another sheet is
+  visible. Use **All sheets** to export the complete project.
+- **Corner labels have print limits.** Long labels are truncated to the box and characters
+  unsupported by the standard PDF font are omitted. Check the exported PDF.
+- **Mixed page sizes.** Each document uses the first page’s dimensions for its page references.
 - **It assumes the PDFs look alike.** The app reads a title above the picture and steps
   below it. Wildly inconsistent layouts will need fixing by hand — which is what the
   editable cards are for.
@@ -157,11 +161,12 @@ Being straight about the limits is more useful than discovering them at the prin
 There is no backend. CrewBTC has no server to send anything to.
 
 - Your PDFs are opened in the tab and never uploaded.
-- Sheet settings live in your browser's local storage.
-- A service worker caches the app so it opens without a network connection.
+- Cards, photos and available original PDFs are stored locally in your browser; sheet
+  settings use local storage. Downloaded project files also contain this content.
+- A service worker caches the app so it can reopen offline after it has been loaded.
 
-The only time CrewBTC reaches the internet is the first time it needs OCR, when it
-fetches the recognition engine. If that fails, the card still opens with empty text
+Loading or updating the app uses the network. The first OCR use also fetches the
+recognition engine and English language data. If that fails, the card still opens with empty text
 boxes for you to fill in — you don't lose the upload.
 
 ## Updates
@@ -170,7 +175,8 @@ When a new version is deployed, an open tab tells you a new version is ready and
 a **Reload** button. It won't refresh on its own, because that would throw away cards
 you hadn't exported yet. Reload when it suits you.
 
-If you miss the notice entirely, a normal refresh picks up the latest version.
+If you miss the notice, a normal refresh may pick up the latest version; a service-worker
+update can take an additional reload to take control.
 
 ## Requirements
 

@@ -86,3 +86,32 @@ test('export after reload contains the edited text, label, and photo', async ({ 
   expect(content).toContain('<414243> Tj')
   expect(content).toMatch(/\/[^\s]+ Do\b/)
 })
+
+test('clear undo keeps original PDF; a later clear releases it after the undo window', async ({ page }) => {
+  await uploadPdf(page)
+  await expect(page.getByLabel('Save project')).toBeEnabled()
+  const sourceIds = () => page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('crewbtc-project-sources')
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    const keys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+      const request = db.transaction('sources').objectStore('sources').getAllKeys()
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    db.close()
+    return keys.filter((key): key is string => typeof key === 'string')
+  })
+  const before = await sourceIds()
+  expect(before.length).toBeGreaterThan(0)
+  const id = before.at(-1)!
+  await page.getByRole('button', { name: /clear all files/i }).click()
+  await page.getByRole('button', { name: /undo/i }).click()
+  await expect(page.locator('[data-cell]').first()).toBeVisible()
+  await page.waitForTimeout(10_500)
+  expect(await sourceIds()).toContain(id)
+  await page.getByRole('button', { name: /clear all files/i }).click()
+  await expect.poll(sourceIds, { timeout: 15000 }).not.toContain(id)
+})

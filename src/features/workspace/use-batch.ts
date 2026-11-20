@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import type { IngestedDocument } from '../../types/document'
 import { ingestBatch } from '../../lib/pdf/ingest-batch'
 import { keepSource, releaseAll } from '../../lib/export/doc-cache'
-import { getProjectSource, putProjectSource } from '../../lib/storage/project-sources'
+import { getProjectSource, putProjectSource, retireProjectSources } from '../../lib/storage/project-sources'
 import { releaseProxies } from '../../lib/pdf/proxy-cache'
 import type { ToastInput } from '../../components/ui/use-toasts'
 
@@ -191,6 +191,7 @@ export function useBatch({ notify, restore, restoreActiveId }: BatchOptions): Ba
       setDocuments([])
       setActiveId(null)
       await runIn(pending)
+      void retireProjectSources(documents.map((document) => document.id)).catch(() => undefined)
     })()
   }, [documents, notify, runIn])
 

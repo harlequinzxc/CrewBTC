@@ -1,7 +1,7 @@
 import { cn } from '../../lib/cn'
 import { CardReadout } from './inspector/CardReadout'
 import { SheetSection } from './inspector/SheetSection'
-import type { Card, CardBands } from '../../types/card'
+import type { Card } from '../../types/card'
 import type { GridLayout, SheetSettings as SheetSettingsValue } from '../../types/imposition'
 import type { UnitSystem } from '../../lib/units'
 
@@ -20,12 +20,8 @@ export interface InspectorProps {
   /** The selected card, or null when the sheet itself is the selection. */
   readonly card: Card | null
   readonly cellIndex: number | null
-  readonly cellHeightMm: number
   /** The document's display unit. Every length in this pane is converted with it. */
   readonly units: UnitSystem
-  readonly onBandsChange: (bands: CardBands) => void
-  readonly onTextScaleChange: (scale: number) => void
-  readonly onResetCard: () => void
 
   readonly showCutMarks: boolean
   readonly onShowCutMarksChange: (value: boolean) => void

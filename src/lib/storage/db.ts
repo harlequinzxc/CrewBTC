@@ -58,7 +58,8 @@ export type StoredSettings = PageSettings
 export async function writeSettings(settings: PageSettings): Promise<void> {
   const db = await getDb()
   const record: SettingsRecord = { id: 'page', settings, updatedAt: new Date().toISOString() }
-  await db.put('settings', record, 'page')
+  // The store has an inline keyPath: passing a separate key raises DataError.
+  await db.put('settings', record)
 }
 
 export async function requestPersistence(): Promise<boolean> {

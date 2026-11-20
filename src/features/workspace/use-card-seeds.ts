@@ -23,7 +23,7 @@ export function useCardSeeds(
     () =>
       planSheets(pageRefs, grid).flatMap((plan) =>
         plan.placements.map((placement) => {
-          // `documentId` is the *file name* (the exporter resolves source bytes by it),
+          // `documentId` is the *file name* used by placements and card keys,
           // not the internal id.
           const document = documents.find((item) => item.fileName === placement.documentId)
           const copy = document?.copies[placement.pageNumber]

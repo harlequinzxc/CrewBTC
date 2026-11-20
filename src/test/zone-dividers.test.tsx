@@ -1,19 +1,17 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { Card } from '../features/workspace/Card'
-import { CardSection } from '../features/workspace/inspector/CardSection'
 import { BAND_MIN_MM, PICTURE_MIN_MM } from '../types/card'
 import { blankCard } from '../features/workspace/use-cards'
-import type { Card as CardModel, CardBands, RectMm } from '../types/card'
+import type { Card as CardModel, RectMm } from '../types/card'
 import { textEditGestureStub } from './gesture-stub'
 
 /**
  * Dragging the boundaries between header, picture and footer.
  *
  * The dividers are a pointer affordance on the card, but they must go through exactly the
- * same clamping as the numeric fields in the inspector — otherwise the two controls would
- * disagree about what the minimum picture height is, and a card could be dragged into two
- * text boxes with nothing between them.
+ * same clamping as the card model, so a card cannot be dragged into two text boxes with
+ * nothing between them.
  */
 
 const CELL: RectMm = { xMm: 4, yMm: 17, widthMm: 52, heightMm: 67 }
@@ -114,65 +112,5 @@ describe('zone dividers', () => {
     const top = Number.parseFloat(divider('header').style.top)
     const expected = card.bands.headerMm * SCALE
     expect(Math.abs(top - (expected - 3.5))).toBeLessThan(4)
-  })
-})
-
-describe('the inspector drives the same values the sliders used to', () => {
-  const section = (props: {
-    card?: Parameters<typeof CardSection>[0]['card']
-    onBandsChange?: (bands: CardBands) => void
-    onTextScaleChange?: (scale: number) => void
-  }) => (
-    <CardSection
-      card={props.card ?? model()}
-      cellIndex={0}
-      cellHeightMm={67}
-      units="mm"
-      onBandsChange={props.onBandsChange ?? vi.fn()}
-      onTextScaleChange={props.onTextScaleChange ?? vi.fn()}
-      onReset={vi.fn()}
-    />
-  )
-
-  it('shows the card text scale as a percentage', () => {
-    render(section({ card: { ...model(), textScale: 1.2 } }))
-    const field = screen.getByLabelText('Text') as HTMLInputElement
-    expect(Number(field.value)).toBe(120)
-  })
-
-  it('reports a text-scale change in model units', () => {
-    const onTextScaleChange = vi.fn()
-    render(section({ onTextScaleChange }))
-    fireEvent.change(screen.getByLabelText('Text'), { target: { value: '150' } })
-    expect(onTextScaleChange).toHaveBeenCalledWith(1.5)
-  })
-
-  it('reports the top band as clamped millimetres', () => {
-    const onBandsChange = vi.fn()
-    // Leave enough room for an exact 20 mm header plus the photo minimum.
-    render(section({ onBandsChange, card: { ...model(), bands: { headerMm: 7.28, footerMm: 25 } } }))
-    fireEvent.change(screen.getByLabelText('Top'), { target: { value: '20' } })
-    expect(onBandsChange).toHaveBeenCalled()
-    const sent = onBandsChange.mock.calls.at(-1)?.[0] as CardBands
-    expect(sent.headerMm).toBeCloseTo(20, 5)
-    // The same budget rule the dividers obey: the photo keeps its minimum.
-    expect(67 - sent.headerMm - sent.footerMm).toBeGreaterThanOrEqual(PICTURE_MIN_MM - 1e-6)
-  })
-
-  it('never lets a typed value overrun the photo', () => {
-    const onBandsChange = vi.fn()
-    render(section({ onBandsChange }))
-    fireEvent.change(screen.getByLabelText('Bottom'), { target: { value: '60' } })
-    const sent = onBandsChange.mock.calls.at(-1)?.[0] as CardBands
-    expect(67 - sent.headerMm - sent.footerMm).toBeGreaterThanOrEqual(PICTURE_MIN_MM - 1e-6)
-  })
-
-  it('steps a field with the arrow keys instead of scrolling the page', () => {
-    const onBandsChange = vi.fn()
-    render(section({ onBandsChange }))
-    const field = screen.getByLabelText('Top')
-    fireEvent.keyDown(field, { key: 'ArrowDown' })
-    const sent = onBandsChange.mock.calls.at(-1)?.[0] as CardBands
-    expect(sent.headerMm).toBeLessThan(model().bands.headerMm)
   })
 })

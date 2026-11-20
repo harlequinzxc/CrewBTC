@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { retireProjectSources, cancelProjectRetirement } from '../../lib/storage/project-sources'
 import type { useBatch } from './use-batch'
 import type { useCards } from './use-cards'
 import type { useToasts } from '../../components/ui/use-toasts'
@@ -32,6 +33,8 @@ export function useClearBatch(input: {
     const cards = store.cards
     if (documents.length === 0) return
 
+    const ids = documents.map((document) => document.id)
+    void retireProjectSources(ids).catch(() => undefined)
     batch.clear()
     store.reset()
     clearSelection()
@@ -41,6 +44,7 @@ export function useClearBatch(input: {
       title: `Cleared ${documents.length} ${documents.length === 1 ? 'file' : 'files'}`,
       description: 'The batch and its card edits were removed.',
       undo: () => {
+        void cancelProjectRetirement(ids).catch(() => undefined)
         batch.restoreCleared(documents, activeId)
         store.restoreCards(cards)
       },

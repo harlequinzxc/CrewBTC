@@ -1,5 +1,5 @@
 import { applyToSelection, shiftRuns, styleAt } from '../../types/text-runs'
-import { clampBands, clampTextScale, defaultBands } from '../../types/card'
+import { clampBands } from '../../types/card'
 import type { Card, CardBands, TextRun, TextStyle } from '../../types/card'
 
 /**
@@ -98,20 +98,9 @@ export function textInto(card: Card, zone: Zone, text: string): Card {
     : { ...card, bodyText: text, bodyRuns: runs }
 }
 
-/**
- * The three whole-card edits the inspector makes, as pure transitions.
- *
- * They live here, next to the text and style edits, because they are the same kind of
- * thing: a card in, a card out, with the clamp applied. `WorkspaceScreen` was doing this
- * arithmetic inline in three near-identical callbacks, which is how three copies of one
- * rule drift apart.
- */
+/** Clamp divider changes to keep room for the photo. */
 export function bandsInto(card: Card, bands: CardBands, cellHeightMm: number): Card {
   return { ...card, bands: clampBands(bands, cellHeightMm) }
-}
-
-export function textScaleInto(card: Card, textScale: number): Card {
-  return { ...card, textScale: clampTextScale(textScale) }
 }
 
 /**
@@ -137,13 +126,4 @@ export function matchBandsInto(
     next[key] = { ...card, bands: clampBands(source, cellHeightMm) }
   }
   return next
-}
-
-/** Back to the bands a freshly seeded card of this height would get, at 100% type. */
-export function resetProportions(card: Card, cellHeightMm: number): Card {
-  return {
-    ...card,
-    bands: clampBands(defaultBands(cellHeightMm), cellHeightMm),
-    textScale: 1,
-  }
 }

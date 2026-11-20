@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { SheetSection } from '../features/workspace/inspector/SheetSection'
-import { CardSection } from '../features/workspace/inspector/CardSection'
+import { CardReadout } from '../features/workspace/inspector/CardReadout'
 import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
 import { cardFromPage } from '../types/card'
@@ -85,40 +85,13 @@ describe('the unit setting reaches the sheet panel', () => {
   })
 })
 
-describe('the unit setting reaches the card panel', () => {
+describe('the unit setting reaches the card readout', () => {
   const card = cardFromPage({ photo: null, headerText: 'A', bodyText: 'B' }, 67)
 
-  it('reads a band height in the document unit', () => {
-    const { unmount } = render(
-      <CardSection
-        card={card}
-        cellIndex={0}
-        cellHeightMm={67}
-        units="cm"
-        onBandsChange={() => undefined}
-        onTextScaleChange={() => undefined}
-        onReset={() => undefined}
-      />,
-    )
-    // The seeded header band is ~9.5 mm.
-    const top = Number((screen.getByLabelText('Top') as HTMLInputElement).value)
-    expect(top).toBeGreaterThan(0.5)
-    expect(top).toBeLessThan(1.1)
-    unmount()
-  })
-
-  it('leaves the text percentage a percentage', () => {
-    render(
-      <CardSection
-        card={card}
-        cellIndex={0}
-        cellHeightMm={67}
-        units="cm"
-        onBandsChange={() => undefined}
-        onTextScaleChange={() => undefined}
-        onReset={() => undefined}
-      />,
-    )
-    expect((screen.getByLabelText('Text') as HTMLInputElement).value).toBe('100')
+  it('shows actual bands in the selected unit and text as a percentage', () => {
+    render(<CardReadout card={{ ...card, textScale: 0.8 }} cellIndex={0} units="cm" />)
+    expect(screen.getByLabelText('Top value')).toHaveTextContent('0.73 cm')
+    expect(screen.getByLabelText('Bottom value')).toHaveTextContent('3.55 cm')
+    expect(screen.getByLabelText('Text value')).toHaveTextContent('80%')
   })
 })

@@ -23,11 +23,6 @@ export function getSource(id: string): ArrayBuffer | null {
   return sources.get(id) ?? null
 }
 
-export function releaseSource(id: string): void {
-  sources.delete(id)
-  versions.delete(id)
-}
-
 export function releaseAll(): void {
   sources.clear()
   versions.clear()
@@ -36,8 +31,4 @@ export function releaseAll(): void {
 /** 0 means the file is not currently held, so nothing may be rendered from it. */
 export function sourceVersion(id: string): number {
   return versions.get(id) ?? 0
-}
-
-export function sourceCount(): number {
-  return sources.size
 }

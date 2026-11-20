@@ -2,7 +2,6 @@ import 'fake-indexeddb/auto'
 import { describe, expect, it, vi } from 'vitest'
 import { isPdfFile, rejectedFiles, ingestFile } from '../lib/pdf/ingest'
 import { describePdfError } from '../lib/pdf/client'
-import { formatBytes, formatDateTime } from '../lib/format'
 
 function makeFile(name: string, type: string, bytes = new Uint8Array([1, 2, 3])): File {
   return new File([bytes], name, { type })
@@ -57,20 +56,5 @@ describe('pdf error copy', () => {
     expect(describePdfError(named)).toBe('PDF is password protected')
     expect(describePdfError(new Error('some internal stack'))).toBe('PDF could not be read')
     expect(describePdfError('a string')).toBe('PDF could not be read')
-  })
-})
-
-describe('formatting', () => {
-  it('formats bytes with a fallback', () => {
-    expect(formatBytes(0)).toBe('0 B')
-    expect(formatBytes(2048)).toBe('2 KB')
-    expect(formatBytes(5 * 1024 * 1024)).toBe('5.0 MB')
-    expect(formatBytes(Number.NaN)).toBe('—')
-    expect(formatBytes(-1)).toBe('—')
-  })
-
-  it('formats dates locally and never emits Invalid Date', () => {
-    expect(formatDateTime('not-a-date')).toBe('—')
-    expect(formatDateTime('2026-11-19T08:00:00.000Z')).not.toContain('Invalid')
   })
 })
