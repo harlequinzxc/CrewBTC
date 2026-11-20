@@ -38,9 +38,19 @@ describe('the top bar', () => {
     expect(screen.getByText('210 × 297 mm · 1 sheet')).toBeInTheDocument()
   })
 
+  it('labels a fitted percentage as fitted, not as a scale you chose', () => {
+    render_({ scale: 2.83, fitting: true })
+    const level = screen.getByLabelText('Zoom level, fitted')
+    expect(level.textContent).toBe('283%')
+    expect(screen.getByRole('button', { name: 'Fit to window' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
   it('shows the live scale and the three zoom controls', () => {
     const props = render_({ scale: 1.94, fitting: false })
-    expect(screen.getByLabelText('Zoom level').textContent).toBe('194%')
+    expect(screen.getByLabelText(/^Zoom level/).textContent).toBe('194%')
 
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
     expect(props.onStep).toHaveBeenCalledWith(1)

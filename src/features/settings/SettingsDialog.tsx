@@ -67,8 +67,13 @@ export function SettingsDialog({ open, onClose, settings, onSettingsChange }: Se
       aria-modal="true"
       aria-label="Settings"
       className={cn(
-        'max-h-[min(720px,calc(100svh-48px))] w-full max-w-lg overflow-hidden rounded-xl border border-hairline',
-        'bg-surface-panel p-0 text-ink-primary shadow-2xl shadow-black/70',
+        // A native <dialog> is placed by the UA's own absolute positioning, so it does not
+        // respond to a grid or flex parent. `m-auto` is what centres it; without it the
+        // panel sits in the top-left corner and reads as a drawer rather than a modal.
+        'm-auto',
+        'max-h-[min(720px,calc(100svh-48px))] w-[min(32rem,calc(100vw-32px))] overflow-hidden',
+        'rounded-xl border border-hairline bg-surface-panel p-0 text-ink-primary',
+        'shadow-2xl shadow-black/70',
         'backdrop:bg-black/60 backdrop:backdrop-blur-[1px]',
         'open:flex open:flex-col',
       )}

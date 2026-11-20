@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.4.1",
+    "date": "2026-11-20",
+    "title": "The sheet opens fitted, and settings stops burying its own toggles",
+    "highlights": [
+      "Fixed: the sheet came up at a literal 100% instead of filling the window \u2014 the canvas measurer attached to an element that did not exist yet and never looked again",
+      "The percentage is the real scale whether or not you chose it, and Fit is highlighted while the fit is live, so a computed 283% cannot be mistaken for one you set",
+      "Settings is centred over the sheet rather than appearing in the corner, and is a bounded panel instead of a full-height drawer",
+      "What's new is one collapsed row naming the current version, instead of eight releases above the fold \u2014 print output and reduced motion no longer need scrolling to reach",
+      "The sheet dimensions appear only in the inspector, where the sheet is; settings keeps trim, bleed, units and motion"
+    ]
+  },
+  {
     "version": "1.4.0",
     "date": "2026-11-20",
     "title": "One sheet, one bar, one inspector",

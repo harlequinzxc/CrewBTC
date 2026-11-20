@@ -32,7 +32,7 @@ export const CANVAS_PADDING = 24
 
 export function useSheetZoom(sheetWidthMm: number, sheetHeightMm: number): SheetZoom {
   const [manualScale, setManualScale] = useState<number | null>(null)
-  const [paneRef, size] = useElementSize<HTMLDivElement>()
+  const [measureRef, size] = useElementSize<HTMLDivElement>()
 
   const scale =
     manualScale ??
@@ -56,12 +56,16 @@ export function useSheetZoom(sheetWidthMm: number, sheetHeightMm: number): Sheet
     setManualScale(wheelZoom(wheelScale.current, event.deltaY))
   })
 
+  // Two things need this node: the measurer (a callback ref) and the wheel listener (an
+  // object ref). Forwarding to `measureRef` is what makes the fit happen at all — writing
+  // `.current` onto a callback ref function, which is what this did when the measurer was
+  // ref-shaped, silently measured nothing and left the sheet at 100%.
   const attach = useCallback(
     (node: HTMLDivElement | null) => {
-      paneRef.current = node
+      measureRef(node)
       wheelRef.current = node
     },
-    [paneRef, wheelRef],
+    [measureRef, wheelRef],
   )
 
   return {

@@ -91,10 +91,19 @@ export function TopBar(props: TopBarProps) {
         >
           <Minus aria-hidden className="size-3.5" />
         </button>
+        {/*
+          The real scale, always — a percentage is how you know whether you are zoomed in
+          for detail or looking at the whole page. In Fit mode it is the *result* of the
+          fit, labelled as such, so "283%" never reads as a scale the user chose.
+        */}
         <span
           aria-live="polite"
-          aria-label="Zoom level"
-          className="tabular w-11 text-center text-[12px] text-ink-primary"
+          aria-label={props.fitting ? 'Zoom level, fitted' : 'Zoom level'}
+          title={props.fitting ? 'Fitted to the window' : 'Set by hand'}
+          className={cn(
+            'tabular h-6 whitespace-nowrap rounded px-1.5 text-center text-[12px] leading-6',
+            props.fitting ? 'text-ink-secondary' : 'text-ink-primary',
+          )}
         >
           {zoomPercent(scale)}%
         </span>
@@ -114,7 +123,14 @@ export function TopBar(props: TopBarProps) {
           aria-label="Fit to window"
           aria-pressed={props.fitting}
           onClick={props.onFit}
-          className={cn(iconButton, 'ml-1 w-auto gap-1 px-1.5')}
+          className={cn(
+            iconButton,
+            'ml-1 w-auto gap-1 px-1.5',
+            // Active state on Fit itself, so the mode is readable at a glance: a
+            // highlighted Fit button means the percentage beside it is derived, not chosen.
+            props.fitting && 'bg-accent/15 text-accent-bright',
+            props.fitting && 'hover:bg-accent/20 hover:text-accent-bright focus-visible:bg-accent/20 focus-visible:text-accent-bright',
+          )}
         >
           <Maximize2 aria-hidden className="size-3" />
           <span className="text-[11px]">Fit</span>

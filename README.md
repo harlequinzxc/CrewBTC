@@ -51,14 +51,19 @@ Three columns and a bar across the top:
   size, cell size, gutter, margin, rotation, cut guides, bleed — and when you select a
   card it puts that card's **Top**, **Bottom** and **Text** numbers above them.
 
-The gear opens settings over the sheet rather than on a page of its own.
+The gear opens settings over the sheet rather than on a page of its own: trim and bleed,
+reduced motion, and the changelog folded into one row that names the version you are on.
 
 ## Zooming the sheet
 
-`−`, the current percentage, `+` and **Fit** sit in the middle of the top bar. **Fit**
-keeps the sheet matched to the window as you resize it; step the zoom once and it stays
-where you put it, with scrollbars when the sheet outgrows the pane. `Ctrl`/`Cmd` and the
-scroll wheel over the sheet does the same thing.
+`−`, the current percentage, `+` and **Fit** sit in the middle of the top bar. The sheet
+opens fitted — it fills the window rather than sitting at a literal 100%, which on a large
+screen is a postage stamp. The percentage still shows the real scale, and **Fit** is
+highlighted while the fit is live, so you can tell a computed `283%` from one you chose.
+
+**Fit** keeps the sheet matched to the window as you resize it; step the zoom with `−`,
+`+` or `Ctrl`/`Cmd` + wheel and it stays where you put it, with scrollbars when the sheet
+outgrows the pane. **Fit** returns you to the mode.
 
 ## Getting started
 

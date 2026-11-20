@@ -146,7 +146,15 @@ which card is meant from the selected cell and the sheet plan, so there is only 
 
 `lib/zoom.ts` holds the ladder and the arithmetic. The controls are in the `TopBar`, which
 sits outside the pane the sheet is fitted into, so `useSheetZoom` measures the *canvas*
-region and owns the single value both of them read. `Fit` is a mode
+region and owns the single value both of them read.
+
+Measurement goes through `useElementSize`, which attaches its `ResizeObserver` with a
+callback ref rather than an effect. That is not a style preference: the pane does not exist
+on first render — it appears with the first batch and disappears when the batch is cleared —
+and an effect that measured once on mount therefore measured nothing and left the sheet at
+100% permanently. The callback ref re-binds whenever the node changes. It also drops writes
+that do not change the size, because a ref callback that writes state on every attach can
+detach and re-attach itself into an infinite render loop. `Fit` is a mode
 (`manualScale === null`), not a one-off calculation, so a window resize keeps the sheet
 fitted until the user steps the zoom. Once the sheet is larger than the pane it scrolls —
 it is never silently shrunk.

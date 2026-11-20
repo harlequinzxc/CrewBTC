@@ -54,6 +54,21 @@ console.log("initial route JS  " + jsBytes + " B  (budget " + BUDGET + ")")
 console.log("initial route CSS " + cssBytes + " B  (budget " + CSS_BUDGET + ")")
 for (const f of [...new Set(lazy)]) console.log("lazy chunk        " + f + " — " + gz(f) + " B gzip (not counted)")
 
+const cssText = [...new Set(initialCss)].map((f) => readFileSync(join("dist", f), "utf8")).join("")
+// A stale dist passes every size check while shipping the previous build of the chrome.
+// Spot that by looking for rules only the current UI emits, so a failed build cannot
+// masquerade as a passing gate.
+const required = [
+  { rule: ".m-auto{", why: "the settings dialog centres with m-auto" },
+  { rule: "width:min(32rem", why: "the settings dialog is a bounded panel" },
+]
+for (const { rule, why } of required) {
+  if (!cssText.includes(rule)) {
+    console.error("✗ built CSS is missing " + rule + " — " + why + " (stale dist?)")
+    failed = true
+  }
+}
+
 if (jsBytes > BUDGET) { console.error("✗ initial JS over budget"); failed = true }
 if (cssBytes > CSS_BUDGET) { console.error("✗ initial CSS over budget"); failed = true }
 if (lazy.length === 0) { console.error("✗ expected at least one lazy chunk (PDF.js must stay out of the shell)"); failed = true }
