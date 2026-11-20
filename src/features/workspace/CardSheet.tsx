@@ -12,6 +12,8 @@ import { CANVAS_PADDING } from './use-sheet-zoom'
 import { sheetOffsets } from './sheet-stack'
 import { useSheetScroll } from './use-sheet-scroll'
 import { activeStyle, styleInto, styleSelection, textInto } from './card-edits'
+import { useTextEditGesture } from './use-text-edit-gesture'
+import { useEditDismissal } from './use-edit-dismissal'
 import type { CardZone } from './Card'
 
 export interface CardSheetProps {
@@ -39,6 +41,8 @@ export interface CardSheetProps {
 }
 
 interface EditState {
+  /** Which sheet the card is on. A cell index alone is a shape, not a place. */
+  readonly sheet: number
   readonly cellIndex: number
   readonly key: string
   readonly zone: CardZone
@@ -81,14 +85,19 @@ export function CardSheet(props: CardSheetProps) {
     scrollTo,
     onScrollToHandled,
   } = props
+  // One per sheet, never per zone — `use-text-edit-gesture` explains what the other way cost.
+  const gesture = useTextEditGesture()
   const [editing, setEditing] = useState<EditState | null>(null)
   const [pictureEditing, setPictureEditing] = useState<string | null>(null)
-  // The caret's selection in the box being edited. Cleared on every edit boundary, so a
-  // stale range can never style text the user is no longer looking at.
-  const [selection, setSelection] = useState<{
-    readonly start: number
-    readonly end: number
-  } | null>(null)
+  // A stale range must never style text nobody is looking at, so every boundary clears it.
+  const [selection, setSelection] = useState<{ start: number; end: number } | null>(null)
+  // An edit ends when the user acts, never on focus loss: see `use-edit-dismissal`.
+  const dismissal = useEditDismissal({
+    editingCell: editing?.cellIndex ?? null,
+    onEndEdit: () => { setSelection(null); setEditing(null) },
+    onSelectCell,
+    onDeselect: () => { setPictureEditing(null); onSelectCell(null) },
+  })
 
   const sheets = planSheets(pages, grid)
   const marks = showCutMarks ? cutMarksFor(grid) : []
@@ -178,7 +187,7 @@ export function CardSheet(props: CardSheetProps) {
           different element.
         */
         onPointerDown={(event) => {
-          if (event.target === event.currentTarget) onSelectCell(null)
+          if (event.target === event.currentTarget) dismissal.selectCell(null)
         }}
         className={cn(
           'relative min-h-0 flex-1 overflow-auto',
@@ -205,24 +214,17 @@ export function CardSheet(props: CardSheetProps) {
               selectedCell={selectedCell}
               selectionHere={selectionSheet === index}
               activeZone={activeZone}
-              editing={editing}
+              editing={editing?.sheet === index ? editing : null}
               pictureEditing={pictureEditing}
               showCutMarks={showCutMarks}
-              onSelectCell={onSelectCell}
-              onDeselect={() => {
-                setEditing(null)
-                setPictureEditing(null)
-                onSelectCell(null)
-              }}
+              onSelectCell={dismissal.selectCell}
+              onDeselect={dismissal.deselect}
+              gesture={gesture}
               onBeginTextEdit={(cellIndex, key, zone) => {
-                props.onSelectCell(cellIndex)
-                setSelection(null)
-                setEditing({ cellIndex, key, zone })
+                dismissal.selectCell(cellIndex)
+                setEditing({ sheet: index, cellIndex, key, zone })
               }}
-              onEndEdit={() => {
-                setSelection(null)
-                setEditing(null)
-              }}
+              onEndEdit={dismissal.endEdit}
               onSelectionChange={(zone, next) => setSelection(zone === editing?.zone ? next : null)}
               onTextChange={(key, zone, text) => apply(key, (current) => textInto(current, zone, text))}
               onStyleChange={(key, zone, style) => apply(key, (current) => styleInto(current, zone, style))}

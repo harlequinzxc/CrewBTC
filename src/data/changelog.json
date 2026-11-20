@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.8.2",
+    "date": "2026-11-20",
+    "title": "The text box stops closing itself, and only one sheet opens it",
+    "highlights": [
+      "Fixed the reported bug: clicking a card\u2019s text did nothing. The truth was not that the press was lost \u2014 it always arrived and always ran the handler. There were two faults, and each hid the other",
+      "First: which card was being edited was recorded by cell number, and every sheet draws the same cell numbers. Opening cell 3 therefore opened a text field on every sheet in the stack, and the fields took the caret from each other in a loop. That is the flicker. Editing now records the sheet it began on, so only that sheet opens a field, exactly as selecting a card already worked",
+      "Second: an edit ended whenever the field lost focus, and a field loses focus for reasons nobody chose \u2014 the window losing focus, a scroll, the layout shift from the field appearing. With an editor open on more than one sheet the caret is contested, so the box could open and close within a millisecond. Edits now end on Escape, on a press on another card, or on a press on the canvas around the sheets",
+      "Why it took so long: fixing either fault alone left the bug. Suppressing the default press handling, moving when focus is taken, and opening the box from a fallback listener were all real improvements that could not have worked on their own, and each one was measured against a field that was closing itself before anything could see it",
+      "The lesson recorded in docs/ROOT-CAUSE-text-editing.md: when a container changes from showing one item to showing all of them, every key that identifies a place must be re-read. A bare index is a place only while there is one list"
+    ]
+  },
+  {
     "version": "1.8.1",
     "date": "2026-11-20",
     "title": "One click on a card\u2019s text now edits it",

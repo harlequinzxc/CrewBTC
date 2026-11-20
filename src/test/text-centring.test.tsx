@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { CardZoneText } from '../features/workspace/CardZoneText'
 import { layoutStyledBand } from '../lib/export/styled-band'
 import { cardZones } from '../types/card'
+import { textEditGestureStub } from './gesture-stub'
 
 /**
  * A block shorter than its band is centred in it, in the preview and in the PDF.
@@ -38,7 +39,7 @@ const textProps = (heightMm: number) => ({
 
 /** The offset the preview applies, read back off the rendered line. */
 const previewOffset = (heightMm: number): number => {
-  const { container } = render(<CardZoneText {...textProps(heightMm)} />)
+  const { container } = render(<CardZoneText gesture={textEditGestureStub} {...textProps(heightMm)} />)
   const line = container.querySelector('span') as HTMLElement
   const topPx = Number.parseFloat(line.style.top)
   // Convert back to millimetres and undo the ascent, leaving just the centring.
@@ -90,7 +91,7 @@ describe('a short block is centred in its band', () => {
     // A band dragged shorter than the type it holds is the case that used to spill: with
     // centring, an unclamped offset could push the first line above the box, over the
     // card's top border and into whatever sits above it.
-    const { container } = render(<CardZoneText {...textProps(3)} />)
+    const { container } = render(<CardZoneText gesture={textEditGestureStub} {...textProps(3)} />)
     const box = container.querySelector('button') as HTMLElement
     const boxTop = Number.parseFloat(box.style.top)
     const boxHeight = Number.parseFloat(box.style.height)

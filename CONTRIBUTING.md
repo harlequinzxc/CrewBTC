@@ -347,6 +347,31 @@ Measured on the production build, gzip:
 Budgets (§7A) are 200 KB JS and 40 KB CSS for the initial route; `check-bundle.sh`
 enforces that the heavy chunks stay off the first paint.
 
+## End-to-end tests
+
+`e2e/` runs Playwright against the **preview build**, not the dev server: every bug that
+suite exists for lived in production CSS and production timing.
+
+```bash
+npx playwright install chromium   # once, needs network
+npm run test:e2e
+```
+
+Where that CDN is blocked, `bash scripts/fetch-chromium.sh` gets a real Chromium from npm
+instead and prints the two environment variables the config reads. `npm run gate` runs
+`gate:e2e`, which executes the suite if a browser can be found and otherwise reports
+**`NOT RUN`** with the test count — it never claims a pass. Treat `NOT RUN` as an open
+gate, not a green one.
+
+Blocked service workers matter: the app is a PWA, so a reused browser profile serves a
+**precached previous build** and every measurement silently describes the wrong code. The
+config blocks service workers everywhere except `offline.spec.ts`, which exists to test
+them.
+
+Every spec says why it exists. The short version: jsdom has no layout, no hit-testing and
+no default browser behaviour, so a click swallowed by an element that mounted between press
+and release is invisible to it — which is exactly how that bug shipped twice.
+
 ## Testing
 
 199 tests across 22 files. The ones that protect against specific past bugs:

@@ -4,6 +4,7 @@ import { Card } from '../features/workspace/Card'
 import { cardFromPage } from '../types/card'
 import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
+import { textEditGestureStub } from './gesture-stub'
 
 /**
  * Guards the three ways a card could break its own layout.
@@ -37,7 +38,7 @@ function renderCard(options: { cellIndex?: number; bands?: { headerMm: number; f
 
   const { container } = render(
     <div style={{ position: 'relative', width: 800, height: 1200 }}>
-      <Card
+      <Card gesture={textEditGestureStub}
         card={card}
         cell={cell}
         scale={SCALE}

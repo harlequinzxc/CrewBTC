@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { SheetBody } from '../features/workspace/SheetBody'
 import { computeGrid } from '../lib/imposition/grid'
 import { DEFAULT_SHEET } from '../types/imposition'
+import { textEditGestureStub } from './gesture-stub'
 
 /**
  * Empty cells are places, not missing things.
@@ -15,7 +16,7 @@ import { DEFAULT_SHEET } from '../types/imposition'
  */
 const render_ = () =>
   render(
-    <SheetBody
+    <SheetBody gesture={textEditGestureStub}
       grid={computeGrid(DEFAULT_SHEET)}
       scale={2}
       placements={[]}

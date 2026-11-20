@@ -5,6 +5,7 @@ import { CardTextBar } from '../features/workspace/CardTextBar'
 import { blankCard } from '../features/workspace/use-cards'
 import { DEFAULT_IMAGE_TRANSFORM, DEFAULT_TEXT_STYLE } from '../types/card'
 import type { Card as CardModel, RectMm } from '../types/card'
+import { textEditGestureStub } from './gesture-stub'
 
 /**
  * Editing a card in place: typing in its two text boxes, styling them, tuning the band
@@ -44,7 +45,7 @@ function props(card: CardModel) {
 describe('typing into a card', () => {
   it('opens the header box when the top text is clicked', () => {
     const p = props(model({ headerText: 'CHK-01' }))
-    render(<Card {...p} />)
+    render(<Card gesture={textEditGestureStub} {...p} />)
 
     fireEvent.click(screen.getByRole('button', { name: /CHK-01/ }))
     expect(p.onBeginTextEdit).toHaveBeenCalledWith('header')
@@ -52,7 +53,7 @@ describe('typing into a card', () => {
 
   it('opens the body box when the instructions are clicked', () => {
     const p = props(model({ bodyText: '• Plate with rice' }))
-    render(<Card {...p} />)
+    render(<Card gesture={textEditGestureStub} {...p} />)
 
     fireEvent.click(screen.getByRole('button', { name: /Plate with rice/ }))
     expect(p.onBeginTextEdit).toHaveBeenCalledWith('body')
@@ -61,7 +62,7 @@ describe('typing into a card', () => {
   it('reports each keystroke with the box it belongs to', () => {
     const p = props(model({ headerText: 'CHK-01' }))
     p.editing = 'header'
-    render(<Card {...p} />)
+    render(<Card gesture={textEditGestureStub} {...p} />)
 
     fireEvent.change(screen.getByLabelText('Edit card text'), {
       target: { value: 'CHK-02' },
@@ -70,18 +71,39 @@ describe('typing into a card', () => {
   })
 
   it('shows a placeholder rather than an empty box', () => {
-    render(<Card {...props(model())} />)
+    render(<Card gesture={textEditGestureStub} {...props(model())} />)
     expect(screen.getByRole('button', { name: /Dish code/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Plating steps/ })).toBeInTheDocument()
   })
 
-  it('closes the box on blur', () => {
+  /*
+    Focus loss never ends an edit. Not "sometimes": never.
+
+    Two rules failed here before this one. Ending on any blur closed the box a millisecond
+    after it opened. Ignoring only a blur to nothing was still not enough: on the machine
+    that reported this, the blur carried a `relatedTarget`, so something was taking focus a
+    frame after the field appeared, and it was not the user. Any rule about who received the
+    focus is a rule about something the user may not have done.
+
+    So the editor does not close on focus at all — Escape, a press on another card, and a
+    press on the paper are what end it. Both of these therefore do nothing.
+  */
+  it('keeps the box open when focus moves to another control', () => {
     const p = props(model({ headerText: 'X' }))
     p.editing = 'header'
-    render(<Card {...p} />)
+    render(<Card gesture={textEditGestureStub} {...p} />)
+
+    fireEvent.blur(screen.getByLabelText('Edit card text'), { relatedTarget: document.body })
+    expect(p.onEndEdit).not.toHaveBeenCalled()
+  })
+
+  it('keeps the box open when focus is lost to nothing', () => {
+    const p = props(model({ headerText: 'X' }))
+    p.editing = 'header'
+    render(<Card gesture={textEditGestureStub} {...p} />)
 
     fireEvent.blur(screen.getByLabelText('Edit card text'))
-    expect(p.onEndEdit).toHaveBeenCalled()
+    expect(p.onEndEdit).not.toHaveBeenCalled()
   })
 })
 
@@ -150,7 +172,7 @@ describe('moving the photo', () => {
 
   it('enters adjust mode on double-click', () => {
     const p = props(model({ photo }))
-    render(<Card {...p} />)
+    render(<Card gesture={textEditGestureStub} {...p} />)
 
     fireEvent.doubleClick(screen.getByRole('button', { name: /Dish photo/ }))
     expect(p.onBeginPictureEdit).toHaveBeenCalled()
@@ -158,7 +180,7 @@ describe('moving the photo', () => {
 
   it('marks the picture box while adjusting', () => {
     const p = { ...props(model({ photo })), pictureEditing: true }
-    const { container } = render(<Card {...p} />)
+    const { container } = render(<Card gesture={textEditGestureStub} {...p} />)
     const box = container.querySelector('[data-image="adjusting"]')
     expect(box).not.toBeNull()
     expect(box?.className).toContain('outline')
@@ -166,7 +188,7 @@ describe('moving the photo', () => {
 
   it('pans by the distance dragged, in sheet millimetres', () => {
     const p = { ...props(model({ photo })), pictureEditing: true }
-    render(<Card {...p} />)
+    render(<Card gesture={textEditGestureStub} {...p} />)
     const target = screen.getByRole('button', { name: /Dish photo/ })
 
     fireEvent.pointerDown(target, { clientX: 100, clientY: 100, pointerId: 1 })
@@ -180,13 +202,13 @@ describe('moving the photo', () => {
 
   it('zooms on the wheel only while adjusting', () => {
     const idle = props(model({ photo }))
-    const { unmount } = render(<Card {...idle} />)
+    const { unmount } = render(<Card gesture={textEditGestureStub} {...idle} />)
     fireEvent.wheel(screen.getByRole('button', { name: /Dish photo/ }), { deltaY: -100 })
     expect(idle.onImageChange).not.toHaveBeenCalled()
     unmount()
 
     const active = { ...props(model({ photo })), pictureEditing: true }
-    render(<Card {...active} />)
+    render(<Card gesture={textEditGestureStub} {...active} />)
     fireEvent.wheel(screen.getByRole('button', { name: /Dish photo/ }), { deltaY: -100 })
     const next = active.onImageChange.mock.calls.at(-1)?.[0] as typeof DEFAULT_IMAGE_TRANSFORM
     expect(next.scale).toBeGreaterThan(1)
@@ -194,7 +216,7 @@ describe('moving the photo', () => {
 
   it('never stretches the photo, whatever the box', () => {
     const p = props(model({ photo }))
-    const { container } = render(<Card {...p} />)
+    const { container } = render(<Card gesture={textEditGestureStub} {...p} />)
     const img = container.querySelector('[data-image] img')
 
     const width = Number.parseFloat(img?.getAttribute('style')?.match(/width: ([\d.]+)px/)?.[1] ?? '0')
@@ -203,7 +225,7 @@ describe('moving the photo', () => {
   })
 
   it('says so plainly when there is no photo', () => {
-    render(<Card {...props(model())} />)
+    render(<Card gesture={textEditGestureStub} {...props(model())} />)
     expect(screen.getByText('No photo on this page')).toBeInTheDocument()
   })
 })

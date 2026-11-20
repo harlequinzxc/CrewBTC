@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { CardZoneText } from '../features/workspace/CardZoneText'
+import { textEditGestureStub } from './gesture-stub'
 
 /**
  * Clicking into a text box must not move the page.
@@ -28,7 +29,7 @@ describe('a text zone entering edit mode', () => {
     const focus = vi.spyOn(HTMLTextAreaElement.prototype, 'focus')
 
     render(
-      <CardZoneText
+      <CardZoneText gesture={textEditGestureStub}
         text="CHK-01 Kung Pao"
         scale={2}
         xMm={0}

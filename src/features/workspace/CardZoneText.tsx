@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
+import { DrawnCardText } from './DrawnCardText'
+import type { TextEditGesture } from './use-text-edit-gesture'
 import { layoutStyledBand } from '../../lib/export/styled-band'
 import type { TextStyle, TextRun } from '../../types/card'
 
@@ -22,6 +24,8 @@ export interface CardZoneTextProps {
   readonly textScale?: number
   readonly placeholder: string
   readonly onBeginEdit: () => void
+  /** The sheet's shared press gesture; see `use-text-edit-gesture`. */
+  readonly gesture: TextEditGesture
   readonly onChange: (text: string) => void
   readonly onEndEdit: () => void
   readonly onStyle: (style: TextStyle) => void
@@ -50,19 +54,36 @@ export function CardZoneText(props: CardZoneTextProps) {
   const fieldRef = useRef<HTMLTextAreaElement>(null)
   const px = (mm: number): string => `${mm * scale}px`
 
+  /**
+   * Focus the field once per edit, from an effect.
+   *
+   * **Not from a ref callback.** A ref callback runs on every commit where the field is
+   * re-attached, and this one called `focus()` when the field was not already focused.
+   * That looks like a harmless guard and is not: it re-focuses the field during renders
+   * the user did not ask for, and the churn is enough that the press never settles into a
+   * caret — clicking the text appeared to do nothing at all. It shipped in v1.8.1 and made
+   * every version after it unable to open a text box, which is exactly what was reported
+   * for four releases running.
+   *
+   * The caret goes to the **end**, not to a selection. `select()` made the first keystroke
+   * replace the whole dish name: type "X" into "Kung Pao Chicken" and you are left with
+   * "X", which reads as the text being broken rather than edited.
+   */
+  const takeFocus = useCallback((field: HTMLTextAreaElement | null) => {
+    if (field === null) return
+    field.focus({ preventScroll: true })
+    const end = field.value.length
+    field.setSelectionRange(end, end)
+  }, [])
+
   useEffect(() => {
     if (!editing) return
     const field = fieldRef.current
     if (field === null) return
-    // `preventScroll` is not an optimisation. A bare `focus()` scrolls the nearest
-    // scrollable ancestor to reveal the element, so clicking a card near the bottom of
-    // the viewport moved the whole stack up to centre it — the paper slid out from under
-    // the pointer the instant you clicked into a text box. Every other gesture in this
-    // canvas avoids that scroll deliberately; this one was the exception, which is why it
-    // was the only one that still jumped.
-    field.focus({ preventScroll: true })
-    field.select()
-  }, [editing])
+    // `preventScroll`: a bare `focus()` scrolls the nearest scrollable ancestor to reveal
+    // the element, which moved the stack under the pointer.
+    takeFocus(field)
+  }, [editing, takeFocus])
 
   // `layoutBand` measures down from `boxTopMm`, so the box's own top is passed rather
   // than a height. This is the same function the exporter calls, which is what keeps a
@@ -120,7 +141,33 @@ export function CardZoneText(props: CardZoneTextProps) {
         ref={fieldRef}
         value={text}
         onChange={(event) => props.onChange(event.target.value)}
-        onBlur={props.onEndEdit}
+        /*
+          A lost focus never ends an edit. Not "sometimes": never.
+
+          This is the third rule for the same line, and the history is the argument.
+
+          1. `onBlur={onEndEdit}` closed the box on any focus loss. A newly focused field
+             blurs on its own — window focus, a scroll, the layout shift from the field
+             mounting — so the editor opened and closed within about a millisecond.
+          2. Ignoring a blur to nothing was still not enough. On the machine that reported
+             this, the blur has a `relatedTarget`: something is taking focus one frame after
+             any field appears, and it is not the user. Every rule about *who* received the
+             focus is a rule about something the user may not have done.
+
+          So the editor does not close here at all. It closes on Escape (below), or when the
+          sheet decides the press went elsewhere, or when the card is deselected. Those are
+          all things a user did, delivered as user actions rather than inferred from focus.
+
+          The focus is taken back rather than merely kept, because a field that is open and
+          unfocused takes no typing — which looks exactly as broken as one that never opened.
+        */
+        onBlur={() => {
+          window.setTimeout(() => {
+            const field = fieldRef.current
+            if (field === null) return
+            if (document.activeElement !== field) takeFocus(field)
+          }, 0)
+        }}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             event.stopPropagation()
@@ -159,34 +206,26 @@ export function CardZoneText(props: CardZoneTextProps) {
   }
 
   return (
-    <button
-      type="button"
-      data-target="dense"
-      /*
-        Edit begins on **pointer-down**, not click.
-        
-        Selecting a card reveals the band dividers, and they sit at a higher `z-index` than
-        the zones so they can be grabbed. On an unselected card those dividers do not exist
-        yet: pressing the text mounted them under the pointer, and the `click` that followed
-        was delivered to the divider instead of this button. The result was that the first
-        click on a card's text selected the card and did nothing else — you had to click
-        again, by which time the thing you clicked had moved.
-
-        Beginning the edit on pointer-down happens before the dividers mount, so the
-        gesture completes regardless of what ends up under the pointer. `onClick` is kept
-        for keyboard activation (`Enter`/`Space`), where there is no pointer at all.
-      */
-      onPointerDown={(event) => {
-        if (event.button !== 0) return
-        event.stopPropagation()
-        props.onBeginEdit()
+    <DrawnCardText
+      lines={layout.lines}
+      positionPx={positionPx}
+      label={`Card text: ${text === '' ? props.placeholder : text}`}
+      onBeginEdit={props.onBeginEdit}
+      onPress={(event) => {
+        // Proof of arrival for the click probe: see `use-click-probe`.
+        ;(event.currentTarget as HTMLElement).dataset.pressHandled = 'true'
+        props.gesture.press(event, props.onBeginEdit)
       }}
-      onClick={(event) => {
-        event.stopPropagation()
-        props.onBeginEdit()
+      attach={(element) => props.gesture.register(element, props.onBeginEdit)}
+      onKeyDown={(event) => {
+        // The formatting bar overlays the pane once editing begins, so the field cannot be
+        // relied on to receive its own Escape.
+        if (event.key === 'Escape' && editing) {
+          event.stopPropagation()
+          props.onEndEdit()
+        }
       }}
-      className="zone-box absolute block cursor-text overflow-hidden border-0 bg-transparent p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-      style={{
+      box={{
         left: px(xMm),
         top: px(yMm),
         width: px(widthMm),
@@ -195,31 +234,6 @@ export function CardZoneText(props: CardZoneTextProps) {
         lineHeight: `${lineHeight}px`,
         fontWeight: 400,
       }}
-      aria-label={`Card text: ${text === '' ? props.placeholder : text}`}
-    >
-      {layout.lines.map((line, index) => (
-        <span
-          key={`${index}-${line.text}`}
-          // A line is a run of segments, each with the style it was measured in. Bold
-          // characters are wider, so per-segment styling is what keeps on-screen breaks
-          // equal to the ones the exporter computed.
-          className="absolute whitespace-pre"
-          style={{ top: positionPx(line), left: 0, fontWeight: 400 }}
-        >
-          {line.segments.map((segment, segmentIndex) => (
-            <span
-              key={`${segmentIndex}-${segment.text}`}
-              style={{
-                background: segment.highlight ?? 'transparent',
-                color: segment.color,
-                fontWeight: segment.bold ? 700 : 400,
-              }}
-            >
-              {segment.text}
-            </span>
-          ))}
-        </span>
-      ))}
-    </button>
+    />
   )
 }

@@ -17,6 +17,8 @@ import { toPageRefs } from '../../lib/pdf/page-refs'
 import { pickFiles } from '../../lib/files/open-picker'
 import type { Card } from '../../types/card'
 import { useUpdateNotice } from './use-update-notice'
+import { useClickProbe } from './use-click-probe'
+import { CHANGELOG } from '../../data/changelog'
 import { usePageReveal } from './use-page-reveal'
 import { useRestoredSession, useSaveSession } from './use-session-persistence'
 import { useClearBatch } from './use-clear-batch'
@@ -25,15 +27,7 @@ import { SettingsDialog } from '../settings/SettingsDialog'
 import { usePageSettings } from './use-page-settings'
 import type { useToasts } from '../../components/ui/use-toasts'
 
-/**
- * One screen: files, the sheet, and the inspector.
- *
- * There is no view state and no navigation rail. Everything the app can do is reachable
- * from the top bar or from the thing it acts on, which is what lets the sheet take the
- * whole window between them. The sheet strip is the one exception, and only for documents
- * that span more than one page of cards: it is navigation for a set of pages, not for the
- * app.
- */
+/** One screen: files, the sheet, the inspector. No view state, no navigation rail. */
 export interface WorkspaceScreenProps {
   readonly notify: ReturnType<typeof useToasts>['show']
 }
@@ -58,6 +52,9 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
       action: 'Reload',
     })
   })
+
+  // `Shift+?` or the top-bar button reports what the next press lands on.
+  const probe = useClickProbe(CHANGELOG[0]?.version ?? 'unknown')
 
   // Read before anything is constructed: the batch and the card store both take their
   // initial value from it, so the first paint already has the user's cards on their sheet.
@@ -150,6 +147,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   return (
     <div className="flex h-[100svh] max-h-[100svh] w-full flex-col overflow-hidden bg-surface-canvas">
       <TopBar
+        onProbe={probe.arm}
         paper={{ widthMm: sheet.settings.sheetWidthMm, heightMm: sheet.settings.sheetHeightMm }}
         sheetCount={sheetCount}
         scale={zoom.scale}

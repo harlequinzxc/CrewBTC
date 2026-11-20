@@ -100,10 +100,14 @@
     min-height: 44px;
   }
 
+  /* The 32px desktop rung, for chrome. Deliberately *not* on plain `[data-target]`:
+     that attribute is also carried by the text boxes and photo frames on a sheet, whose
+     height is millimetres of paper. `height: 32px` forced a 24px header band to 32px, so
+     the box overhung the photo below it — and the photo, painted later, took every click
+     in the overhang. Clicking the lower half of a card's text did nothing at all. */
   button[data-target='dense'],
-  [data-target='dense'] {
+  [role='button'][data-target='dense'] {
     min-height: 32px;
-    height: 32px;
   }
 
   /* Inputs carrying real numbers are measured against their own row, not the ladder. */
@@ -117,8 +121,12 @@
      global `min-height: 44px` on a 10 mm header band is several times the band's real
      height, which is what pushed text over the photo and the photo over the footer. */
   .zone-box {
-    min-height: 0;
-    height: auto;
+    /* `!important` is the mechanism, not a shrug. Base @layer rules lose to utilities,
+       but nothing guarantees this sits after every chrome rule that might match a sheet
+       box, and the failure is silent: a box grows a few pixels, overhangs the photo, and
+       stops accepting clicks in the overhang. The geometry here is millimetres of paper
+       and must win outright. */
+    min-height: 0 !important;
   }
 
   /* Number inputs: no spinners, since every field is typed or stepped deliberately. */

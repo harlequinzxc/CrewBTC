@@ -1,6 +1,10 @@
 import { Maximize2, Minus, PanelRightClose, PanelRightOpen, Plus, Settings2 } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { ExportControl } from './ExportControl'
+import { CHANGELOG } from '../../data/changelog'
+
+/** The shipped build, read from the changelog so the two cannot drift apart. */
+const APP_VERSION = CHANGELOG[0]?.version ?? 'unknown'
 import { APP_NAME } from '../../config/brand'
 import { MAX_ZOOM, MIN_ZOOM, zoomPercent } from '../../lib/zoom'
 
@@ -19,6 +23,8 @@ export interface TopBarProps {
   readonly scale: number
   readonly fitting: boolean
   readonly onStep: (direction: 1 | -1) => void
+  /** Starts the click probe; see `use-click-probe`. Absent in tests that do not need it. */
+  readonly onProbe?: () => void
   readonly onFit: () => void
   readonly onOpenSettings: () => void
   readonly onExportCurrent: () => void
@@ -61,6 +67,33 @@ export function TopBar(props: TopBarProps) {
           className="size-5 shrink-0 rounded-[5px]"
         />
         <span className="text-[13px] font-medium tracking-tight text-ink-primary">{APP_NAME}</span>
+        {/*
+          The version, quietly. It answers "am I actually running the build I think I am?"
+          — a question this app forces on you, because it is a PWA and an update only takes
+          over once the page has been reloaded into it. Muted and small: it is a fact, not
+          a control.
+        */}
+        <span className="tabular text-[10px] leading-none text-ink-muted/70" aria-label={`Version ${APP_VERSION}`}>
+          v{APP_VERSION}
+        </span>
+        {/*
+          Starts the click probe. Small, quiet, and deliberately here: it is the answer to
+          "I clicked the text and nothing happened", and asking the user to find a keyboard
+          shortcut is one assumption too many when the shortcut is the thing under suspicion.
+        */}
+        <button
+          type="button"
+          data-target="dense"
+          aria-label="Check what a click lands on"
+          title="Check what a click lands on"
+          onClick={() => props.onProbe?.()}
+          className="grid size-5 place-items-center rounded text-ink-muted/60 transition-colors duration-150 ease-out hover:text-ink-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true" className="size-3 fill-none stroke-current stroke-[1.4]">
+            <circle cx="7" cy="7" r="4.2" />
+            <path d="M10.2 10.2 14 14" strokeLinecap="round" />
+          </svg>
+        </button>
       </div>
 
       <div className="ml-2 flex items-center gap-2 border-l border-hairline pl-3">
