@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react'
-import { getSource } from '../../lib/export/doc-cache'
 import { downloadBytes } from '../../lib/export/download'
 import { writeCards } from '../../lib/export/write-cards'
 import { planSheets } from '../../lib/imposition/sheet'
@@ -55,13 +54,6 @@ export function useCardExport(options: CardExportOptions): CardExportApi {
     void (async () => {
       setBusy(true)
       try {
-        const sources = new Map<string, ArrayBuffer>()
-        for (const page of selection) {
-          if (sources.has(page.documentId)) continue
-          const bytes = getSource(page.documentId)
-          if (bytes !== null) sources.set(page.documentId, bytes)
-        }
-
         // Every photo a placed card needs, keyed the way the exporter looks it up.
         const photos: Record<string, PhotoSource> = {}
         for (const [key, card] of Object.entries(cards)) {
@@ -72,22 +64,23 @@ export function useCardExport(options: CardExportOptions): CardExportApi {
           settings,
           grid,
           pages: selection,
-          sources,
           drawCutMarks,
           cards,
           photos,
         })
 
-        if (result.bytes.length === 0) {
-          notify({ variant: 'error', title: 'Nothing to export', description: 'Place a page first.' })
+        if (result.bytes.length === 0 || result.cardsDrawn === 0) {
+          notify({ variant: 'error', title: 'Nothing exported', description: 'No complete cards could be written. Check the cards and photos, then try again.' })
           return
         }
 
         downloadBytes(result.bytes, filename)
         notify({
-          variant: 'success',
-          title: 'Sheet exported',
-          description: `${result.sheetCount} ${result.sheetCount === 1 ? 'sheet' : 'sheets'}, ${result.cardsDrawn} ${result.cardsDrawn === 1 ? 'card' : 'cards'}`,
+          variant: result.cardsSkipped > 0 ? 'warning' : 'success',
+          title: result.cardsSkipped > 0 ? 'Export incomplete' : 'Sheet exported',
+          description: result.cardsSkipped > 0
+            ? `${result.cardsDrawn} cards exported; ${result.cardsSkipped} could not be written completely. Check the affected cards and photos.`
+            : `${result.sheetCount} ${result.sheetCount === 1 ? 'sheet' : 'sheets'}, ${result.cardsDrawn} ${result.cardsDrawn === 1 ? 'card' : 'cards'}`,
         })
       } catch {
         notify({ variant: 'error', title: 'Export failed', description: 'The sheet could not be written.' })

@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.9.8",
+    "date": "2026-11-19",
+    "title": "Export restored cards after reload",
+    "highlights": [
+      "Export uses saved cards and photos even after a reload, without needing the original PDF to remain in memory.",
+      "Incomplete exports now show a warning, and exports with no complete cards report an error instead of a misleading success."
+    ]
+  },
+  {
     "version": "1.9.7",
     "date": "2026-11-19",
     "title": "New card margins and a visible print border",

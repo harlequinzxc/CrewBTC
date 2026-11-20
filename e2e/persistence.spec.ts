@@ -1,3 +1,4 @@
+import type { PDFArray } from '@cantoo/pdf-lib'
 import { expect, test } from '@playwright/test'
 import { textZones, uploadPdf } from './fixtures'
 
@@ -47,4 +48,41 @@ test('clear all offers an undo that restores the batch', async ({ page }) => {
 
   await page.getByRole('button', { name: /undo/i }).click()
   await expect(page.locator('[data-cell]')).toHaveCount(drawn)
+  const download = page.waitForEvent('download')
+  await page.getByLabel('Export PDF').click()
+  await download
+  await expect(page.getByText(`${drawn} cards`, { exact: false })).toBeVisible()
+})
+
+test('export after reload contains the edited text, label, and photo', async ({ page }) => {
+  await uploadPdf(page)
+  await textZones(page).first().click()
+  await page.getByLabel('Edit card text').fill('KEPT')
+  await page.keyboard.press('Escape')
+  await page.getByLabel('Card corner label').first().fill('ABC')
+  await page.waitForTimeout(1000)
+  await page.reload()
+  await expect(page.locator('[data-cell]').first()).toBeVisible()
+  await expect(page.locator('[data-cell]').first()).toContainText('KEPT')
+  const pending = page.waitForEvent('download')
+  await page.getByLabel('Export PDF').click()
+  const download = await pending
+  const { readFile } = await import('node:fs/promises')
+  const { PDFDocument } = await import('@cantoo/pdf-lib')
+  const doc = await PDFDocument.load(await readFile(await download.path()))
+  const contents = doc.getPages()[0]!.node.Contents() as unknown as PDFArray
+  const streams: string[] = []
+  for (let i = 0; i < contents.size(); i += 1) {
+    const item = doc.context.lookup(contents.get(i) as never) as { contents?: Uint8Array }
+    if (item.contents === undefined) continue
+    const stream = new DecompressionStream('deflate')
+    const writer = stream.writable.getWriter()
+    void writer.write(new Uint8Array(item.contents))
+    void writer.close()
+    streams.push(await new Response(stream.readable).text())
+  }
+  const content = streams.join('\n')
+  expect(content).toContain('<4B455054> Tj')
+  expect(content).toContain('<414243> Tj')
+  expect(content).toMatch(/\/[^\s]+ Do\b/)
 })

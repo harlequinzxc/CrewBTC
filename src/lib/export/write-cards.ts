@@ -14,8 +14,6 @@ export interface CardExportInput {
   readonly settings: SheetSettings
   readonly grid: GridLayout
   readonly pages: readonly PageRef[]
-  /** Source bytes per document id, used only to prove a page exists. */
-  readonly sources: ReadonlyMap<string, ArrayBuffer>
   readonly drawCutMarks: boolean
   /** Every card, keyed `cellIndex|documentId|pageNumber`. */
   readonly cards: Readonly<Record<string, Card>>
@@ -38,7 +36,7 @@ export interface CardExportResult {
  * construction rather than by keeping two code paths in step.
  */
 export async function writeCards(input: CardExportInput): Promise<CardExportResult> {
-  const { settings, grid, pages, sources, drawCutMarks, cards } = input
+  const { settings, grid, pages, drawCutMarks, cards } = input
   const photos = input.photos ?? {}
   const plans = planSheets(pages, grid)
 
@@ -51,17 +49,8 @@ export async function writeCards(input: CardExportInput): Promise<CardExportResu
   out.setCreator('CrewBTC — recipe cards')
   out.setCreationDate(new Date())
 
-  // A page only needs its source to exist; nothing is copied from it, so the original
-  // document is never modified and never embedded.
-  const knowable = new Set<string>()
-  for (const [id, bytes] of sources) {
-    try {
-      await PDFDocument.load(bytes, { updateMetadata: false })
-      knowable.add(id)
-    } catch {
-      // Unreadable source: its cards are counted as skipped, never faked.
-    }
-  }
+  // Cards are the complete printable content; parsed page references and saved cards
+  // remain available after reload even when the original upload is no longer in memory.
 
   // Helvetica is standard-14: no embedding cost, and bold is a second standard face.
   let regular = await out.embedFont(StandardFonts.Helvetica)
@@ -90,7 +79,7 @@ export async function writeCards(input: CardExportInput): Promise<CardExportResu
 
     for (const placement of plan.placements) {
       const cell = grid.cells.find((item) => item.index === placement.cellIndex)
-      if (cell === undefined || !knowable.has(placement.documentId)) {
+      if (cell === undefined) {
         cardsSkipped += 1
         continue
       }
@@ -138,6 +127,7 @@ export async function writeCards(input: CardExportInput): Promise<CardExportResu
         })
         drawCornerLabels(canvas, cell.rect, card, rgb)
         if (placed || card.photo === null) cardsDrawn += 1
+        else cardsSkipped += 1
       } catch {
         cardsSkipped += 1
       }

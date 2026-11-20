@@ -135,7 +135,7 @@ export function useBatch({ notify, restore, restoreActiveId }: BatchOptions): Ba
 
   const addFiles = useCallback(
     (files: readonly File[]) => {
-      // Cache the bytes before parsing so the exporter can embed real pages later.
+      // Cache the uploads for thumbnails and re-running extraction during this visit.
       void (async () => {
         const bytes = await Promise.all(
           files.map(async (file) => {
@@ -162,7 +162,7 @@ export function useBatch({ notify, restore, restoreActiveId }: BatchOptions): Ba
     /*
       A restored batch has no `File` objects — the snapshot stores parsed results, not the
       uploads, so `sources` is empty after a reload even though every card is on the sheet.
-      Deriving a File from the bytes the exporter already holds keeps re-run working for
+      Deriving a File from cached bytes keeps re-run working for
       the rest of the session instead of claiming there is nothing to do.
 
       When there are no bytes either (an older snapshot, or a file cleared since), the
