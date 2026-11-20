@@ -1,4 +1,4 @@
-import { CARD_TEXT_PT, cornerHeightMm } from '../../types/card-typography'
+import { CARD_TEXT_PT, printedCornerHeightMm } from '../../types/card-typography'
 import type { RGB } from '@cantoo/pdf-lib'
 import type { Card, RectMm } from '../../types/card'
 import { mmToPt } from '../units'
@@ -9,14 +9,14 @@ export function drawCornerLabels(canvas: CardCanvas, cell: RectMm, card: Card, r
   if (card.displayNumber === undefined) return
   const width = mmToPt(cell.widthMm * 0.22)
   const textScale = card.textScale ?? 1
-  const height = mmToPt(cornerHeightMm(textScale))
+  const height = mmToPt(printedCornerHeightMm(textScale))
   const size = CARD_TEXT_PT * textScale
   const font = canvas.bold
   const y = canvas.sheetHeightPt - mmToPt(cell.yMm) - height
   const x = mmToPt(cell.xMm)
   const bg = rgb(228 / 255, 228 / 255, 231 / 255)
   const border = rgb(161 / 255, 161 / 255, 170 / 255)
-  const texts = [String(card.displayNumber), card.cornerLabel ?? '']
+  const texts = [String(card.displayNumber), card.displayCornerLabel ?? card.cornerLabel ?? '']
   for (const [index, text] of texts.entries()) {
     const left = x + (index === 0 ? 0 : mmToPt(cell.widthMm) - width)
     canvas.page.drawRectangle({ x: left, y, width, height, color: bg, borderColor: border, borderWidth: 0.4 })

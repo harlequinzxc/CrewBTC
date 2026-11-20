@@ -1,3 +1,4 @@
+import { numberedCards } from '../features/workspace/numbered-cards'
 import { createCanvas } from '@napi-rs/canvas'
 import { PDFArray, PDFDocument } from '@cantoo/pdf-lib'
 import { describe, expect, it } from 'vitest'
@@ -198,4 +199,17 @@ it('all four card text areas print at the same bold size', async () => {
   expect(fonts.map((match) => Number(match[2]))).toEqual([13.5, 13.5, 13.5, 13.5])
   expect(content).toContain('<3430> Tj')
   expect(content).toContain('<4142> Tj')
+})
+
+
+it('prints the first corner label on following cards rather than their old labels', async () => {
+  const pages = [1, 2].map((pageNumber) => ({ documentId: 'doc-a', fileName: 'cards.pdf', pageNumber, widthMm: 181, heightMm: 255 }))
+  const cards = {
+    [cardKey(0, 'doc-a', 1)]: makeCard({ photo: null, cornerLabel: 'AB' }),
+    [cardKey(1, 'doc-a', 2)]: makeCard({ photo: null, cornerLabel: 'ZZ' }),
+  }
+  const result = await writeCards({ settings: DEFAULT_SHEET, grid, pages, sources: new Map([['doc-a', await sourceBytes()]]), drawCutMarks: false, cards: numberedCards(cards, pages, grid, 0.8) })
+  const content = await contentOf(result.bytes)
+  expect(content.match(/<4142> Tj/g)).toHaveLength(2)
+  expect(content).not.toContain('<5A5A> Tj')
 })

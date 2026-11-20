@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.9.5",
+    "date": "2026-11-19",
+    "title": "One shared corner label and a smaller print box",
+    "highlights": [
+      "The first card\u2019s right-hand corner label now appears on all following populated cards, including across sheets. Edit the first card to change or clear every mirrored label.",
+      "Both grey corner boxes print with slightly less vertical padding, while keeping the same type size and centred text.",
+      "New sheet settings default to 80% text size. A previously saved text-size choice is kept."
+    ]
+  },
+  {
     "version": "1.9.4",
     "date": "2026-11-19",
     "title": "One text size across the card",

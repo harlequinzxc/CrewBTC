@@ -5,7 +5,6 @@
  * settings — every card can hold its own header height, its own photo framing, its own
  * type styles — so two dishes on one sheet can be laid out differently.
  */
-
 /** How a run of card text is drawn. One style per zone, applied to all its words. */
 export interface TextStyle {
   readonly bold: boolean
@@ -31,14 +30,12 @@ export const DEFAULT_TEXT_STYLE: TextStyle = {
   color: '#111827',
   highlight: null,
 }
-
 /** The style a card's instruction box starts with: bold black, flush left. */
 export const DEFAULT_BODY_STYLE: TextStyle = {
   bold: true,
   color: '#111827',
   highlight: null,
 }
-
 /** The style a card's *name* box starts with: bold black, centred. */
 export const DEFAULT_HEADER_STYLE: TextStyle = {
   bold: true,
@@ -200,8 +197,10 @@ export interface Card {
   /** Optional numbering restart and editable corner label. */
   readonly numberStart?: number
   readonly cornerLabel?: string
-  /** Resolved in sheet order; not a numbering restart. */
+  /** Values resolved from sheet order for display and export. */
   readonly displayNumber?: number
+  readonly displayCornerLabel?: string
+  readonly cornerLabelMirrored?: boolean
   readonly headerText: string
   readonly bodyText: string
   /** Selection-level styling, empty when the whole box shares one style. */

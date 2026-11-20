@@ -131,7 +131,8 @@ describe('fine-tuning one card', () => {
     expect(labels[0]?.placeholder).toBe('XXXXX')
     fireEvent.change(labels[0]!, { target: { value: 'ABC' } })
     expect(labels[0]?.value).toBe('ABC')
-    expect(labels[1]?.value).toBe('')
+    expect(labels[1]?.value).toBe('ABC')
+    expect(labels[1]?.readOnly).toBe(true)
   })
 
   afterEach(() => {

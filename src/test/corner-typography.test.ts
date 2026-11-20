@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { drawCornerLabels } from '../lib/export/corner-labels'
 import type { CardCanvas } from '../lib/export/draw-card'
 import { blankCard } from '../features/workspace/use-cards'
-import { CARD_TEXT_PT, cornerHeightMm } from '../types/card-typography'
+import { CARD_TEXT_PT, cornerHeightMm, printedCornerHeightMm } from '../types/card-typography'
 import { mmToPt } from '../lib/units'
 
 describe('corner box PDF geometry', () => {
@@ -22,7 +22,8 @@ describe('corner box PDF geometry', () => {
     for (let i = 0; i < 2; i += 1) {
       const box = drawRectangle.mock.calls[i]![0]
       const [text, options] = drawText.mock.calls[i]!
-      expect(box.height).toBeCloseTo(mmToPt(cornerHeightMm(scale)), 6)
+      expect(box.height).toBeCloseTo(mmToPt(printedCornerHeightMm(scale)), 6)
+      expect(box.height).toBeLessThan(mmToPt(cornerHeightMm(scale)))
       expect(options.font).toBe(bold)
       expect(options.size).toBe(CARD_TEXT_PT * scale)
       expect(options.x + bold.widthOfTextAtSize(text, options.size) / 2).toBeCloseTo(box.x + box.width / 2, 6)
