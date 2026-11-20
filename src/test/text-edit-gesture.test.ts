@@ -36,13 +36,18 @@ describe('the text edit gesture', () => {
       and stand down. Dispatching the press and letting the button handle it in the same
       task reproduces that order.
     */
-    button.addEventListener('pointerdown', () => result.current.press({
-      button: 0,
-      timeStamp: 100,
-      currentTarget: button,
-      stopPropagation: () => undefined,
-      preventDefault: () => undefined,
-    } as unknown as React.PointerEvent<HTMLElement>))
+    button.addEventListener('pointerdown', () =>
+      result.current.press(
+        {
+          button: 0,
+          timeStamp: 100,
+          currentTarget: button,
+          stopPropagation: () => undefined,
+          preventDefault: () => undefined,
+        } as unknown as React.PointerEvent<HTMLElement>,
+        begin,
+      ),
+    )
 
     press(button, 100)
     await new Promise((resolve) => setTimeout(resolve, 10))
@@ -63,6 +68,35 @@ describe('the text edit gesture', () => {
 
     press(button, 200)
     await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(begin).toHaveBeenCalledTimes(1)
+  })
+
+  /*
+    The regression this signature exists for.
+
+    With the callback looked up in a map, a press on a zone whose entry was missing opened
+    nothing while still counting as handled — the bug presented as "the press handler ran,
+    but no field ever appeared", which cost four releases. The callback is now passed in,
+    so the ordinary path cannot fail this way even with an empty map.
+  */
+  it('opens the box it was given, even for a zone the map never saw', () => {
+    const { result } = renderHook(() => useTextEditGesture())
+    const button = document.createElement('button')
+    button.setAttribute('aria-label', 'Card text: Kung Pao')
+    document.body.append(button)
+
+    const begin = vi.fn()
+    result.current.press(
+      {
+        button: 0,
+        timeStamp: 300,
+        currentTarget: button,
+        stopPropagation: () => undefined,
+        preventDefault: () => undefined,
+      } as unknown as React.PointerEvent<HTMLElement>,
+      begin,
+    )
 
     expect(begin).toHaveBeenCalledTimes(1)
   })

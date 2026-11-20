@@ -14,9 +14,19 @@ import { useCallback, useEffect, useRef } from 'react'
  * which no amount of testing from outside can rule out.
  */
 export interface TextEditGesture {
-  /** Attach to any card-text button's `onPointerDown`. */
-  readonly press: (event: React.PointerEvent<HTMLElement>) => void
-  /** Attach to the same button's `ref`, so the fallback knows how to open it. */
+  /**
+   * Attach to any card-text button's `onPointerDown`, with the callback that opens *that*
+   * box.
+   *
+   * The callback is passed in rather than looked up. An earlier version found it in a map
+   * keyed by element, and that lookup could fail silently — `begin?.()` on a missing entry
+   * opens nothing, reports nothing, and leaves the press counted as handled. Every
+   * diagnostic then said "the press handler ran" while no field appeared, which is exactly
+   * the report that took four releases to explain. The same closure already has the
+   * callback, so the ordinary path no longer consults the map at all.
+   */
+  readonly press: (event: React.PointerEvent<HTMLElement>, begin: () => void) => void
+  /** Attach to the same button's `ref`. Only the fallback needs the map. */
   readonly register: (element: HTMLElement | null, begin: () => void) => void
 }
 
@@ -32,7 +42,7 @@ export function useTextEditGesture(): TextEditGesture {
     if (element !== null) zones.current.set(element, begin)
   }, [])
 
-  const press = useCallback((event: React.PointerEvent<HTMLElement>) => {
+  const press = useCallback((event: React.PointerEvent<HTMLElement>, begin: () => void) => {
     if (event.button !== 0) return
     handled.current = event.timeStamp
     event.stopPropagation()
@@ -45,8 +55,16 @@ export function useTextEditGesture(): TextEditGesture {
       and a whole-build bisect of every release since 1.7.0 confirms it. It is load-bearing.
     */
     event.preventDefault()
-    const begin = zones.current.get(event.currentTarget)
-    begin?.()
+    /*
+      For the probe: did the fallback's map know this element at all?
+
+      The press itself no longer depends on the answer — that is the point of taking the
+      callback as an argument — but if the two ever disagree on the user's machine, that
+      disagreement is worth seeing in a report rather than debugging twice.
+    */
+    const zone = event.currentTarget as HTMLElement
+    zone.dataset.pressBegin = zones.current.has(zone) ? 'registered' : 'unregistered'
+    begin()
   }, [])
 
   useEffect(() => {

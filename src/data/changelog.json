@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.9.8",
+    "date": "2026-11-20",
+    "title": "The press no longer needs a lookup to find the box it belongs to",
+    "highlights": [
+      "Fixed the reported bug: the press arrived, the handler ran, and no field appeared. The handler found the code that opens the box by looking it up in a map \u2014 and when the lookup found nothing, it did nothing, silently, while still counting as handled. That is why every diagnostic for four releases said \u201cthe press handler ran\u201d next to \u201cno field\u201d",
+      "The handler is now given the code to run instead of looking it up, so the ordinary path cannot fail this way at all. A missing map entry is now harmless rather than silent",
+      "The new report line showed it: \u201c+21ms the button handler ran\u201d followed by no field, which ruled out the press never arriving and pointed straight at what the handler did next",
+      "New test presses a box the map has never seen and requires it to open. Put the lookup back and the test fails, which is the reported symptom exactly"
+    ]
+  },
+  {
     "version": "1.9.7",
     "date": "2026-11-20",
     "title": "The diagnostic stops guessing, and says when it cannot see",
