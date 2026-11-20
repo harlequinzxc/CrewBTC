@@ -6,19 +6,7 @@ export interface ToastInput {
   readonly title: string
   readonly description?: string | undefined
   readonly undo?: (() => void) | undefined
-}
-
-export interface ToastApi {
-  readonly show: (input: ToastInput) => void
-  readonly dismiss: (id: string) => void
-  readonly messages: readonly ToastMessage[]
-}
-
-export interface ToastInput {
-  readonly variant: ToastVariant
-  readonly title: string
-  readonly description?: string | undefined
-  readonly undo?: (() => void) | undefined
+  readonly action?: string | undefined
 }
 
 export interface ToastApi {

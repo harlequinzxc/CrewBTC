@@ -12,6 +12,8 @@ export interface ToastMessage {
   readonly description?: string | undefined
   /** Optional undo affordance for destructive actions (§6). */
   readonly undo?: (() => void) | undefined
+  /** Text for the action button. Defaults to "Undo", which is what most actions are. */
+  readonly action?: string | undefined
 }
 
 const ICONS = {
@@ -90,7 +92,7 @@ export function Toast({ toast, onDismiss, durationMs = 6000 }: ToastProps) {
             toast.undo?.()
             onDismiss(toast.id)
           }} className="h-8 min-h-8 rounded-md px-2 text-xs font-semibold text-red-300 transition-colors duration-150 ease-out hover:bg-zinc-800 focus-visible:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-red-500">
-          Undo
+          {toast.action ?? 'Undo'}
         </button>
       )}
     </div>
