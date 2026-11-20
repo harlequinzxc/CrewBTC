@@ -157,3 +157,44 @@ test('clicking into the header and then the footer switches which band is editab
   await zones.nth(1).click()
   await expect(page.getByLabel('Edit card text')).toHaveCount(1)
 })
+
+/**
+ * The rescue, and what it is for.
+ *
+ * Nothing found in testing stops the press before it reaches the button, but the user's
+ * machine did it four releases running, so the gesture is no longer allowed to depend on
+ * the press arriving at all. This test manufactures the failure: it severs both of the
+ * button's own ways in — the press and the click that follows it — between the document
+ * and the button. The field must still open, and it must open *once*: the first version of
+ * the fallback opened a rescued zone during the press and the ordinary press at the same
+ * time, and the fight between them left no field at all.
+ *
+ * The listeners sit on `documentElement`, not `window`. The fallback itself listens on
+ * `document` in the capture phase, so a `window` listener would run *first* and sever the
+ * press before the fallback ever saw it. `documentElement` is one step further down: the
+ * fallback has already been given the press, and the button has not.
+ */
+test('a press that never reaches the button is rescued by the sheet-level fallback', async ({
+  page,
+}) => {
+  await uploadPdf(page)
+
+  await page.evaluate(() => {
+    const sever = (event: Event): void => {
+      const target = event.target as Element | null
+      if (target?.closest?.('button[aria-label^="Card text:"]')) event.stopPropagation()
+    }
+    document.documentElement.addEventListener('pointerdown', sever, true)
+    document.documentElement.addEventListener('click', sever, true)
+  })
+
+  const box = await textZones(page).first().boundingBox()
+  expect(box).not.toBeNull()
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
+  await page.mouse.down()
+  await page.mouse.up()
+
+  // Exactly one field: a rescued press must not race the press's own handler.
+  await expect(page.getByLabel('Edit card text')).toHaveCount(1)
+  await expect(page.getByLabel('Edit card text')).toBeVisible()
+})

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { Card } from '../features/workspace/Card'
 import { blankCard } from '../features/workspace/use-cards'
 import type { Card as CardModel, RectMm } from '../types/card'
+import { textEditGestureStub } from './gesture-stub'
 
 /**
  * The picture controls: double-click to adjust, then drag to pan and wheel to zoom.
@@ -46,7 +47,7 @@ const photoButton = (): HTMLElement => screen.getByRole('button', { name: /Dish 
 describe('entering and leaving adjust mode', () => {
   it('enters on double-click', () => {
     const p = props(model({ photo }))
-    render(<Card {...p} />)
+    render(<Card {...p} gesture={textEditGestureStub} />)
     fireEvent.doubleClick(photoButton())
     expect(p.onBeginPictureEdit).toHaveBeenCalled()
   })
@@ -54,7 +55,7 @@ describe('entering and leaving adjust mode', () => {
   it('leaves on double-click when already adjusting', () => {
     const p = props(model({ photo }))
     p.pictureEditing = true
-    render(<Card {...p} />)
+    render(<Card {...p} gesture={textEditGestureStub} />)
     fireEvent.doubleClick(photoButton())
     expect(p.onEndPictureEdit).toHaveBeenCalled()
     expect(p.onBeginPictureEdit).not.toHaveBeenCalled()
@@ -62,17 +63,17 @@ describe('entering and leaving adjust mode', () => {
 
   it('shows the frame as active only while adjusting', () => {
     const idle = props(model({ photo }))
-    const { rerender } = render(<Card {...idle} />)
+    const { rerender } = render(<Card {...idle} gesture={textEditGestureStub} />)
     expect(photoButton().dataset.adjusting).toBe('false')
 
-    rerender(<Card {...idle} pictureEditing />)
+    rerender(<Card gesture={textEditGestureStub} {...idle} pictureEditing />)
     expect(photoButton().dataset.adjusting).toBe('true')
   })
 
   it('offers no floating slider, buttons or reset bar', () => {
     const p = props(model({ photo }))
     p.pictureEditing = true
-    render(<Card {...p} />)
+    render(<Card {...p} gesture={textEditGestureStub} />)
 
     expect(screen.queryByLabelText('Photo zoom')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Zoom in' })).toBeNull()
@@ -85,7 +86,7 @@ describe('framing the photo', () => {
   it('pans by the distance dragged', () => {
     const p = props(model({ photo }))
     p.pictureEditing = true
-    render(<Card {...p} />)
+    render(<Card {...p} gesture={textEditGestureStub} />)
     const button = photoButton()
 
     fireEvent.pointerDown(button, { clientX: 100, clientY: 100, pointerId: 1 })
@@ -99,7 +100,7 @@ describe('framing the photo', () => {
 
   it('does not pan when not adjusting', () => {
     const p = props(model({ photo }))
-    render(<Card {...p} />)
+    render(<Card {...p} gesture={textEditGestureStub} />)
     const button = photoButton()
 
     fireEvent.pointerDown(button, { clientX: 10, clientY: 10, pointerId: 1 })
@@ -110,7 +111,7 @@ describe('framing the photo', () => {
   it('nudges with the arrow keys while adjusting', () => {
     const p = props(model({ photo }))
     p.pictureEditing = true
-    render(<Card {...p} />)
+    render(<Card {...p} gesture={textEditGestureStub} />)
     fireEvent.keyDown(photoButton(), { key: 'ArrowRight' })
     const sent = p.onImageChange.mock.calls.at(-1)?.[0] as { offsetXMm: number }
     expect(sent.offsetXMm).toBeGreaterThan(0)
@@ -119,7 +120,7 @@ describe('framing the photo', () => {
   it('keeps the framing when leaving', () => {
     const p = props(model({ photo }))
     p.pictureEditing = true
-    render(<Card {...p} />)
+    render(<Card {...p} gesture={textEditGestureStub} />)
     fireEvent.keyDown(photoButton(), { key: 'Escape' })
     expect(p.onEndPictureEdit).toHaveBeenCalled()
     // Leaving is not a discard: nothing hands the transform back to its original values.
@@ -133,7 +134,7 @@ describe('zooming with the wheel', () => {
   it('zooms in on wheel up, without a floating control', () => {
     const p = props(model({ photo }))
     p.pictureEditing = true
-    render(<Card {...p} />)
+    render(<Card {...p} gesture={textEditGestureStub} />)
 
     // The listener is non-passive and attached to the frame itself, so a native event
     // is what exercises it — this is the path that also stops the sheet from scrolling.
@@ -146,7 +147,7 @@ describe('zooming with the wheel', () => {
   it('zooms out on wheel down', () => {
     const p = props(model({ photo }))
     p.pictureEditing = true
-    render(<Card {...p} />)
+    render(<Card {...p} gesture={textEditGestureStub} />)
     fireEvent.wheel(photoButton().parentElement as HTMLElement, { deltaY: 100 })
     const sent = p.onImageChange.mock.calls.at(-1)?.[0] as { scale: number }
     expect(sent.scale).toBeLessThan(1)
@@ -154,7 +155,7 @@ describe('zooming with the wheel', () => {
 
   it('ignores the wheel when not adjusting, leaving the sheet free to scroll', () => {
     const p = props(model({ photo }))
-    render(<Card {...p} />)
+    render(<Card {...p} gesture={textEditGestureStub} />)
     fireEvent.wheel(photoButton().parentElement as HTMLElement, { deltaY: -100 })
     expect(p.onImageChange).not.toHaveBeenCalled()
   })
@@ -163,7 +164,7 @@ describe('zooming with the wheel', () => {
     const p = props(model({ photo }))
     p.pictureEditing = true
     p.card = { ...p.card, imageTransform: { offsetXMm: 0, offsetYMm: 0, scale: 4 } }
-    render(<Card {...p} />)
+    render(<Card {...p} gesture={textEditGestureStub} />)
     fireEvent.wheel(photoButton().parentElement as HTMLElement, { deltaY: -100 })
     const sent = p.onImageChange.mock.calls.at(-1)?.[0] as { scale: number }
     expect(sent.scale).toBeLessThanOrEqual(4)

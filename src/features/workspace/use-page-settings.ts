@@ -19,11 +19,24 @@ export function usePageSettings(): PageSettingsStore {
   const [settings, setSettings] = useState<PageSettings>(DEFAULT_PAGE_SETTINGS)
 
   useEffect(() => {
+    /*
+      A flag rather than an abort: the read is a database round-trip, and a screen closed
+      while it is in flight must not come back to set state on an unmounted component.
+      React lets that call through to `dispatchSetState`, which reaches for `window` and
+      throws where there is none — during test teardown, for instance. It surfaced as an
+      intermittent "window is not defined" from this line, four tests into a suite it had
+      nothing to do with.
+    */
+    let live = true
     void (async () => {
       const previous = normalisePageSettings(await readSettings())
+      if (!live) return
       setSettings(previous)
       await requestPersistence()
     })()
+    return () => {
+      live = false
+    }
   }, [])
 
   const update = useCallback((next: PageSettings) => {

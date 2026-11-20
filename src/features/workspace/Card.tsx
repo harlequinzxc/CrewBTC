@@ -5,6 +5,7 @@ import { CardZoneImage } from './CardZoneImage'
 import { CardZoneText } from './CardZoneText'
 import { relativeToCard } from './zone-box'
 import { ZoneDividers } from './ZoneDividers'
+import type { TextEditGesture } from './use-text-edit-gesture'
 
 export type CardZone = 'header' | 'picture' | 'body'
 
@@ -28,6 +29,8 @@ export interface CardProps {
   readonly onBeginPictureEdit: () => void
   readonly onEndPictureEdit: () => void
   readonly onImageChange: (transform: Card['imageTransform']) => void
+  /** The sheet's shared press gesture for text boxes. */
+  readonly gesture: TextEditGesture
   /** Present only on the selected card: dividers are a pointer gesture on that one card. */
   readonly onBandsChange?: (bands: Card['bands']) => void
 }
@@ -69,6 +72,7 @@ export function Card(props: CardProps) {
       onPointerDown={props.onSelect}
     >
       <CardZoneText
+        gesture={props.gesture}
         text={card.headerText}
         scale={scale}
         xMm={header.xMm}
@@ -100,6 +104,7 @@ export function Card(props: CardProps) {
       />
 
       <CardZoneText
+        gesture={props.gesture}
         text={card.bodyText}
         scale={scale}
         xMm={footer.xMm}
