@@ -1,0 +1,121 @@
+import { cardKey } from '../../types/card'
+import type { Card } from '../../types/card'
+import type { GridLayout } from '../../types/imposition'
+import { Card as CardView } from './Card'
+import { blankCard } from './use-cards'
+import type { CardZone } from './Card'
+
+/**
+ * Everything painted on the sheet: the empty-cell guides, every card, and the cut marks.
+ *
+ * Split out of `CardSheet` so that component can stay what its name says — the thing that
+ * owns *which* card is being edited — while this one owns the drawing. Both are given the
+ * same grid and the same sheet scale, so what is drawn here is what is exported.
+ */
+
+/** One page placed into one cell, as the sheet planner produces it. */
+export interface Placement {
+  readonly cellIndex: number
+  readonly documentId: string
+  readonly pageNumber: number
+  readonly fileName: string
+}
+
+export interface SheetBodyProps {
+  readonly grid: GridLayout
+  readonly scale: number
+  readonly placements: readonly Placement[] | undefined
+  readonly marks: readonly { readonly x1Mm: number; readonly y1Mm: number; readonly x2Mm: number; readonly y2Mm: number }[]
+  readonly cards: Readonly<Record<string, Card>>
+  readonly selectedCell: number | null
+  readonly activeZone: CardZone | null
+  readonly editingCell: number | null
+  readonly pictureKey: string | null
+  readonly onDeselect: () => void
+  readonly onSelectCell: (cellIndex: number) => void
+  readonly onBeginTextEdit: (cellIndex: number, key: string, zone: 'header' | 'body') => void
+  readonly onEndEdit: () => void
+  readonly onSelectionChange: (zone: 'header' | 'body', selection: { readonly start: number; readonly end: number } | null) => void
+  readonly onTextChange: (key: string, zone: 'header' | 'body', text: string) => void
+  readonly onStyleChange: (key: string, zone: 'header' | 'body', style: Card['headerStyle']) => void
+  readonly onBeginPictureEdit: (cellIndex: number, key: string) => void
+  readonly onEndPictureEdit: () => void
+  readonly onImageChange: (key: string, transform: Card['imageTransform']) => void
+  readonly onBandsChange: (key: string, bands: Card['bands']) => void
+}
+
+export function SheetBody(props: SheetBodyProps) {
+  const { grid, scale, placements, cards } = props
+
+  return (
+    <>
+      <button
+        type="button"
+        data-target="dense"
+        aria-label="Sheet preview — deselect card"
+        className="absolute inset-0 z-0 min-h-8 cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
+        onClick={props.onDeselect}
+      />
+
+      {grid.cells.map((cell) => {
+        const placement = placements?.find((item) => item.cellIndex === cell.index)
+        const geometry = {
+          left: `${cell.rect.xMm * scale}px`,
+          top: `${cell.rect.yMm * scale}px`,
+          width: `${cell.rect.widthMm * scale}px`,
+          height: `${cell.rect.heightMm * scale}px`,
+        }
+
+        if (placement === undefined) {
+          return (
+            <div key={cell.index} className="absolute border border-dashed border-zinc-300" style={geometry}>
+              <span className="absolute left-0.5 top-0.5 text-[9px] leading-none text-zinc-400">
+                {cell.index + 1}
+              </span>
+            </div>
+          )
+        }
+
+        const key = cardKey(cell.index, placement.documentId, placement.pageNumber)
+        const card = cards[key] ?? blankCard(grid.cellHeightMm)
+        return (
+          <CardView
+            key={cell.index}
+            card={card}
+            cell={cell.rect}
+            scale={scale}
+            cellIndex={cell.index}
+            pageLabel={`${placement.fileName}#${placement.pageNumber}`}
+            selected={props.selectedCell === cell.index}
+            editing={props.editingCell === cell.index ? props.activeZone : null}
+            pictureEditing={props.pictureKey === key}
+            onSelect={() => props.onSelectCell(cell.index)}
+            onBeginTextEdit={(zone) => props.onBeginTextEdit(cell.index, key, zone)}
+            onEndEdit={props.onEndEdit}
+            onSelectionChange={props.onSelectionChange}
+            onTextChange={(zone, text) => props.onTextChange(key, zone, text)}
+            onStyleChange={(zone, style) => props.onStyleChange(key, zone, style)}
+            onBeginPictureEdit={() => props.onBeginPictureEdit(cell.index, key)}
+            onEndPictureEdit={props.onEndPictureEdit}
+            onImageChange={(transform) => props.onImageChange(key, transform)}
+            onBandsChange={(bands) => props.onBandsChange(key, bands)}
+          />
+        )
+      })}
+
+      {props.marks.map((mark, index) => (
+        <div
+          key={`mark-${index}`}
+          aria-hidden="true"
+          className="pointer-events-none absolute bg-red-300/50"
+          style={{
+            left: `${mark.x1Mm * scale}px`,
+            top: `${mark.y1Mm * scale}px`,
+            width: `${Math.max(1, (mark.x2Mm - mark.x1Mm) * scale)}px`,
+            height: `${Math.max(1, (mark.y2Mm - mark.y1Mm) * scale)}px`,
+          }}
+        />
+      ))}
+    </>
+  )
+}

@@ -26,18 +26,25 @@ text underneath.
 - Both text boxes are real text fields. Type in them, add or remove lines, and select
   text to format it. **Bold**, ink colour and a red / green / amber highlight apply to
   whatever you have selected; with nothing selected they set the whole box.
-- The photo is never stretched. Double-click it to adjust: drag to move, use the wheel
-  or the `+` / `−` buttons to zoom, and **Reset** to put it back. Anything that spills
-  past the box is clipped, so a tall photo can't push the text out of the way. Click
-  outside or press `Escape` when you are happy — the framing is kept.
-- Each card tunes its own proportions. The top and bottom heights are yours to set
-  per card, so a dish with long instructions and a dish with a short name can both
-  be laid out the way they need.
+- The photo is never stretched. Double-click the frame to adjust it: drag to move,
+  scroll to zoom. Anything that spills past the box is clipped, so a tall photo can't
+  push the text out of the way. Double-click again, click outside or press `Escape`
+  when you are happy — the framing is kept.
+- Each card tunes its own proportions. Drag the boundary lines on a selected card to
+  resize its text boxes, or use the sliders underneath. A **text scale** control makes
+  the type bigger or smaller without shortening the photo.
 
 **Prints properly.** Export gives you a real PDF at print resolution. Text is drawn as
 vector text, so it stays crisp at any size, and the sheet comes out exactly as it
 looked on screen — same words, same colours, same photo position — with crop marks
 for cutting.
+
+## Zooming the sheet
+
+The toolbar above the sheet has `−`, the current percentage, `+` and **Fit**. **Fit**
+keeps the sheet matched to the window as you resize it; step the zoom once and it stays
+where you put it, with scrollbars when the sheet outgrows the pane. `Ctrl`/`Cmd` and the
+scroll wheel over the workspace does the same thing.
 
 ## Getting started
 

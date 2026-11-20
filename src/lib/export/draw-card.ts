@@ -159,7 +159,7 @@ export async function drawCard(input: DrawCardInput): Promise<boolean> {
     bold: card.headerStyle.bold,
     color: card.headerStyle.color,
     highlight: card.headerStyle.highlight,
-    maxPt: HEADER_MAX_PT,
+    maxPt: HEADER_MAX_PT * (card.textScale ?? 1),
     fallback: black,
     rgb: input.lib.rgb,
   })
@@ -172,7 +172,7 @@ export async function drawCard(input: DrawCardInput): Promise<boolean> {
     bold: card.bodyStyle.bold,
     color: card.bodyStyle.color,
     highlight: card.bodyStyle.highlight,
-    maxPt: FOOTER_MAX_PT,
+    maxPt: FOOTER_MAX_PT * (card.textScale ?? 1),
     fallback: black,
     rgb: input.lib.rgb,
   })

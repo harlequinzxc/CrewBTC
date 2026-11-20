@@ -39,6 +39,8 @@ export const REFERENCE_HIGHLIGHTS = {
 } as const
 
 import type { TextRun } from './text-runs'
+export { containRectMm, fitInsideMm } from './photo-rect'
+export { MAX_TEXT_SCALE, MIN_TEXT_SCALE, clampTextScale } from './text-runs'
 
 export type { TextRun } from './text-runs'
 
@@ -96,12 +98,42 @@ export function defaultBands(cellHeightMm: number): CardBands {
   return { headerMm, footerMm }
 }
 
-/** Keeps two hand-tuned bands inside the card, apart from each other. */
+/**
+ * Keeps two hand-tuned bands inside the card and apart from each other.
+ *
+ * The invariant is that the three zones always tile the cell with a photo at least
+ * `PICTURE_MIN_MM` tall between them. The obvious implementation clamps the header and
+ * then clamps the footer to whatever is left — which quietly breaks the invariant, because
+ * the footer's own minimum can still land on the photo's share. With a cell of 67 mm and
+ * the defaults that produced a 6 mm photo instead of 12, on 7,130 of the possible
+ * header/footer pairs.
+ *
+ * So the pair is treated as a budget: the two bands together get whatever the photo does
+ * not take, the header gets its share first, and the footer gets the remainder. Any
+ * request that cannot be honoured proportionally is scaled down rather than clipped, which
+ * keeps the picture at its minimum instead of stealing from it.
+ */
 export function clampBands(bands: CardBands, cellHeightMm: number): CardBands {
-  const ceiling = Math.max(BAND_MIN_MM, cellHeightMm - PICTURE_MIN_MM)
-  const headerMm = Math.min(Math.max(bands.headerMm, BAND_MIN_MM), ceiling)
-  const footerCeiling = Math.max(BAND_MIN_MM, ceiling - headerMm)
-  const footerMm = Math.min(Math.max(bands.footerMm, BAND_MIN_MM), footerCeiling)
+  const min = BAND_MIN_MM
+  // A cell too small for both minimums still has to yield something drawable.
+  const budget = Math.max(min * 2, cellHeightMm - PICTURE_MIN_MM)
+
+  const header = Math.max(min, Number.isFinite(bands.headerMm) ? bands.headerMm : min)
+  const footer = Math.max(min, Number.isFinite(bands.footerMm) ? bands.footerMm : min)
+
+  // Room the two bands have to share once each minimum is honoured.
+  const spare = Math.max(0, budget - min * 2)
+  const wanted = header - min + (footer - min)
+  if (wanted <= spare || wanted <= 0) {
+    return { headerMm: header, footerMm: footer }
+  }
+
+  // Both want more than exists: split what is left in proportion to what each asked for.
+  // The header is rounded *up* and the footer takes the exact remainder, so rounding can
+  // never eat into the photo's minimum by a hundredth of a millimetre.
+  const share = spare / wanted
+  const headerMm = Math.min(budget - min, Math.ceil((min + (header - min) * share) * 100) / 100)
+  const footerMm = Math.max(min, Math.floor((budget - headerMm) * 100) / 100)
   return { headerMm, footerMm }
 }
 
@@ -147,61 +179,6 @@ export function cardZones(cell: RectMm, bands: CardBands): CardZones {
   }
 }
 
-/**
- * The rectangle a photo is actually drawn at: fitted to the box, then zoomed, centred,
- * and finally offset by however far the user has dragged it.
- *
- * Fit, never cover: the scale comes from the photo's own pixels, so a dish keeps its
- * shape whatever shape the box happens to be. Returns null for a photo or box with no
- * area, so callers can say "nothing to draw" instead of drawing a zero.
- */
-export function containRectMm(
-  box: RectMm,
-  photoWidthPx: number,
-  photoHeightPx: number,
-  transform: ImageTransform = DEFAULT_IMAGE_TRANSFORM,
-  insetMm: number = IMAGE_INSET_MM,
-): RectMm | null {
-  if (
-    box.widthMm <= 0 ||
-    box.heightMm <= 0 ||
-    photoWidthPx <= 0 ||
-    photoHeightPx <= 0
-  ) {
-    return null
-  }
-
-  // A negative inset would push the photo outside its own box.
-  const inset = Math.max(0, Math.min(insetMm, box.widthMm / 2, box.heightMm / 2))
-  const roomWidth = Math.max(0.001, box.widthMm - inset * 2)
-  const roomHeight = Math.max(0.001, box.heightMm - inset * 2)
-
-  const fit = Math.min(roomWidth / photoWidthPx, roomHeight / photoHeightPx)
-  const scale = Math.min(MAX_IMAGE_SCALE, Math.max(MIN_IMAGE_SCALE, transform.scale))
-
-  const widthMm = photoWidthPx * fit * scale
-  const heightMm = photoHeightPx * fit * scale
-
-  // Centred on the *scaled* size, so zoom grows about the middle of the box rather
-  // than pinning one corner.
-  const xMm = box.xMm + (box.widthMm - widthMm) / 2 + transform.offsetXMm
-  const yMm = box.yMm + (box.heightMm - heightMm) / 2 + transform.offsetYMm
-
-  return { xMm, yMm, widthMm, heightMm }
-}
-
-/** The largest `widthPx:heightPx` rectangle that fits a box. Never stretched. */
-export function fitInsideMm(
-  boxWidthMm: number,
-  boxHeightMm: number,
-  widthPx: number,
-  heightPx: number,
-): { widthMm: number; heightMm: number } {
-  if (widthPx <= 0 || heightPx <= 0) return { widthMm: boxWidthMm, heightMm: boxHeightMm }
-  const factor = Math.min(boxWidthMm / widthPx, boxHeightMm / heightPx)
-  return { widthMm: widthPx * factor, heightMm: heightPx * factor }
-}
-
 /** Everything one cell shows. */
 export interface Card {
   readonly headerText: string
@@ -214,6 +191,8 @@ export interface Card {
   readonly bodyStyle: TextStyle
   readonly imageTransform: ImageTransform
   readonly bands: CardBands
+  /** Type size multiplier; 1 is as measured by `layoutBand`. Absent means 1. */
+  readonly textScale?: number
 }
 
 /** A card as it is born from one PDF page. */
@@ -235,6 +214,7 @@ export function cardFromPage(
     bodyStyle: DEFAULT_BODY_STYLE,
     imageTransform: DEFAULT_IMAGE_TRANSFORM,
     bands: defaultBands(cellHeightMm),
+    textScale: 1,
   }
 }
 
