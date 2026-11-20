@@ -13,6 +13,10 @@ import type { IngestedDocument } from '../../types/document'
  * red ring on its cell — one gesture from a file name to the card, in a batch where
  * finding it by scrolling is the whole problem.
  *
+ * The scroll is called here, explicitly, and not left to `selectCell`: selecting a card by
+ * pressing it must never move the canvas (it is the same press that places a caret), so
+ * navigation belongs at the call sites that mean it. This is one; the strip is the other.
+ *
  * Derived from the same plan the canvas draws rather than from the ingest order: the two
  * would agree until the grid changed, at which point the rail would keep pointing at the
  * cell a page used to be in.
@@ -29,6 +33,7 @@ export function usePageReveal(
     cellIndex: number | null,
     page?: { readonly documentId: string; readonly pageNumber: number },
   ) => void,
+  goToSheet: (sheetIndex: number) => void,
 ): PageReveal {
   const placements = useMemo(() => placementsByPage(pageRefs, grid), [pageRefs, grid])
 
@@ -40,12 +45,13 @@ export function usePageReveal(
     (document: IngestedDocument) => {
       const placed = firstPlacementOf(placements, document.fileName)
       if (placed === null) return
+      goToSheet(placed.sheetIndex)
       selectCell(placed.cellIndex, {
         documentId: document.fileName,
         pageNumber: placed.pageNumber,
       })
     },
-    [placements, selectCell],
+    [placements, selectCell, goToSheet],
   )
 
   return { placements, onReveal }

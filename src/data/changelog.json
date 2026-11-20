@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.7.1",
+    "date": "2026-11-20",
+    "title": "Selecting a card no longer drags the page out from under the pointer",
+    "highlights": [
+      "Fixed: clicking a card scrolled the canvas. Since clicking a card is also how you place a caret in its text or grab its photo, the paper moved mid-click and the caret or the drag was lost before it started",
+      "Selection and navigation are now separate: pressing a card selects it and nothing else. The canvas moves when you click a thumbnail or a file row, which are the two gestures that mean \u201ctake me there\u201d"
+    ]
+  },
+  {
     "version": "1.7.0",
     "date": "2026-11-20",
     "title": "All the sheets at once, a strip that looks like the paper, and a rail you can search",

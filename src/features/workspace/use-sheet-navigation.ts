@@ -87,10 +87,18 @@ export function useSheetNavigation(input: {
   const clearScrollTo = useCallback(() => setScrollTo(null), [])
 
   /**
-   * Selecting a cell also has to move the canvas when the card is on another sheet — a
-   * selection the user cannot see is a bug, and the scroll is the only thing that can say
-   * where it went. A file chosen in the rail navigates the same way, through the same
-   * scroll request.
+   * Selecting a cell records which sheet it is on. **It does not scroll.**
+   *
+   * It used to, and the reason looked sound: a selection you cannot see is a bug, and with
+   * one sheet on screen the card really could be off the page. Both halves of that are
+   * false now. Every sheet is drawn and on screen, so a selected card is already visible —
+   * and the gesture that selects it is a pointer-down *on the card*, which is also the
+   * gesture that places a caret in its text or grabs its photo. Scrolling on that gesture
+   * moves the paper out from under the pointer, so the click lands somewhere else and the
+   * caret or the drag is destroyed before it begins.
+   *
+   * Movement is an explicit act, and there are exactly two: the strip, and a file row in
+   * the rail. Both call `goToSheet` directly. Selection is not a third one.
    */
   const selectCell = useCallback(
     (
@@ -102,13 +110,14 @@ export function useSheetNavigation(input: {
         setSelectedCell(null)
         return
       }
-      const sheet =
-        page === undefined ? null : sheetIndexOfPage(pages, grid, page.documentId, page.pageNumber)
-      setSelectionSheet(sheet)
-      if (sheet !== null) goToSheet(sheet)
+      setSelectionSheet(
+        page === undefined
+          ? null
+          : sheetIndexOfPage(pages, grid, page.documentId, page.pageNumber),
+      )
       setSelectedCell(cellIndex)
     },
-    [pages, grid, setSelectedCell, goToSheet],
+    [pages, grid, setSelectedCell],
   )
 
   return {
