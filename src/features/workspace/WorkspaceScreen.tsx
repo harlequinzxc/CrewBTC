@@ -11,6 +11,7 @@ import { useSheet } from './use-sheet'
 import { useSheetZoom } from './use-sheet-zoom'
 import { selectedCardKey } from './selected-card'
 import { useSheetNavigation } from './use-sheet-navigation'
+import { planSheets } from '../../lib/imposition/sheet'
 import { bandsInto, resetProportions, textScaleInto } from './card-edits'
 import { SheetStripSlot } from './SheetStripSlot'
 import { toPageRefs } from '../../lib/pdf/page-refs'
@@ -61,23 +62,33 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
 
   const zoom = useSheetZoom(sheet.settings.sheetWidthMm)
 
-  // One seed per placed page: what the upload read, ready to fill a fresh card.
+  /**
+   * One seed per *placed* page, keyed the way the canvas will look it up.
+   *
+   * The key has to be built from `placement.cellIndex`, not from the page's position in
+   * the flattened list: ordinal 12 is cell 0 of sheet 2, so a positional key populated the
+   * first sheet and left every sheet after it blank. The plan is the only thing that knows
+   * which cell a page really landed in, so it is what seeds are built from.
+   */
   const seeds = useMemo<readonly CardSeed[]>(
     () =>
-      pageRefs.map((page, index) => {
-        // `documentId` on a PageRef is the *file name* (the exporter resolves source
-        // bytes by it), not the internal id. Matching on `id` silently missed every
-        // document, so every card was seeded empty — no photo, no text.
-        const document = batch.documents.find((item) => item.fileName === page.documentId)
-        const copy = document?.copies[page.pageNumber]
-        return {
-          key: cardKey(index, page.documentId, page.pageNumber),
-          headerText: copy?.header ?? '',
-          bodyText: copy?.footer ?? '',
-          photo: document?.photos[page.pageNumber] ?? null,
-        }
-      }),
-    [pageRefs, batch.documents],
+      planSheets(pageRefs, sheet.grid).flatMap((plan) =>
+        plan.placements.map((placement) => {
+          // `documentId` is the *file name* (the exporter resolves source bytes by it),
+          // not the internal id.
+          const document = batch.documents.find(
+            (item) => item.fileName === placement.documentId,
+          )
+          const copy = document?.copies[placement.pageNumber]
+          return {
+            key: cardKey(placement.cellIndex, placement.documentId, placement.pageNumber),
+            headerText: copy?.header ?? '',
+            bodyText: copy?.footer ?? '',
+            photo: document?.photos[placement.pageNumber] ?? null,
+          }
+        }),
+      ),
+    [pageRefs, batch.documents, sheet.grid],
   )
 
   useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm, sheet.grid.cellWidthMm)

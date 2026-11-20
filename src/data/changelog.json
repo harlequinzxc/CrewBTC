@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.6.1",
+    "date": "2026-11-20",
+    "title": "Sheet two gets its text and photos, and a cleared document comes back",
+    "highlights": [
+      "Fixed: the second sheet showed empty cards \u2014 no text, no photo. Every page past the first twelve was seeded under its position in the page list instead of the cell it actually landed in, so the cards existed in the wrong place and the sheet looked blank",
+      "Fixed: after clearing the uploads and loading a PDF again, nothing came back \u2014 not even the first sheet. The seeding step remembered which cards it had already filled, and that memory outlived the cleared cards, so the second load filled nothing",
+      "The seeding step now asks the card store whether a card exists rather than trusting a cache, which is also what keeps it from overwriting a card you have edited"
+    ]
+  },
+    {
     "version": "1.6.0",
     "date": "2026-11-20",
     "title": "Every sheet is reachable, and a narrow window stops eating your work",

@@ -219,5 +219,14 @@ export function cardFromPage(
 }
 
 /** Cards are keyed by position, document and page, so a re-upload finds its own card. */
+/**
+ * A card's identity: the cell it sits in, the file, and the page of that file.
+ *
+ * The cell is the *drawing* cell index, and every reader must agree on that — the canvas,
+ * the exporter, the strip and the inspector all key off `placement.cellIndex`. Using a
+ * page's ordinal position in the flattened page list instead silently works for the first
+ * sheet and breaks every sheet after it, because ordinal 12 is cell 0 of sheet 2, not cell
+ * 12 of anything. `seedKeyFor` below is the one place that knows this.
+ */
 export const cardKey = (cellIndex: number, documentId: string, pageNumber: number): string =>
   `${cellIndex}|${documentId}|${pageNumber}`
