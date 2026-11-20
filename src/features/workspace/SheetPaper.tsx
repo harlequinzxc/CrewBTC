@@ -40,7 +40,11 @@ export interface SheetPaperProps {
   ) => void
   readonly onDeselect: () => void
   readonly gesture: TextEditGesture
-  readonly onBeginTextEdit: (cellIndex: number, key: string, zone: 'header' | 'body') => void
+  readonly onBeginTextEdit: (
+    cellIndex: number,
+    key: string,
+    zone: 'header' | 'body',
+  ) => void
   readonly onEndEdit: () => void
   readonly onSelectionChange: (
     zone: 'header' | 'body',

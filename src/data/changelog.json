@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.9.11",
+    "date": "2026-11-20",
+    "title": "One sheet opens the editor, not every sheet at once",
+    "highlights": [
+      "Fixed the flicker you reported. \u201cWhich card is being edited\u201d was tracked by cell number alone, and every sheet draws the same cell numbers \u2014 so opening cell 3 opened a text field on every sheet in the stack. Several fields then pull the caret back and forth continuously, which is a field that flickers rather than one you can type in. The report showed it precisely: the browser was focused on a TEXTAREA while the app\u2019s own field said it was not",
+      "Editing now records which sheet it is on, not just which cell, so only that sheet opens a field. Selection already worked this way; editing was the one place that did not",
+      "This is also the likely cause of text jumping between cells when deleting. With a field open on more than one sheet, a keystroke is delivered to whichever field currently holds focus, and that field can belong to a different card than the one you clicked",
+      "New test renders a sheet with and without the edit state and requires exactly one field, or none"
+    ]
+  },
+  {
     "version": "1.9.10",
     "date": "2026-11-20",
     "title": "A text box no longer closes because it lost focus",
