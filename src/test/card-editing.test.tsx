@@ -77,22 +77,24 @@ describe('typing into a card', () => {
   })
 
   /*
-    Blur is not "the user finished".
+    Focus loss never ends an edit. Not "sometimes": never.
 
-    A newly focused field blurs on its own — the window losing focus, a scroll, the layout
-    shift from the field mounting — and ending the edit there closed the box milliseconds
-    after it opened. The rule is now: focus leaving to *another control* is a finish, and
-    focus leaving to nothing is not.
+    Two rules failed here before this one. Ending on any blur closed the box a millisecond
+    after it opened. Ignoring only a blur to nothing was still not enough: on the machine
+    that reported this, the blur carried a `relatedTarget`, so something was taking focus a
+    frame after the field appeared, and it was not the user. Any rule about who received the
+    focus is a rule about something the user may not have done.
+
+    So the editor does not close on focus at all — Escape, a press on another card, and a
+    press on the paper are what end it. Both of these therefore do nothing.
   */
-  it('closes the box when focus moves to another control', () => {
+  it('keeps the box open when focus moves to another control', () => {
     const p = props(model({ headerText: 'X' }))
     p.editing = 'header'
     render(<Card gesture={textEditGestureStub} {...p} />)
 
-    fireEvent.blur(screen.getByLabelText('Edit card text'), {
-      relatedTarget: document.body,
-    })
-    expect(p.onEndEdit).toHaveBeenCalled()
+    fireEvent.blur(screen.getByLabelText('Edit card text'), { relatedTarget: document.body })
+    expect(p.onEndEdit).not.toHaveBeenCalled()
   })
 
   it('keeps the box open when focus is lost to nothing', () => {

@@ -142,37 +142,31 @@ export function CardZoneText(props: CardZoneTextProps) {
         value={text}
         onChange={(event) => props.onChange(event.target.value)}
         /*
-          Blur is not the same thing as "the user finished".
+          A lost focus never ends an edit. Not "sometimes": never.
 
-          A newly focused element blurs for reasons that have nothing to do with the user:
-          the window losing focus to another window, a scroll, a layout shift caused by the
-          field mounting in the first place. Any of those ended the edit, and since the
-          editor is only ever closed here, a blur that arrives milliseconds after the press
-          closes the box as soon as it opens — mount and unmount inside one gesture.
+          This is the third rule for the same line, and the history is the argument.
 
-          So the end of an edit is decided by *what the user did next*, not by focus. The
-          box closes on Escape (below), or when the press moves somewhere else (the sheet's
-          own deselect), or when the user clicks another card. `focusout` is kept only as a
-          fallback for the one legitimate case: focus moving to another control that is not
-          part of this box.
+          1. `onBlur={onEndEdit}` closed the box on any focus loss. A newly focused field
+             blurs on its own — window focus, a scroll, the layout shift from the field
+             mounting — so the editor opened and closed within about a millisecond.
+          2. Ignoring a blur to nothing was still not enough. On the machine that reported
+             this, the blur has a `relatedTarget`: something is taking focus one frame after
+             any field appears, and it is not the user. Every rule about *who* received the
+             focus is a rule about something the user may not have done.
+
+          So the editor does not close here at all. It closes on Escape (below), or when the
+          sheet decides the press went elsewhere, or when the card is deselected. Those are
+          all things a user did, delivered as user actions rather than inferred from focus.
+
+          The focus is taken back rather than merely kept, because a field that is open and
+          unfocused takes no typing — which looks exactly as broken as one that never opened.
         */
-        onBlur={(event) => {
-          const next = event.relatedTarget as Node | null
-          /*
-            Focus leaving to nothing at all is not a user action: a window that lost focus,
-            a scroll, a layout shift caused by the field itself mounting. Keep the editor
-            open — and put the caret back, because a field that is open but not focused
-            takes no typing, which looks exactly as broken as one that never opened.
-          */
-          if (next === null) {
-            window.setTimeout(() => {
-              if (document.activeElement !== event.currentTarget) takeFocus(fieldRef.current)
-            }, 0)
-            return
-          }
-          // Moving between the field and something inside the same zone is not a finish.
-          if (event.currentTarget.contains(next)) return
-          props.onEndEdit()
+        onBlur={() => {
+          window.setTimeout(() => {
+            const field = fieldRef.current
+            if (field === null) return
+            if (document.activeElement !== field) takeFocus(field)
+          }, 0)
         }}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
