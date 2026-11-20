@@ -1,3 +1,4 @@
+import { CARD_LINE_HEIGHT, CARD_TEXT_PT } from '../../types/card-typography'
 import type { PDFFont, PDFImage, PDFOperator, PDFPage, RGB } from '@cantoo/pdf-lib'
 import type { ClipOps } from './band-clip'
 import { mmToPt, ptToMm } from '../units'
@@ -16,10 +17,7 @@ import type { Card, RectMm, TextRun } from '../../types/card'
  * makes the print match the preview rather than resemble it.
  */
 
-/** Type sizes a card's boxes start at, before shrinking to fit. */
-const HEADER_MAX_PT = 9
-const FOOTER_MAX_PT = 8
-const LINE_HEIGHT = 1.25
+const LINE_HEIGHT = CARD_LINE_HEIGHT
 const PADDING_MM = 0.8
 
 /** Fonts and colours shared by every card on a sheet. */
@@ -182,7 +180,7 @@ export async function drawCard(input: DrawCardInput): Promise<boolean> {
     ...(card.headerStyle.uppercase === undefined ? {} : { uppercase: card.headerStyle.uppercase }),
     ...(card.headerStyle.align === undefined ? {} : { align: card.headerStyle.align }),
     centreVertically: true,
-    maxPt: HEADER_MAX_PT * (card.textScale ?? 1),
+    maxPt: CARD_TEXT_PT * (card.textScale ?? 1),
     fallback: black,
     rgb: input.lib.rgb,
   })
@@ -198,7 +196,7 @@ export async function drawCard(input: DrawCardInput): Promise<boolean> {
     ...(card.bodyStyle.uppercase === undefined ? {} : { uppercase: card.bodyStyle.uppercase }),
     ...(card.bodyStyle.align === undefined ? {} : { align: card.bodyStyle.align }),
     centreVertically: false,
-    maxPt: FOOTER_MAX_PT * (card.textScale ?? 1),
+    maxPt: CARD_TEXT_PT * (card.textScale ?? 1),
     fallback: black,
     rgb: input.lib.rgb,
   })

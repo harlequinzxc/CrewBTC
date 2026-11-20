@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.9.4",
+    "date": "2026-11-19",
+    "title": "One text size across the card",
+    "highlights": [
+      "The top and bottom text now use the same base size, and both corner fields use that same size and font. The sheet-wide Text size setting changes all four together on screen and in the PDF.",
+      "The grey corner boxes grow with the text size, keep a little space above and below it, and centre the text. The number dropdown remains selectable, but its arrow is not printed."
+    ]
+  },
+  {
     "version": "1.9.3",
     "date": "2026-11-19",
     "title": "Numbered corners, sheet-wide type and adjustable photo cut-outs",

@@ -1,3 +1,4 @@
+import { CARD_FONT_STACK } from '../../types/card-typography'
 import { DrawnCardText } from './DrawnCardText'
 import { TextFieldLayer } from './TextFieldLayer'
 import type { TextEditGesture } from './use-text-edit-gesture'
@@ -115,6 +116,7 @@ export function CardZoneText(props: CardZoneTextProps) {
         width: px(widthMm),
         height: px(heightMm),
         fontSize,
+        fontFamily: CARD_FONT_STACK,
         lineHeight: `${lineHeight}px`,
         color: style.color,
         fontWeight: style.bold ? 700 : 400,

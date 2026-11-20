@@ -1,3 +1,4 @@
+import { CARD_FONT_STACK, CARD_LINE_HEIGHT } from '../../types/card-typography'
 import { layoutStyledBand } from '../../lib/export/styled-band'
 import type { StyledBandLayout } from '../../lib/export/styled-band'
 import type { TextStyle, TextRun } from '../../types/card'
@@ -16,7 +17,7 @@ import type { TextStyle, TextRun } from '../../types/card'
 export const PT_TO_MM = 25.4 / 72
 
 /** Line pitch, matching the exporter so a break lands on the same line in both. */
-export const LINE_HEIGHT = 1.25
+export const LINE_HEIGHT = CARD_LINE_HEIGHT
 /** The exporter's band padding (`PADDING_MM` in `draw-card`). Previews must match it. */
 export const PADDING_MM = 0.8
 
@@ -57,17 +58,9 @@ const measureAt = (text: string, sizePt: number, bold: boolean, scale: number): 
   // point is `PT_TO_MM * scale` pixels wide on this canvas.
   const sizePx = sizePt * PT_TO_MM * scale
   if (context === null) return text.length * sizePx * 0.5
-  context.font = `${bold ? '700' : '400'} ${sizePx}px ${FONT_STACK}`
+  context.font = `${bold ? '700' : '400'} ${sizePx}px ${CARD_FONT_STACK}`
   return context.measureText(text).width / scale
 }
-
-/**
- * The faces available to the preview, in the order the stylesheet resolves them.
- *
- * Must match what the sheet draws with, or the metrics are the metrics of a different
- * font — which is the same category of bug as the estimate was.
- */
-const FONT_STACK = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif'
 
 export interface ZoneLayoutInput {
   readonly text: string

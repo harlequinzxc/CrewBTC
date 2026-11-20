@@ -1,3 +1,4 @@
+import { CARD_TEXT_PT } from '../../types/card-typography'
 import { CardCornerLabels } from './CardCornerLabels'
 import { cn } from '../../lib/cn'
 import { cardZones } from '../../types/card'
@@ -79,7 +80,7 @@ export function Card(props: CardProps) {
       }}
       onPointerDown={props.onSelect}
     >
-      {props.onCornerChange === undefined ? null : <CardCornerLabels card={card} scale={scale} widthMm={cell.widthMm} onChange={props.onCornerChange} />}
+      {props.onCornerChange === undefined ? null : <CardCornerLabels card={card} scale={scale} widthMm={cell.widthMm} onInteract={props.onEndEdit} onChange={props.onCornerChange} />}
       <CardZoneText
         gesture={props.gesture}
         text={card.headerText}
@@ -92,7 +93,7 @@ export function Card(props: CardProps) {
         runs={card.headerRuns ?? []}
         editing={editing === 'header'}
         onSelectionChange={(selection) => props.onSelectionChange('header', selection)}
-        maxPt={9}
+        maxPt={CARD_TEXT_PT}
         textScale={card.textScale ?? 1}
         placeholder="Dish code · Dish name"
         centreVertically
@@ -129,7 +130,7 @@ export function Card(props: CardProps) {
         runs={card.bodyRuns ?? []}
         editing={editing === 'body'}
         onSelectionChange={(selection) => props.onSelectionChange('body', selection)}
-        maxPt={8}
+        maxPt={CARD_TEXT_PT}
         textScale={card.textScale ?? 1}
         placeholder="Plating steps"
         onBeginEdit={() => props.onBeginTextEdit('body')}

@@ -1,3 +1,4 @@
+import { CARD_FONT_STACK } from '../../types/card-typography'
 import { useEffect, useRef } from 'react'
 import type { TextStyle } from '../../types/card'
 import { PADDING_MM } from './zone-layout'
@@ -157,6 +158,7 @@ export function TextFieldLayer(props: TextFieldLayerProps) {
         paddingBottom: px(PADDING_MM),
         paddingLeft: px(PADDING_MM),
         fontSize: props.fontSize,
+        fontFamily: CARD_FONT_STACK,
         lineHeight: `${props.lineHeight}px`,
         color: style.color,
         fontWeight: style.bold ? 700 : 400,
