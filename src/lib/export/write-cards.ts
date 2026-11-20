@@ -95,29 +95,22 @@ export async function writeCards(input: CardExportInput): Promise<CardExportResu
         continue
       }
 
-      /*
-        A border around every card, drawn before its contents.
-
-        The preview has shown one since the sheet existed, and the export did not — so a
-        card that looked like a card on screen printed as bare paper, and the only thing
-        saying where to cut was the registration marks. Drawn first so the zones and the
-        photo sit on top of it rather than under a hairline.
-
-        `0.5 pt` at A4 is a hairline that survives a laser printer; the colour is the same
-        zinc-200 the screen uses, light enough that a printed card is not framed in grey.
-      */
-      outPage.drawRectangle({
-        x: mmToPt(cell.rect.xMm),
-        y: sheetHeightPt - mmToPt(cell.rect.yMm) - mmToPt(cell.rect.heightMm),
-        width: mmToPt(cell.rect.widthMm),
-        height: mmToPt(cell.rect.heightMm),
-        borderColor: cardBorder,
-        borderWidth: 0.5,
-      })
+      // Paint the frame last so neither a photo nor a corner label can cover it.
+      const drawBorder = (): void => {
+        outPage.drawRectangle({
+          x: mmToPt(cell.rect.xMm),
+          y: sheetHeightPt - mmToPt(cell.rect.yMm) - mmToPt(cell.rect.heightMm),
+          width: mmToPt(cell.rect.widthMm),
+          height: mmToPt(cell.rect.heightMm),
+          borderColor: cardBorder,
+          borderWidth: 0.5,
+        })
+      }
 
       const key = cardKey(cell.index, placement.documentId, placement.pageNumber)
       const card = cards[key]
       if (card === undefined) {
+        drawBorder()
         cardsSkipped += 1
         continue
       }
@@ -148,6 +141,7 @@ export async function writeCards(input: CardExportInput): Promise<CardExportResu
       } catch {
         cardsSkipped += 1
       }
+      drawBorder()
     }
 
     // Fonts are embedded once; reusing them across pages is what keeps the file small.

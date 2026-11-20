@@ -21,7 +21,7 @@ const seed = (key: string, headerText: string): CardSeed => ({
 
 function Probe(props: { readonly seeds: readonly CardSeed[] }) {
   const store = useCards()
-  useSeedCards(store, props.seeds, 67, 52)
+  useSeedCards(store, props.seeds, 67)
   return (
     <div>
       <output data-testid="cards">{JSON.stringify(store.cards)}</output>
@@ -33,18 +33,27 @@ function Probe(props: { readonly seeds: readonly CardSeed[] }) {
           if (first !== undefined) store.setText(first, 'header', 'EDITED')
         }}
       />
+      <button type="button" aria-label="edit bands" onClick={() => {
+        const first = Object.keys(store.cards)[0]
+        if (first !== undefined) store.setBands(first, { headerMm: 12, footerMm: 22 }, 67)
+      }} />
       <button type="button" aria-label="clear" onClick={() => store.reset()} />
     </div>
   )
 }
 
-const cards = (): Record<string, { headerText: string }> =>
+const cards = (): Record<string, { headerText: string; bands: { headerMm: number; footerMm: number } }> =>
   JSON.parse(screen.getByTestId('cards').textContent ?? '{}') as Record<
     string,
-    { headerText: string }
+    { headerText: string; bands: { headerMm: number; footerMm: number } }
   >
 
 describe('seeding', () => {
+  it('starts newly extracted cards at the requested band heights', async () => {
+    render(<Probe seeds={[seed('0|a.pdf|1', 'One')]} />)
+    await waitFor(() => expect(cards()['0|a.pdf|1']?.bands).toEqual({ headerMm: 7.28, footerMm: 35.45 }))
+  })
+
   it('writes every seed it is given', async () => {
     render(<Probe seeds={[seed('0|a.pdf|1', 'One'), seed('0|a.pdf|2', 'Two')]} />)
     await waitFor(() => expect(Object.keys(cards())).toHaveLength(2))
@@ -62,6 +71,16 @@ describe('seeding', () => {
     // A re-render, or a re-plan handing back the same seeds, must leave the edit alone.
     rerender(<Probe seeds={seeds} />)
     await waitFor(() => expect(cards()['0|a.pdf|1']?.headerText).toBe('EDITED'))
+  })
+
+  it('never replaces a previously edited band split during seeding', async () => {
+    const seeds = [seed('0|a.pdf|1', 'One')]
+    const { rerender } = render(<Probe seeds={seeds} />)
+    await waitFor(() => expect(cards()['0|a.pdf|1']?.bands.headerMm).toBe(7.28))
+    fireEvent.click(screen.getByRole('button', { name: 'edit bands' }))
+    await waitFor(() => expect(cards()['0|a.pdf|1']?.bands).toEqual({ headerMm: 12, footerMm: 22 }))
+    rerender(<Probe seeds={[...seeds]} />)
+    expect(cards()['0|a.pdf|1']?.bands).toEqual({ headerMm: 12, footerMm: 22 })
   })
 
   it('re-seeds after the uploads are cleared and loaded again', async () => {

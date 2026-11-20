@@ -143,13 +143,13 @@ test('a later corner label starts a new run without changing earlier cards', asy
 
 test('selected card readouts follow the divider and sheet text size', async ({ page }) => {
   await uploadPdf(page)
-  await page.locator('[data-cell]').first().click()
+  await page.locator('[data-image]').first().click()
   await expect(page.getByRole('heading', { name: 'Card 1' })).toBeVisible()
   const top = page.getByLabel('Top value')
   const bottom = page.getByLabel('Bottom value')
   const text = page.getByLabel('Text value')
-  await expect(top).toContainText('mm')
-  await expect(bottom).toContainText('mm')
+  await expect(top).toHaveText('7.28 mm')
+  await expect(bottom).toHaveText('35.45 mm')
   await expect(text).toHaveText('80%')
   const before = await top.textContent()
   const divider = page.locator('[data-divider="header"]').first()

@@ -73,8 +73,7 @@ export const DEFAULT_SHEET: SheetSettings = {
   rotateCells: false,
   // 3 x 4 on A4: twelve 52 x 67 mm cards, 67% of the paper used.
   // The zones below are only the fallback for a card that has no bands of its own —
-  // `defaultBands(67)` derives 10 / 15, leaving a 42 mm photo. Every card tunes its
-  // own split in the band panel, so these two numbers are never the last word.
+  // These legacy sheet fields are used by validation; cards own their own band heights.
   headerMm: 10,
   footerMm: 15,
 }
