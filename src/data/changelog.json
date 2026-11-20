@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.9.1",
+    "date": "2026-11-20",
+    "title": "Re-run says what is actually wrong, and a way to report a dead click",
+    "highlights": [
+      "Fixed: \u201cRe-run all files\u201d answered \u201cNothing to re-run \u2014 Add PDFs first\u201d on a restored session, next to a list of files that had plainly been added. A saved session keeps the results, not the uploads, so the message now says the PDFs need adding again and why",
+      "Added: press Shift+? and then click, and the app reports which build is running, which element the browser actually delivered the press to, and how tall the text box is compared with the band it stands for. A click that lands on the photo instead of the text now says so outright",
+      "The Playwright suite covers re-run on a restored session, so that message cannot regress into the one it used to give"
+    ]
+  },
+  {
     "version": "1.9.0",
     "date": "2026-11-20",
     "title": "Clicking a card\u2019s text now edits it \u2014 found in a real browser",
