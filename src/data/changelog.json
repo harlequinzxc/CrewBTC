@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.9.6",
+    "date": "2026-11-19",
+    "title": "Card measurements and editable label runs",
+    "highlights": [
+      "Select a card to see its Top and Bottom band heights and the current sheet-wide Text percentage in the inspector. These are read-only values; the dividers and sheet text control still make the changes.",
+      "Each right-hand corner label is editable. A change applies from that card onward until another card changes it; earlier cards keep their labels, and the same runs appear in the PDF.",
+      "Older saved cards are retained when sessions are upgraded. Their first corner label continues to supply the initial run."
+    ]
+  },
+  {
     "version": "1.9.5",
     "date": "2026-11-19",
     "title": "One shared corner label and a smaller print box",

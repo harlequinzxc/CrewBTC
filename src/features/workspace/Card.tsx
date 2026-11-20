@@ -21,7 +21,7 @@ export interface CardProps {
   readonly selected: boolean
   readonly editing: CardZone | null
   readonly pictureEditing: boolean
-  readonly onCornerChange?: ((patch: Pick<Card, 'numberStart'> | Pick<Card, 'cornerLabel'>) => void) | undefined
+  readonly onCornerChange?: ((patch: Pick<Card, 'numberStart'> | Pick<Card, 'cornerLabelStart'>) => void) | undefined
   readonly onSelect: () => void
   readonly onBeginTextEdit: (zone: 'header' | 'body') => void
   readonly onEndEdit: () => void

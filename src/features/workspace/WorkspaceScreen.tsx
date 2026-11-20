@@ -143,7 +143,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     pageRefs,
     selectionSheet ?? 0,
   )
-  const selectedCard = selectionKey === null ? null : (cardStore.cards[selectionKey] ?? null)
+  const selectedCard = selectionKey === null ? null : (visibleCards[selectionKey] ?? null)
 
   const inspectorEdits = useCardInspector(cardStore, selectionKey, sheet.grid.cellHeightMm)
 

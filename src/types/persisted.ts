@@ -11,7 +11,7 @@ import type { IngestedDocument } from './document'
  * a restored session is exactly what the user left, not a second opinion about it.
  */
 export interface WorkspaceSnapshot {
-  readonly version: 2
+  readonly version: 3
   /** In ingest order — the rail's order and the rail's selection both depend on it. */
   readonly documents: readonly IngestedDocument[]
   readonly cards: Readonly<Record<string, Card>>
@@ -22,4 +22,4 @@ export interface WorkspaceSnapshot {
 /** Whatever was on disk, before it has been trusted. Never read fields off this directly. */
 export type UnknownSnapshot = unknown
 
-export const SNAPSHOT_VERSION = 2
+export const SNAPSHOT_VERSION = 3

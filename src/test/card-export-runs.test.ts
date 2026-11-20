@@ -213,3 +213,13 @@ it('prints the first corner label on following cards rather than their old label
   expect(content.match(/<4142> Tj/g)).toHaveLength(2)
   expect(content).not.toContain('<5A5A> Tj')
 })
+
+
+it('prints label changes only on the chosen card and following cards', async () => {
+  const pages = [1, 2, 3, 4].map((pageNumber) => ({ documentId: 'doc-a', fileName: 'cards.pdf', pageNumber, widthMm: 181, heightMm: 255 }))
+  const cards = Object.fromEntries(pages.map((page, i) => [cardKey(i, 'doc-a', page.pageNumber), makeCard({ photo: null, ...(i === 0 ? { cornerLabelStart: 'TEST' } : {}), ...(i === 2 ? { cornerLabelStart: 'REST' } : {}) })]))
+  const result = await writeCards({ settings: DEFAULT_SHEET, grid, pages, sources: new Map([['doc-a', await sourceBytes()]]), drawCutMarks: false, cards: numberedCards(cards, pages, grid, 0.8) })
+  const content = await contentOf(result.bytes)
+  expect(content.match(/<54455354> Tj/g)).toHaveLength(2)
+  expect(content.match(/<52455354> Tj/g)).toHaveLength(2)
+})
