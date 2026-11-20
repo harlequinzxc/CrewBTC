@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { resetSession, textZones, uploadPdf } from './fixtures'
+import { textZones, uploadPdf } from './fixtures'
 
 /**
  * A reload must not cost the user their work.
@@ -9,9 +9,6 @@ import { resetSession, textZones, uploadPdf } from './fixtures'
  * with real IndexedDB — which is the only place the storage timing actually happens.
  */
 
-test.beforeEach(async ({ page }) => {
-  await resetSession(page)
-})
 
 test('a reload restores the batch and the cards', async ({ page }) => {
   await uploadPdf(page)

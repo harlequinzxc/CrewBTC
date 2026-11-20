@@ -194,6 +194,9 @@ export function CardZoneImage(props: CardZoneImageProps) {
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
           onKeyDown={onKeyDown}
+          /* No `data-target="dense"`: this button fills a zone whose size is millimetres of
+             paper. Minting a 32px control target inside it made the frame taller than its
+             band, so it overhung whatever sat below and stole those clicks. */
           className="zone-box absolute inset-0 block size-full cursor-default border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
         >
           <img

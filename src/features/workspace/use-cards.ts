@@ -36,12 +36,29 @@ export interface CardStore {
 }
 
 /**
- * `restore` seeds the store once, before the first render, so a restored session paints
- * with its cards already in place rather than flashing empty cards first. Seeding stays
- * additive on top: `seedCard` still refuses to overwrite, so a restored edit wins.
+ * `restore` seeds the store, so a restored session paints its cards rather than flashing
+ * empty ones first. Seeding stays additive on top: `seedCard` still refuses to overwrite,
+ * so a restored edit wins.
+ *
+ * The snapshot arrives **asynchronously** — it is read from IndexedDB, so on the first
+ * render it does not exist yet. Initialising the state from it therefore does nothing, and
+ * did nothing: every reload drew the sheet from the re-parsed documents and quietly threw
+ * away every card edit, photo transform and band drag. The earlier version of this comment
+ * claimed the store was seeded "before the first render", which was only true once the
+ * value was already there. Apply it during render when it finally arrives, exactly as
+ * `use-batch` does, and only for the value being compared so a later local edit is not
+ * overwritten by a stale snapshot.
  */
 export function useCards(restore?: Readonly<Record<string, Card>> | null): CardStore {
   const [cards, setCards] = useState<Record<string, Card>>(() => ({ ...restore }))
+  const [restoredFrom, setRestoredFrom] = useState<Readonly<Record<string, Card>> | null>(null)
+
+  if (restore !== undefined && restore !== null && restore !== restoredFrom) {
+    // Render-phase state adjustment: the value is already known, so an effect would only
+    // start a second render to reach it — and `set-state-in-effect` forbids that shape.
+    setRestoredFrom(restore)
+    setCards((current) => ({ ...restore, ...current }))
+  }
 
   const patch = useCallback((key: string, change: (card: Card) => Card) => {
     setCards((current) => {
