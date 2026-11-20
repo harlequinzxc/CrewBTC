@@ -43,6 +43,8 @@ export function styleSelection(
     bold: style.bold,
     color: style.color,
     highlight: style.highlight,
+    ...(style.uppercase === undefined ? {} : { uppercase: style.uppercase }),
+    ...(style.align === undefined ? {} : { align: style.align }),
   })
   return zone === 'header' ? { ...card, headerRuns: next } : { ...card, bodyRuns: next }
 }

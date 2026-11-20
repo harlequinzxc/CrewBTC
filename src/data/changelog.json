@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.9.0",
+    "date": "2026-11-19",
+    "title": "Callout presets, bold black text, and the selection that was silently dropped",
+    "highlights": [
+      "Fixed, and it was mine: no card could be selected. v1.8.2 changed the dismiss rule so a press on a card would end an edit \u2014 and in doing so dropped the page identity that press carried. The canvas compares that identity against each sheet to decide which card is highlighted, so it compared nothing against everything: no card ever drew as selected, and the band dividers, which only exist on the selected card, never appeared at all. That is why the photo could not be resized; the drag was never unreachable. Selection now passes the identity through, and dragging the dividers resizes the photo again",
+      "Fixed: clicking an empty bottom box made its hint vanish. The drawn box shows \u201cPlating steps\u201d; the field it becomes had no placeholder, so the box went blank and its grey text disappeared. The field now carries the same hint, in the same grey, at the same weight and alignment \u2014 the browser\u2019s default placeholder ink is the field\u2019s own colour at half strength, which is a different grey",
+      "All card text now starts bold and black, and the top box starts centred. It used to be plain black on top and plain red below, which described the PDF\u2019s typography rather than the card a cook reads",
+      "New: two recipe callout presets replace nine colour and highlight swatches. CROCKERIES tags a callout in red with white capitals; CONDIMENTS tags it in green with black type. One click each, and clicking the active one again clears it",
+      "The capitals are drawn, never stored: \u201ckung pao chicken\u201d stays exactly that in the file and prints as KUNG PAO CHICKEN. Clearing the tag gives the lower case back, and the export carries the fill, the ink and the case into the PDF",
+      "Clear formatting puts a box back to the default look in one click, and Bold stays. The bar is four controls where it was nine"
+    ]
+  },
+  {
     "version": "1.8.3",
     "date": "2026-11-19",
     "title": "The text box no longer changes when you click into it, and the formatting bar stopped covering the header",

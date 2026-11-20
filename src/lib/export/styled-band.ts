@@ -1,5 +1,9 @@
 import { layoutBand, MIN_BAND_TEXT_PT } from './text-band'
 import type { BandOptions } from './text-band'
+import { segmentByStyle, wrapSegments } from './wrap-segments'
+
+// Re-exported so existing callers and tests keep one import for the whole typesetter.
+export { segmentByStyle, wrapSegments } from './wrap-segments'
 
 /**
  * Laying out text whose style changes part-way through.
@@ -21,6 +25,10 @@ export interface StyledSegment {
   readonly bold: boolean
   readonly color: string
   readonly highlight: string | null
+  /** Drawn in capitals. The `text` here is already the capitalised form. */
+  readonly uppercase?: boolean
+  /** `left` (default) or `center` within the band's inner width, per line. */
+  readonly align?: 'left' | 'center'
 }
 
 export interface StyledLine {
@@ -30,6 +38,10 @@ export interface StyledLine {
   /** Baseline, measured down from the band's top edge. */
   readonly yMm: number
   readonly sizePt: number
+  /** How wide the line drew, in millimetres. */
+  readonly widthMm: number
+  /** Distance from the band's outer left edge to the first glyph, padding included. */
+  readonly xMm: number
 }
 
 export interface StyledBandLayout {
@@ -48,113 +60,11 @@ export interface StyledBandInput {
     readonly bold?: boolean
     readonly color?: string
     readonly highlight?: string | null
+    readonly uppercase?: boolean
+    readonly align?: 'left' | 'center'
   }[]
 }
 
-/** Splits text into consecutive same-style segments; newlines stay inside their segment. */
-export function segmentByStyle(input: StyledBandInput): readonly StyledSegment[] {
-  const { text, base, runs } = input
-  const styleOf = (offset: number): StyledSegment => {
-    const run = runs.find((item) => offset >= item.start && offset < item.end)
-    if (run === undefined) return { ...base, text: '' }
-    return {
-      text: '',
-      bold: run.bold ?? base.bold,
-      color: run.color ?? base.color,
-      highlight: run.highlight === undefined ? base.highlight : run.highlight,
-    }
-  }
-
-  const out: StyledSegment[] = []
-  let index = 0
-  while (index < text.length) {
-    const style = styleOf(index)
-    let end = index + 1
-    while (end < text.length) {
-      const next = styleOf(end)
-      if (
-        next.bold !== style.bold ||
-        next.color !== style.color ||
-        next.highlight !== style.highlight
-      ) {
-        break
-      }
-      end += 1
-    }
-    out.push({ ...style, text: text.slice(index, end) })
-    index = end
-  }
-  return out
-}
-
-/**
- * Greedy wrap over styled segments. A newline forces a break, a word that would overflow
- * starts a new line, and the style travels with each word so one line can be several
- * styles. Trailing whitespace is dropped from each visual line, as typesetting does.
- */
-export function wrapSegments(
-  segments: readonly StyledSegment[],
-  maxWidthMm: number,
-  measure: (text: string, bold: boolean) => number,
-): readonly (readonly StyledSegment[])[] {
-  const lines: StyledSegment[][] = []
-  let current: StyledSegment[] = []
-  let currentWidth = 0
-
-  const pushLine = (): void => {
-    if (current.length > 0) lines.push(current)
-    current = []
-    currentWidth = 0
-  }
-
-  for (const segment of segments) {
-    for (const piece of segment.text.split(/(\n)/)) {
-      if (piece === '\n') {
-        pushLine()
-        continue
-      }
-      if (piece === '') continue
-
-      for (const word of piece.split(/(\s+)/)) {
-        if (word === '') continue
-
-        if (/^\s+$/.test(word)) {
-          // Whitespace never starts a line and never forces one.
-          if (current.length > 0) {
-            current.push({ ...segment, text: word })
-            currentWidth += measure(word, segment.bold)
-          }
-          continue
-        }
-
-        const width = measure(word, segment.bold)
-        const hasWords = current.some((item) => item.text.trim() !== '')
-        if (currentWidth + width > maxWidthMm && hasWords) pushLine()
-        current.push({ ...segment, text: word })
-        currentWidth += width
-      }
-    }
-  }
-  pushLine()
-
-  return lines
-    .map((line) => {
-      const trimmed = [...line]
-      while (trimmed.length > 0) {
-        const last = trimmed[trimmed.length - 1]
-        if (last === undefined) break
-        const text = last.text.replace(/\s+$/, '')
-        if (text === '') {
-          trimmed.pop()
-          continue
-        }
-        trimmed[trimmed.length - 1] = { ...last, text }
-        break
-      }
-      return trimmed
-    })
-    .filter((line) => line.some((segment) => segment.text.trim() !== ''))
-}
 
 /**
  * Lays out a styled band at the largest size that fits both axes.
@@ -182,12 +92,24 @@ export function layoutStyledBand(
       (text, sizePt) => measureAt(text, sizePt, input.base.bold),
       options,
     )
+    const centered = (input.base.align ?? 'left') === 'center'
+    // The same inset `layoutBand` applied internally, so a left line starts where it did.
+    const padding = options.paddingMm ?? 0.8
     return {
       ...plain,
-      lines: plain.lines.map((line) => ({
-        ...line,
-        segments: [{ ...input.base, text: line.text }],
-      })),
+      lines: plain.lines.map((line) => {
+        // The capitalised form is what was measured and what will be drawn, so the width
+        // comes from the same string rather than from the raw text.
+        const drawn = (input.base.uppercase ?? false) ? line.text.toUpperCase() : line.text
+        const width = measureAt(drawn, line.sizePt, input.base.bold)
+        return {
+          ...line,
+          text: drawn,
+          segments: [{ ...input.base, text: drawn }],
+          widthMm: width,
+          xMm: centered ? Math.max(0, (widthMm - width) / 2) : padding,
+        }
+      }),
     }
   }
 
@@ -222,11 +144,24 @@ export function layoutStyledBand(
   return {
     sizePt,
     overflow: !fits,
-    lines: kept.map((segmentsOnLine, index) => ({
-      text: segmentsOnLine.map((segment) => segment.text).join(''),
-      segments: segmentsOnLine,
-      yMm: boxTopMm + padding + index * sizePt * lineHeight * PT_TO_MM + sizePt * PT_TO_MM,
-      sizePt,
-    })),
+    lines: kept.map((segmentsOnLine, index) => {
+      // Measured segment by segment, because a line can mix weights and only the weight
+      // each segment was wrapped in gives the width it will actually occupy.
+      const width = segmentsOnLine.reduce(
+        (total, segment) => total + measureAt(segment.text, sizePt, segment.bold),
+        0,
+      )
+      const centered = (segmentsOnLine[0]?.align ?? 'left') === 'center'
+      return {
+        text: segmentsOnLine.map((segment) => segment.text).join(''),
+        segments: segmentsOnLine,
+        yMm: boxTopMm + padding + index * sizePt * lineHeight * PT_TO_MM + sizePt * PT_TO_MM,
+        sizePt,
+        widthMm: width,
+        // Distance from the band's left edge to where this line starts. Left-aligned lines
+        // start after the padding, which is the same origin they have always had.
+        xMm: centered ? Math.max(0, padding + (innerWidth - width) / 2) : padding,
+      }
+    }),
   }
 }

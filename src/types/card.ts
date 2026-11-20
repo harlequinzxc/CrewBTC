@@ -13,19 +13,39 @@ export interface TextStyle {
   readonly color: string
   /** Highlighter behind the words, or null for none. */
   readonly highlight: string | null
+  /** Drawn in capitals without altering the stored text. Absent means off. */
+  readonly uppercase?: boolean
+  /** `left` (default) or `centre`d within the box's width. Absent means left. */
+  readonly align?: 'left' | 'center'
 }
 
+/**
+ * The look every card's text starts with: **bold black**, top text **centred**.
+ *
+ * It used to be plain black on top and plain red below, which described the PDF's
+ * typography rather than the card a cook reads. Only the top box is centred: dish names
+ * are headings, and centring the steps as well lets a long instruction wrap raggedly on
+ * both sides.
+ */
 export const DEFAULT_TEXT_STYLE: TextStyle = {
-  bold: false,
+  bold: true,
   color: '#111827',
   highlight: null,
 }
 
-/** The style a card's instruction box starts with: red ink, as a recipe step reads. */
+/** The style a card's instruction box starts with: bold black, flush left. */
 export const DEFAULT_BODY_STYLE: TextStyle = {
-  bold: false,
-  color: '#b91c1c',
+  bold: true,
+  color: '#111827',
   highlight: null,
+}
+
+/** The style a card's *name* box starts with: bold black, centred. */
+export const DEFAULT_HEADER_STYLE: TextStyle = {
+  bold: true,
+  color: '#111827',
+  highlight: null,
+  align: 'center',
 }
 
 export const TEXT_COLORS = ['#111827', '#b91c1c', '#15803d', '#1d4ed8'] as const
@@ -210,7 +230,7 @@ export function cardFromPage(
     headerRuns: [],
     bodyRuns: [],
     photo: scan.photo,
-    headerStyle: DEFAULT_TEXT_STYLE,
+    headerStyle: DEFAULT_HEADER_STYLE,
     bodyStyle: DEFAULT_BODY_STYLE,
     imageTransform: DEFAULT_IMAGE_TRANSFORM,
     bands: defaultBands(cellHeightMm),
@@ -223,10 +243,8 @@ export function cardFromPage(
  * A card's identity: the cell it sits in, the file, and the page of that file.
  *
  * The cell is the *drawing* cell index, and every reader must agree on that — the canvas,
- * the exporter, the strip and the inspector all key off `placement.cellIndex`. Using a
- * page's ordinal position in the flattened page list instead silently works for the first
- * sheet and breaks every sheet after it, because ordinal 12 is cell 0 of sheet 2, not cell
- * 12 of anything. `seedKeyFor` below is the one place that knows this.
+ * the exporter, the strip and the inspector all key off `placement.cellIndex`. A page's
+ * ordinal in the flattened list works for the first sheet and breaks every sheet after it.
  */
 export const cardKey = (cellIndex: number, documentId: string, pageNumber: number): string =>
   `${cellIndex}|${documentId}|${pageNumber}`
