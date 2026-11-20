@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
+import { DrawnCardText } from './DrawnCardText'
 import { layoutStyledBand } from '../../lib/export/styled-band'
 import type { TextStyle, TextRun } from '../../types/card'
 
@@ -50,19 +51,26 @@ export function CardZoneText(props: CardZoneTextProps) {
   const fieldRef = useRef<HTMLTextAreaElement>(null)
   const px = (mm: number): string => `${mm * scale}px`
 
+  /**
+   * Focus the field the moment it exists: `editing` turns on during the press, so the
+   * field is in the DOM before the browser would have handled that press, and focusing it
+   * here closes the window in which nothing is focused (a stray `blur` there ended the
+   * edit immediately). The effect covers edits that begin any other way.
+   */
+  const takeFocus = useCallback((field: HTMLTextAreaElement | null) => {
+    if (field === null) return
+    field.focus({ preventScroll: true })
+    field.select()
+  }, [])
+
   useEffect(() => {
     if (!editing) return
     const field = fieldRef.current
     if (field === null) return
-    // `preventScroll` is not an optimisation. A bare `focus()` scrolls the nearest
-    // scrollable ancestor to reveal the element, so clicking a card near the bottom of
-    // the viewport moved the whole stack up to centre it — the paper slid out from under
-    // the pointer the instant you clicked into a text box. Every other gesture in this
-    // canvas avoids that scroll deliberately; this one was the exception, which is why it
-    // was the only one that still jumped.
-    field.focus({ preventScroll: true })
-    field.select()
-  }, [editing])
+    // `preventScroll`: a bare `focus()` scrolls the nearest scrollable ancestor to reveal
+    // the element, which moved the stack under the pointer.
+    takeFocus(field)
+  }, [editing, takeFocus])
 
   // `layoutBand` measures down from `boxTopMm`, so the box's own top is passed rather
   // than a height. This is the same function the exporter calls, which is what keeps a
@@ -117,7 +125,13 @@ export function CardZoneText(props: CardZoneTextProps) {
   if (editing) {
     return (
       <textarea
-        ref={fieldRef}
+        ref={(field) => {
+          fieldRef.current = field
+          // Synchronous with the commit that mounts it: the effect alone left one frame
+          // with nothing focused, long enough for the browser's press handling to focus
+          // whatever sat under the pointer instead.
+          if (field !== null && !field.matches(':focus')) takeFocus(field)
+        }}
         value={text}
         onChange={(event) => props.onChange(event.target.value)}
         onBlur={props.onEndEdit}
@@ -159,34 +173,29 @@ export function CardZoneText(props: CardZoneTextProps) {
   }
 
   return (
-    <button
-      type="button"
-      data-target="dense"
-      /*
-        Edit begins on **pointer-down**, not click.
-        
-        Selecting a card reveals the band dividers, and they sit at a higher `z-index` than
-        the zones so they can be grabbed. On an unselected card those dividers do not exist
-        yet: pressing the text mounted them under the pointer, and the `click` that followed
-        was delivered to the divider instead of this button. The result was that the first
-        click on a card's text selected the card and did nothing else — you had to click
-        again, by which time the thing you clicked had moved.
-
-        Beginning the edit on pointer-down happens before the dividers mount, so the
-        gesture completes regardless of what ends up under the pointer. `onClick` is kept
-        for keyboard activation (`Enter`/`Space`), where there is no pointer at all.
-      */
-      onPointerDown={(event) => {
+    <DrawnCardText
+      lines={layout.lines}
+      positionPx={positionPx}
+      label={`Card text: ${text === '' ? props.placeholder : text}`}
+      onBeginEdit={props.onBeginEdit}
+      onPress={(event) => {
         if (event.button !== 0) return
         event.stopPropagation()
+        // Suppress the browser's default press handling before the edit begins, so focus
+        // is taken once, here, instead of twice with different ideas of where the caret
+        // should go.
+        event.preventDefault()
         props.onBeginEdit()
       }}
-      onClick={(event) => {
-        event.stopPropagation()
-        props.onBeginEdit()
+      onKeyDown={(event) => {
+        // The formatting bar overlays the pane once editing begins, so the field cannot be
+        // relied on to receive its own Escape.
+        if (event.key === 'Escape' && editing) {
+          event.stopPropagation()
+          props.onEndEdit()
+        }
       }}
-      className="zone-box absolute block cursor-text overflow-hidden border-0 bg-transparent p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-      style={{
+      box={{
         left: px(xMm),
         top: px(yMm),
         width: px(widthMm),
@@ -195,31 +204,6 @@ export function CardZoneText(props: CardZoneTextProps) {
         lineHeight: `${lineHeight}px`,
         fontWeight: 400,
       }}
-      aria-label={`Card text: ${text === '' ? props.placeholder : text}`}
-    >
-      {layout.lines.map((line, index) => (
-        <span
-          key={`${index}-${line.text}`}
-          // A line is a run of segments, each with the style it was measured in. Bold
-          // characters are wider, so per-segment styling is what keeps on-screen breaks
-          // equal to the ones the exporter computed.
-          className="absolute whitespace-pre"
-          style={{ top: positionPx(line), left: 0, fontWeight: 400 }}
-        >
-          {line.segments.map((segment, segmentIndex) => (
-            <span
-              key={`${segmentIndex}-${segment.text}`}
-              style={{
-                background: segment.highlight ?? 'transparent',
-                color: segment.color,
-                fontWeight: segment.bold ? 700 : 400,
-              }}
-            >
-              {segment.text}
-            </span>
-          ))}
-        </span>
-      ))}
-    </button>
+    />
   )
 }
