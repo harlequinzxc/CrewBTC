@@ -18,6 +18,8 @@ export interface CardZoneTextProps {
   /** Reports the live selection so the formatting bar can act on it. */
   readonly onSelectionChange: (selection: { readonly start: number; readonly end: number } | null) => void
   readonly maxPt: number
+  /** Multiplier on the size the layout settles on. 1 is unmodified. */
+  readonly textScale?: number
   readonly placeholder: string
   readonly onBeginEdit: () => void
   readonly onChange: (text: string) => void
@@ -58,6 +60,8 @@ export function CardZoneText(props: CardZoneTextProps) {
   // than a height. This is the same function the exporter calls, which is what keeps a
   // line break in the same place on screen and on paper.
   const shown = text === '' ? props.placeholder : text
+  // The multiplier is applied to the *requested* size, so `layoutBand` still shrinks the
+  // result until it fits — a bigger scale wraps sooner rather than overflowing.
   const layout = layoutStyledBand(
     {
       text: shown,
@@ -73,7 +77,7 @@ export function CardZoneText(props: CardZoneTextProps) {
     0,
     widthMm,
     heightMm,
-    props.maxPt,
+    props.maxPt * (props.textScale ?? 1),
     LINE_HEIGHT,
     (candidate, sizePt, bold) => (bold ? measure(candidate, sizePt) * 1.06 : measure(candidate, sizePt)),
   )

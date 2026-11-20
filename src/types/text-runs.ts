@@ -1,6 +1,22 @@
 import type { TextStyle } from './card'
 
 /**
+ * How much larger or smaller a card's type is drawn, as a multiple.
+ *
+ * `layoutBand` already shrinks type until it fits, so this exists for the opposite
+ * problem: type that fits comfortably but reads too small, or a card the user wants a
+ * little airier. It scales the size the layout settles on, and the layout re-runs, so a
+ * card that fits at 100% still fits at 120% — it simply wraps sooner.
+ */
+export const MIN_TEXT_SCALE = 0.6
+export const MAX_TEXT_SCALE = 2
+
+export const clampTextScale = (value: number): number =>
+  !Number.isFinite(value)
+    ? 1
+    : Math.min(MAX_TEXT_SCALE, Math.max(MIN_TEXT_SCALE, Math.round(value * 100) / 100))
+
+/**
  * Styling applied to part of a text box, on top of the box's own style.
  *
  * The box style is the default for every character; a run overrides it for one stretch.

@@ -126,3 +126,43 @@ describe('the photo inside its box', () => {
     expect(containRectMm(box, 0, 300)).toBeNull()
   })
 })
+
+describe('clampBands keeps the picture alive', () => {
+  /**
+   * Exhaustive, because the bug this replaces only showed up for some inputs: the old
+   * implementation clamped the header and then the footer, so a large header could still
+   * leave a 6 mm photo. Sampling the range would have missed it.
+   */
+  it('never lets the photo fall below its minimum, for any pair of requests', () => {
+    const height = 67
+    for (let header = -5; header <= height + 5; header += 0.5) {
+      for (let footer = -5; footer <= height + 5; footer += 0.5) {
+        const clamped = clampBands({ headerMm: header, footerMm: footer }, height)
+        const picture = height - clamped.headerMm - clamped.footerMm
+        expect(picture).toBeGreaterThanOrEqual(PICTURE_MIN_MM - 1e-9)
+        expect(clamped.headerMm).toBeGreaterThanOrEqual(BAND_MIN_MM)
+        expect(clamped.footerMm).toBeGreaterThanOrEqual(BAND_MIN_MM)
+      }
+    }
+  })
+
+  it('never lets the zones overflow the cell', () => {
+    for (let header = 0; header <= 200; header += 5) {
+      for (let footer = 0; footer <= 200; footer += 5) {
+        const clamped = clampBands({ headerMm: header, footerMm: footer }, 67)
+        expect(clamped.headerMm + clamped.footerMm).toBeLessThanOrEqual(67 - PICTURE_MIN_MM + 1e-9)
+      }
+    }
+  })
+
+  it('leaves a request that already fits completely alone', () => {
+    expect(clampBands({ headerMm: 10, footerMm: 15 }, 67)).toEqual({ headerMm: 10, footerMm: 15 })
+    expect(clampBands({ headerMm: 30, footerMm: 20 }, 67)).toEqual({ headerMm: 30, footerMm: 20 })
+  })
+
+  it('splits the overflow proportionally rather than starving one box', () => {
+    const clamped = clampBands({ headerMm: 40, footerMm: 40 }, 67)
+    // Both asked for the same excess, so both end up the same size.
+    expect(clamped.headerMm).toBeCloseTo(clamped.footerMm, 2)
+  })
+})

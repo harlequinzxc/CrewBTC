@@ -88,6 +88,33 @@ function highlightRects(content: string): number {
   return [...content.matchAll(/\bh\s+f\b/g)].length
 }
 
+describe('text scale', () => {
+  /** The nominal size in points, read from the `Tf` operator that sets it. */
+  const sizes = (content: string): readonly number[] =>
+    [...content.matchAll(/\/[\w-]+\s+([\d.]+)\s+Tf/g)].map((match) => Number.parseFloat(match[1] ?? '0'))
+
+  it('prints larger type when the card asks for it', async () => {
+    const normal = sizes(await exportOne(makeCard({ textScale: 1 })))
+    const larger = sizes(await exportOne(makeCard({ textScale: 1.5 })))
+
+    expect(Math.max(...normal)).toBeGreaterThan(0)
+    expect(Math.max(...larger)).toBeGreaterThan(Math.max(...normal))
+  })
+
+  it('prints smaller type when the card asks for it', async () => {
+    const normal = sizes(await exportOne(makeCard({ textScale: 1 })))
+    const smaller = sizes(await exportOne(makeCard({ textScale: 0.7 })))
+    expect(Math.max(...smaller)).toBeLessThan(Math.max(...normal))
+  })
+
+  it('still fits the band: a big scale shrinks back to fit rather than overflowing', async () => {
+    // A 14 mm header on a 67 mm card cannot hold 9 pt at 2x, so the layout must give way.
+    const huge = sizes(await exportOne(makeCard({ textScale: 2 })))
+    const normal = sizes(await exportOne(makeCard({ textScale: 1 })))
+    expect(Math.max(...huge)).toBeLessThan(Math.max(...normal) * 2)
+  })
+})
+
 describe('selection-level styling', () => {
   it('highlights only the selected run, not the whole box', async () => {
     const boxWide = await exportOne(makeCard({ headerStyle: { bold: false, color: '#111827', highlight: '#86efac' } }))

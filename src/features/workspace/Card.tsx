@@ -4,6 +4,7 @@ import type { Card, RectMm } from '../../types/card'
 import { CardZoneImage } from './CardZoneImage'
 import { CardZoneText } from './CardZoneText'
 import { relativeToCard } from './zone-box'
+import { ZoneDividers } from './ZoneDividers'
 
 export type CardZone = 'header' | 'picture' | 'body'
 
@@ -27,6 +28,8 @@ export interface CardProps {
   readonly onBeginPictureEdit: () => void
   readonly onEndPictureEdit: () => void
   readonly onImageChange: (transform: Card['imageTransform']) => void
+  /** Present only on the selected card: dividers are a pointer gesture on that one card. */
+  readonly onBandsChange?: (bands: Card['bands']) => void
 }
 
 /**
@@ -77,6 +80,7 @@ export function Card(props: CardProps) {
         editing={editing === 'header'}
         onSelectionChange={(selection) => props.onSelectionChange('header', selection)}
         maxPt={9}
+        textScale={card.textScale ?? 1}
         placeholder="Dish code · Dish name"
         onBeginEdit={() => props.onBeginTextEdit('header')}
         onChange={(text) => props.onTextChange('header', text)}
@@ -95,6 +99,17 @@ export function Card(props: CardProps) {
         onChange={props.onImageChange}
       />
 
+      {/* Dividers sit above the zones so they can be grabbed, but only on the card the
+          user has selected — otherwise every card would sprout handles. */}
+      {selected && props.onBandsChange !== undefined ? (
+        <ZoneDividers
+          bands={card.bands}
+          cellHeightMm={cell.heightMm}
+          scale={scale}
+          onChange={props.onBandsChange}
+        />
+      ) : null}
+
       <CardZoneText
         text={card.bodyText}
         scale={scale}
@@ -107,6 +122,7 @@ export function Card(props: CardProps) {
         editing={editing === 'body'}
         onSelectionChange={(selection) => props.onSelectionChange('body', selection)}
         maxPt={8}
+        textScale={card.textScale ?? 1}
         placeholder="Plating steps"
         onBeginEdit={() => props.onBeginTextEdit('body')}
         onChange={(text) => props.onTextChange('body', text)}

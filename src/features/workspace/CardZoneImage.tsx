@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNonPassiveWheel } from '../../lib/use-wheel'
 import { cn } from '../../lib/cn'
 import { containRectMm, MAX_IMAGE_SCALE, MIN_IMAGE_SCALE } from '../../types/card'
 import type { ImageTransform, PhotoSource, RectMm } from '../../types/card'
@@ -82,6 +83,17 @@ export function CardZoneImage(props: CardZoneImageProps) {
     props.onChange({ ...transform, scale: clampScale(transform.scale * factor) })
   }
 
+  // Non-passive, so `preventDefault` is honoured and the wheel does not leak through to
+  // the sheet pane, which would scroll or zoom the paper while the photo was being framed.
+  const wheelRef = useNonPassiveWheel<HTMLDivElement>(
+    (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      zoomBy(event.deltaY < 0 ? 1 + ZOOM_STEP : 1 - ZOOM_STEP)
+    },
+    editing,
+  )
+
   const onPointerDown = (event: React.PointerEvent<HTMLButtonElement>): void => {
     if (!editing) return
     event.preventDefault()
@@ -136,14 +148,20 @@ export function CardZoneImage(props: CardZoneImageProps) {
 
   return (
     <div
-      ref={rootRef}
+      ref={(node) => {
+        rootRef.current = node
+        wheelRef.current = node
+      }}
       // A clipping box, not a control. `zone-box` exempts it from the §4.1 target
       // floor: a global `min-height` would stretch it past its band and make the photo
       // overlap the footer.
       className={cn(
         'zone-box absolute overflow-hidden bg-zinc-100',
-        // A subtle outline, not a loud one: the photo is the subject, not the frame.
-        editing && 'outline outline-2 -outline-offset-2 outline-sky-500',
+        // While adjusting, the frame is the only cue that the photo — not the text — is
+        // about to receive the gesture, so it needs to be unmistakable rather than subtle.
+        editing
+          ? 'outline outline-2 -outline-offset-2 outline-sky-400 ring-2 ring-sky-400/40'
+          : 'outline outline-1 outline-transparent',
       )}
       style={{
         left: px(box.xMm),
@@ -162,24 +180,19 @@ export function CardZoneImage(props: CardZoneImageProps) {
           type="button"
           data-target="dense"
           aria-label="Dish photo — double-click to move and zoom"
+          data-adjusting={editing ? 'true' : 'false'}
           aria-roledescription="movable photo"
           tabIndex={editing ? 0 : -1}
           onDoubleClick={(event) => {
             event.stopPropagation()
-            props.onBeginEdit()
+            // Toggle: the same gesture that enters adjust mode leaves it again.
+            if (props.editing) props.onEndEdit()
+            else props.onBeginEdit()
           }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
-          onWheel={
-            editing
-              ? (event) => {
-                  event.preventDefault()
-                  zoomBy(event.deltaY < 0 ? 1 + ZOOM_STEP : 1 - ZOOM_STEP)
-                }
-              : undefined
-          }
           onKeyDown={onKeyDown}
           className="zone-box absolute inset-0 block size-full cursor-default border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500"
         >
@@ -203,48 +216,6 @@ export function CardZoneImage(props: CardZoneImageProps) {
         </button>
       )}
 
-      {editing && photo !== null ? (
-        <div className="absolute inset-x-0 bottom-0 flex items-center gap-1 bg-zinc-950/85 px-1">
-          <button
-            type="button"
-            data-target="dense"
-            aria-label="Zoom out"
-            className="h-8 min-h-8 w-6 rounded text-zinc-200 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-sky-400"
-            onClick={() => zoomBy(1 - ZOOM_STEP)}
-          >
-            −
-          </button>
-          <input
-            type="range"
-            aria-label="Photo zoom"
-            min={MIN_IMAGE_SCALE}
-            max={MAX_IMAGE_SCALE}
-            step={0.05}
-            value={transform.scale}
-            onChange={(event) => props.onChange({ ...transform, scale: clampScale(Number(event.target.value)) })}
-            onPointerDown={(event) => event.stopPropagation()}
-            className="h-3 min-w-0 flex-1 accent-sky-500"
-          />
-          <button
-            type="button"
-            data-target="dense"
-            aria-label="Zoom in"
-            className="h-8 min-h-8 w-6 rounded text-zinc-200 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-sky-400"
-            onClick={() => zoomBy(1 + ZOOM_STEP)}
-          >
-            +
-          </button>
-          <button
-            type="button"
-            data-target="dense"
-            aria-label="Reset photo framing"
-            className="h-8 min-h-8 rounded px-1 text-[9px] text-zinc-200 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-sky-400"
-            onClick={() => props.onChange({ offsetXMm: 0, offsetYMm: 0, scale: 1 })}
-          >
-            reset
-          </button>
-        </div>
-      ) : null}
     </div>
   )
 }

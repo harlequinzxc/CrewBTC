@@ -1,5 +1,19 @@
 [
   {
+    "version": "1.3.0",
+    "date": "2026-11-19",
+    "title": "Zoom into the sheet, and shape a card by dragging it",
+    "highlights": [
+      "The sheet zooms properly now: \u2212, the percentage, +, and Fit in the toolbar, plus Ctrl/Cmd + wheel over the workspace",
+      "Fit is a mode \u2014 resizing the window keeps the sheet fitted until you step the zoom yourself, after which the pane scrolls",
+      "The floating slider and buttons over a photo are gone: double-click the frame to adjust, drag to pan, scroll to zoom, and Escape or a second double-click leaves with the framing kept",
+      "Scrolling while adjusting a photo zooms the photo and nothing else \u2014 the sheet no longer moves underneath it",
+      "Drag the boundary lines on a selected card to resize the text boxes directly, instead of reaching for the sliders",
+      "A text scale control makes a card's type bigger or smaller without touching the picture band: the layout re-wraps until it fits",
+      "Fixed a band clamp that could leave a 6 mm photo where 12 mm was promised \u2014 it affected any card given a large header"
+    ]
+  },
+  {
     "version": "1.2.0",
     "date": "2026-11-19",
     "title": "Format the words you select, not the whole box",

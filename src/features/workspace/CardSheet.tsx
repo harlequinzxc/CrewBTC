@@ -2,11 +2,15 @@ import { useCallback, useState } from 'react'
 import { cutMarksFor, planSheets } from '../../lib/imposition/sheet'
 import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
-import { cardKey } from '../../types/card'
-import type { Card, ImageTransform } from '../../types/card'
-import { useElementSize } from '../../lib/use-element-size'
-import { Card as CardView } from './Card'
+import { cardKey, clampBands } from '../../types/card'
+import { cn } from '../../lib/cn'
+import type { Card } from '../../types/card'
 import { CardTextBar } from './CardTextBar'
+import { SheetBody } from './SheetBody'
+import { SheetToolbar } from './SheetToolbar'
+import { useElementSize } from '../../lib/use-element-size'
+import { useNonPassiveWheel } from '../../lib/use-wheel'
+import { fitScale, nextZoom, previousZoom, wheelZoom } from '../../lib/zoom'
 import { BandPanel } from './BandPanel'
 import { blankCard } from './use-cards'
 import { activeStyle, styleInto, styleSelection, textInto } from './card-edits'
@@ -23,8 +27,7 @@ export interface CardSheetProps {
   readonly onCardChange: (key: string, card: Card) => void
 }
 
-/** Padding kept around the sheet so it never touches the pane edges. */
-const BREATHING_ROOM = 24
+const PANE_PADDING = 12
 
 interface EditState {
   readonly cellIndex: number
@@ -46,7 +49,28 @@ export function CardSheet(props: CardSheetProps) {
   // The caret's selection in the box being edited. Cleared on every edit boundary, so a
   // stale range can never style text the user is no longer looking at.
   const [selection, setSelection] = useState<{ readonly start: number; readonly end: number } | null>(null)
+
+  // `null` means following the pane; a number means the user chose it and the pane scrolls.
+  const [manualScale, setManualScale] = useState<number | null>(null)
   const [containerRef, size] = useElementSize<HTMLDivElement>()
+
+  const fit = fitScale(
+    Math.max(0, size.width - PANE_PADDING * 2),
+    Math.max(0, size.height - PANE_PADDING * 2),
+    settings.sheetWidthMm,
+    settings.sheetHeightMm,
+  )
+  const scale = manualScale ?? fit
+  const overflows =
+    settings.sheetWidthMm * scale > size.width || settings.sheetHeightMm * scale > size.height
+
+  // Ctrl/Cmd + wheel zooms the sheet, not the browser page. Non-passive so the
+  // `preventDefault` is honoured — React's delegated wheel listener is passive.
+  const paneRef = useNonPassiveWheel<HTMLDivElement>((event) => {
+    if (!event.ctrlKey && !event.metaKey) return
+    event.preventDefault()
+    setManualScale(wheelZoom(scale, event.deltaY))
+  })
 
   const sheets = planSheets(pages, grid)
   const first = sheets[0]
@@ -70,14 +94,6 @@ export function CardSheet(props: CardSheetProps) {
     )
   }
 
-  const availableWidth = Math.max(0, size.width - BREATHING_ROOM)
-  const availableHeight = Math.max(0, size.height - BREATHING_ROOM)
-  const raw = Math.min(
-    availableWidth > 0 ? availableWidth / settings.sheetWidthMm : 1,
-    availableHeight > 0 ? availableHeight / settings.sheetHeightMm : 1,
-  )
-  const scale = Number.isFinite(raw) && raw > 0 ? raw : 1
-
   const activeZone = editing === null ? null : editing.zone
 
   // The card under the caret, used by the formatting bar for both its state and its target.
@@ -97,25 +113,9 @@ export function CardSheet(props: CardSheetProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex h-9 shrink-0 items-center gap-3 overflow-x-auto border-b border-zinc-800 px-3">
-        <span className="tabular whitespace-nowrap text-xs text-zinc-300">
-          {grid.columns} × {grid.rows} = {grid.cellCount} cells
-        </span>
-        <span className="tabular whitespace-nowrap text-xs text-zinc-500">
-          {grid.utilisationPercent}% of paper
-        </span>
-        <span className="tabular whitespace-nowrap text-xs text-zinc-500">
-          {sheets.length} {sheets.length === 1 ? 'sheet' : 'sheets'}
-        </span>
-        <span className="tabular ml-auto whitespace-nowrap text-xs text-zinc-600">
-          {Math.round(scale * 100)}% zoom
-        </span>
-      </div>
-
       {/* The formatting bar follows whichever text box has the caret. */}
       {editing !== null && editZone !== null ? (
         <div className="shrink-0 border-b border-zinc-800 px-3 py-1.5">
-          {/* `editZone` narrows the union once, so the bar never receives a picture zone. */}
           <CardTextBar
             zone={editZone}
             style={barCard[editZone === 'header' ? 'headerStyle' : 'bodyStyle']}
@@ -131,7 +131,28 @@ export function CardSheet(props: CardSheetProps) {
         </div>
       ) : null}
 
-      <div ref={containerRef} className="grid min-h-0 flex-1 place-items-center overflow-hidden p-3">
+      <SheetToolbar
+        grid={grid}
+        sheetCount={sheets.length}
+        scale={scale}
+        fitting={manualScale === null}
+        panned={false}
+        onStep={(direction) => setManualScale(direction === 1 ? nextZoom(scale) : previousZoom(scale))}
+        onFit={() => setManualScale(null)}
+        onResetPan={() => undefined}
+      />
+
+      <div
+        ref={(node) => {
+          containerRef.current = node
+          paneRef.current = node
+        }}
+        data-testid="sheet-pane"
+        className={cn(
+          'min-h-0 flex-1 p-3',
+          overflows ? 'overflow-auto' : 'grid place-items-center overflow-hidden',
+        )}
+      >
         <div
           className="relative shrink-0 bg-white shadow-xl shadow-black/50 ring-1 ring-black/20"
           style={{
@@ -139,93 +160,44 @@ export function CardSheet(props: CardSheetProps) {
             height: `${settings.sheetHeightMm * scale}px`,
           }}
         >
-          <button
-            type="button"
-            data-target="dense"
-            aria-label="Sheet preview — deselect card"
-            className="absolute inset-0 z-0 min-h-8 cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
-            onClick={() => {
-              setEditing(null)
-              setPictureEditing(null)
-              props.onSelectCell(null)
-            }}
-          />
-
-          {grid.cells.map((cell) => {
-            const placement = first?.placements.find((item) => item.cellIndex === cell.index)
-            if (placement === undefined) {
-              return (
-                <div
-                  key={cell.index}
-                  className="absolute border border-dashed border-zinc-300"
-                  style={{
-                    left: `${cell.rect.xMm * scale}px`,
-                    top: `${cell.rect.yMm * scale}px`,
-                    width: `${cell.rect.widthMm * scale}px`,
-                    height: `${cell.rect.heightMm * scale}px`,
-                  }}
-                >
-                  <span className="absolute left-0.5 top-0.5 text-[9px] leading-none text-zinc-400">
-                    {cell.index + 1}
-                  </span>
-                </div>
-              )
-            }
-
-            const key = cardKey(cell.index, placement.documentId, placement.pageNumber)
-            const card = cards[key] ?? blankCard(grid.cellHeightMm)
-            return (
-              <CardView
-                key={cell.index}
-                card={card}
-                cell={cell.rect}
-                scale={scale}
-                cellIndex={cell.index}
-                pageLabel={`${placement.fileName}#${placement.pageNumber}`}
-                selected={props.selectedCell === cell.index}
-                editing={editing?.cellIndex === cell.index ? activeZone : null}
-                pictureEditing={pictureEditing === key}
-                onSelect={() => props.onSelectCell(cell.index)}
-                onBeginTextEdit={(zone) => {
-                  props.onSelectCell(cell.index)
-                  setSelection(null)
-                  setEditing({ cellIndex: cell.index, key, zone })
-                }}
-                onEndEdit={() => {
-                  setSelection(null)
-                  setEditing(null)
-                }}
-                onSelectionChange={(zone, next) => {
-                  setSelection(zone === editing?.zone ? next : null)
-                }}
-                // Runs are offsets into the text, so an edit has to move them too.
-                onTextChange={(zone, text) => apply(key, (current) => textInto(current, zone, text))}
-                onStyleChange={(zone, style) => apply(key, (current) => styleInto(current, zone, style))}
-                onBeginPictureEdit={() => {
-                  props.onSelectCell(cell.index)
-                  setPictureEditing(key)
-                }}
-                onEndPictureEdit={() => setPictureEditing(null)}
-                onImageChange={(transform: ImageTransform) =>
-                  apply(key, (current) => ({ ...current, imageTransform: transform }))
-                }
-              />
-            )
-          })}
-
-          {marks.map((mark, index) => (
-            <div
-              key={`mark-${index}`}
-              aria-hidden="true"
-              className="pointer-events-none absolute bg-red-300/50"
-              style={{
-                left: `${mark.x1Mm * scale}px`,
-                top: `${mark.y1Mm * scale}px`,
-                width: `${Math.max(1, (mark.x2Mm - mark.x1Mm) * scale)}px`,
-                height: `${Math.max(1, (mark.y2Mm - mark.y1Mm) * scale)}px`,
-              }}
-            />
-          ))}
+        <SheetBody
+          grid={grid}
+          scale={scale}
+          placements={first?.placements}
+          marks={marks}
+          cards={cards}
+          selectedCell={props.selectedCell}
+          activeZone={activeZone}
+          editingCell={editing?.cellIndex ?? null}
+          pictureKey={pictureEditing}
+          onDeselect={() => {
+            setEditing(null)
+            setPictureEditing(null)
+            props.onSelectCell(null)
+          }}
+          onSelectCell={props.onSelectCell}
+          onBeginTextEdit={(cellIndex, key, zone) => {
+            props.onSelectCell(cellIndex)
+            setSelection(null)
+            setEditing({ cellIndex, key, zone })
+          }}
+          onEndEdit={() => {
+            setSelection(null)
+            setEditing(null)
+          }}
+          onSelectionChange={(zone, next) => setSelection(zone === editing?.zone ? next : null)}
+          onTextChange={(key, zone, text) => apply(key, (current) => textInto(current, zone, text))}
+          onStyleChange={(key, zone, style) => apply(key, (current) => styleInto(current, zone, style))}
+          onBeginPictureEdit={(cellIndex, key) => {
+            props.onSelectCell(cellIndex)
+            setPictureEditing(key)
+          }}
+          onEndPictureEdit={() => setPictureEditing(null)}
+          onImageChange={(key, transform) => apply(key, (current) => ({ ...current, imageTransform: transform }))}
+          onBandsChange={(key, bands) =>
+            apply(key, (current) => ({ ...current, bands: clampBands(bands, grid.cellHeightMm) }))
+          }
+        />
         </div>
       </div>
 
@@ -237,6 +209,10 @@ export function CardSheet(props: CardSheetProps) {
           onChange={(bands) => {
             if (selectedKey === null) return
             apply(selectedKey, (current) => ({ ...current, bands }))
+          }}
+          onTextScaleChange={(textScale) => {
+            if (selectedKey === null) return
+            apply(selectedKey, (current) => ({ ...current, textScale }))
           }}
         />
       </div>

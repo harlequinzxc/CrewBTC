@@ -1,4 +1,12 @@
-import { clampBands, defaultBands, PICTURE_MIN_MM, BAND_MIN_MM } from '../../types/card'
+import {
+  BAND_MIN_MM,
+  MAX_TEXT_SCALE,
+  MIN_TEXT_SCALE,
+  PICTURE_MIN_MM,
+  clampBands,
+  clampTextScale,
+  defaultBands,
+} from '../../types/card'
 import type { Card, CardBands } from '../../types/card'
 
 export interface BandPanelProps {
@@ -7,10 +15,14 @@ export interface BandPanelProps {
   readonly cellIndex: number
   readonly cellHeightMm: number
   readonly onChange: (bands: CardBands) => void
+  readonly onTextScaleChange: (scale: number) => void
 }
 
 /** Half a millimetre: fine enough to tune, coarse enough to feel deliberate. */
 const STEP_MM = 0.5
+
+/** Twenty steps across the range: fine enough to nudge, coarse enough to reach 100%. */
+const TEXT_SCALE_STEP = 0.05
 
 /** The three-zone split drawn at panel size, so the sliders have something to point at. */
 function ZoneBar(props: { readonly bands: CardBands; readonly cellHeightMm: number }) {
@@ -104,14 +116,44 @@ export function BandPanel(props: BandPanelProps) {
         </span>
       </label>
 
-      <button
-        type="button"
-        data-target="dense"
-        onClick={() => props.onChange(clampBands(defaultBands(cellHeightMm), cellHeightMm))}
-        className="h-8 min-h-8 self-start rounded border border-zinc-700 px-2 text-[11px] text-zinc-300 transition-colors duration-150 ease-out hover:bg-zinc-800 hover:text-zinc-100 focus-visible:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-red-500"
-      >
-        Reset to default
-      </button>
+      {/* Type size is separate from the zone split: making the words bigger re-wraps
+          them inside the same band, so the picture keeps its height either way. */}
+      <label className="flex items-center gap-2">
+        <span className="w-10 shrink-0 text-[11px] text-zinc-400">text</span>
+        <input
+          type="range"
+          aria-label="Text scale"
+          min={MIN_TEXT_SCALE}
+          max={MAX_TEXT_SCALE}
+          step={TEXT_SCALE_STEP}
+          value={card.textScale ?? 1}
+          onChange={(event) => props.onTextScaleChange(clampTextScale(Number(event.target.value)))}
+          className="h-4 min-w-0 flex-1 accent-sky-500"
+        />
+        <span className="tabular w-12 shrink-0 text-right text-[11px] text-zinc-300">
+          {Math.round((card.textScale ?? 1) * 100)}%
+        </span>
+      </label>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          data-target="dense"
+          onClick={() => props.onChange(clampBands(defaultBands(cellHeightMm), cellHeightMm))}
+          className="h-8 min-h-8 rounded border border-zinc-700 px-2 text-[11px] text-zinc-300 transition-colors duration-150 ease-out hover:bg-zinc-800 hover:text-zinc-100 focus-visible:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-red-500"
+        >
+          Reset bands
+        </button>
+        <button
+          type="button"
+          data-target="dense"
+          onClick={() => props.onTextScaleChange(1)}
+          disabled={(card.textScale ?? 1) === 1}
+          className="h-8 min-h-8 rounded border border-zinc-700 px-2 text-[11px] text-zinc-300 transition-colors duration-150 ease-out hover:bg-zinc-800 hover:text-zinc-100 focus-visible:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-40 disabled:hover:bg-transparent"
+        >
+          Reset text
+        </button>
+      </div>
     </div>
   )
 }

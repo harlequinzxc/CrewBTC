@@ -99,6 +99,9 @@ stays correct after the box is recoloured.
 - `lib/export/styled-band.ts` — wraps per style segment, because a bold word measures
   wider than a regular one. A box with no runs takes the single-style path unchanged.
 - `draw-card.ts` — draws each segment at its own x offset, so printed output matches.
+- `textScale` multiplies the requested point size before layout, so the type still
+  shrinks to fit the band. It is applied in `CardZoneText` and in `drawCard`, from the
+  same number, which is what keeps the print equal to the preview.
 
 ## Geometry
 
@@ -119,6 +122,18 @@ nothing between them.
 Sheet settings persist to `localStorage` under `crewbtc.sheet` and are validated on read
 — a corrupt or out-of-range value falls back to the defaults rather than rendering a
 broken grid.
+
+## Workspace zoom
+
+`lib/zoom.ts` holds the ladder and the arithmetic; `SheetToolbar` renders it. `Fit` is a
+mode (`manualScale === null`), not a one-off calculation, so a window resize keeps the
+sheet fitted until the user steps the zoom. Once the sheet is larger than the pane it
+scrolls — it is never silently shrunk.
+
+The wheel listener is attached through `lib/use-wheel.ts`, which binds with
+`{ passive: false }`. React's delegated `wheel` handler is passive, so `preventDefault`
+inside an `onWheel` does nothing; that is why the photo's scroll-to-zoom and the pane's
+Ctrl+wheel both use the direct listener.
 
 ## Export
 
