@@ -3,12 +3,13 @@ import { cutMarksFor, planSheets } from '../../lib/imposition/sheet'
 import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import { cardKey } from '../../types/card'
-import type { Card, ImageTransform, TextStyle } from '../../types/card'
+import type { Card, ImageTransform } from '../../types/card'
 import { useElementSize } from '../../lib/use-element-size'
 import { Card as CardView } from './Card'
 import { CardTextBar } from './CardTextBar'
 import { BandPanel } from './BandPanel'
 import { blankCard } from './use-cards'
+import { activeStyle, styleInto, styleSelection, textInto } from './card-edits'
 import type { CardZone } from './Card'
 
 export interface CardSheetProps {
@@ -42,6 +43,9 @@ export function CardSheet(props: CardSheetProps) {
   const { settings, grid, pages, cards, showCutMarks } = props
   const [editing, setEditing] = useState<EditState | null>(null)
   const [pictureEditing, setPictureEditing] = useState<string | null>(null)
+  // The caret's selection in the box being edited. Cleared on every edit boundary, so a
+  // stale range can never style text the user is no longer looking at.
+  const [selection, setSelection] = useState<{ readonly start: number; readonly end: number } | null>(null)
   const [containerRef, size] = useElementSize<HTMLDivElement>()
 
   const sheets = planSheets(pages, grid)
@@ -76,6 +80,10 @@ export function CardSheet(props: CardSheetProps) {
 
   const activeZone = editing === null ? null : editing.zone
 
+  // The card under the caret, used by the formatting bar for both its state and its target.
+  const editZone = editing === null || editing.zone === 'picture' ? null : editing.zone
+  const barCard = editing === null ? blankCard(grid.cellHeightMm) : (cards[editing.key] ?? blankCard(grid.cellHeightMm))
+
   // The selected card, resolved once for the docked panel.
   const selectedPlacement =
     props.selectedCell === null
@@ -105,16 +113,20 @@ export function CardSheet(props: CardSheetProps) {
       </div>
 
       {/* The formatting bar follows whichever text box has the caret. */}
-      {editing !== null && (editing.zone === 'header' || editing.zone === 'body') ? (
+      {editing !== null && editZone !== null ? (
         <div className="shrink-0 border-b border-zinc-800 px-3 py-1.5">
+          {/* `editZone` narrows the union once, so the bar never receives a picture zone. */}
           <CardTextBar
-            zone={editing.zone}
-            style={
-              (cards[editing.key] ?? blankCard(grid.cellHeightMm))[
-                editing.zone === 'header' ? 'headerStyle' : 'bodyStyle'
-              ]
-            }
-            onChange={(style) => apply(editing.key, (card) => styleInto(card, editing.zone, style))}
+            zone={editZone}
+            style={barCard[editZone === 'header' ? 'headerStyle' : 'bodyStyle']}
+            selection={selection}
+            active={activeStyle(barCard, editZone, selection)}
+            onChange={(style) => {
+              const zone = editZone
+              apply(editing.key, (card) =>
+                selection === null ? styleInto(card, zone, style) : styleSelection(card, zone, selection, style),
+              )
+            }}
           />
         </div>
       ) : null}
@@ -176,16 +188,18 @@ export function CardSheet(props: CardSheetProps) {
                 onSelect={() => props.onSelectCell(cell.index)}
                 onBeginTextEdit={(zone) => {
                   props.onSelectCell(cell.index)
+                  setSelection(null)
                   setEditing({ cellIndex: cell.index, key, zone })
                 }}
-                onEndEdit={() => setEditing(null)}
-                onTextChange={(zone, text) =>
-                  apply(key, (current) =>
-                    zone === 'header'
-                      ? { ...current, headerText: text }
-                      : { ...current, bodyText: text },
-                  )
-                }
+                onEndEdit={() => {
+                  setSelection(null)
+                  setEditing(null)
+                }}
+                onSelectionChange={(zone, next) => {
+                  setSelection(zone === editing?.zone ? next : null)
+                }}
+                // Runs are offsets into the text, so an edit has to move them too.
+                onTextChange={(zone, text) => apply(key, (current) => textInto(current, zone, text))}
                 onStyleChange={(zone, style) => apply(key, (current) => styleInto(current, zone, style))}
                 onBeginPictureEdit={() => {
                   props.onSelectCell(cell.index)
@@ -233,9 +247,4 @@ export function CardSheet(props: CardSheetProps) {
       </p>
     </div>
   )
-}
-
-/** Applies a style to whichever text box the user was in. */
-function styleInto(card: Card, zone: CardZone, style: TextStyle): Card {
-  return zone === 'header' ? { ...card, headerStyle: style } : { ...card, bodyStyle: style }
 }

@@ -18,8 +18,7 @@ export interface CardZoneImageProps {
 const ZOOM_STEP = 0.08
 const NUDGE_MM = 0.5
 
-const clampScale = (value: number): number =>
-  Math.min(MAX_IMAGE_SCALE, Math.max(MIN_IMAGE_SCALE, value))
+const clampScale = (value: number): number => Math.min(MAX_IMAGE_SCALE, Math.max(MIN_IMAGE_SCALE, value))
 
 /**
  * The middle zone: a fixed box the dish photo lives inside.
@@ -38,6 +37,13 @@ export function CardZoneImage(props: CardZoneImageProps) {
     null,
   )
   const rootRef = useRef<HTMLDivElement>(null)
+  // Dragging renders on every pointermove; the listeners below read this ref rather than
+  // depending on `props`, or they would re-subscribe mid-gesture. Set in an effect
+  // because writing a ref during render is unsafe under concurrent rendering.
+  const endEditRef = useRef(props.onEndEdit)
+  useEffect(() => {
+    endEditRef.current = props.onEndEdit
+  }, [props.onEndEdit])
 
   const px = (mm: number): string => `${mm * scale}px`
 
@@ -46,23 +52,23 @@ export function CardZoneImage(props: CardZoneImageProps) {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape' || event.key === 'Enter') {
         event.preventDefault()
-        props.onEndEdit()
+        endEditRef.current()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [editing, props])
+  }, [editing])
 
   // A press outside the box leaves adjust mode, as in any picture editor.
   useEffect(() => {
     if (!editing) return
     const onDown = (event: PointerEvent): void => {
       const root = rootRef.current
-      if (root !== null && !root.contains(event.target as Node)) props.onEndEdit()
+      if (root !== null && !root.contains(event.target as Node)) endEditRef.current()
     }
     document.addEventListener('pointerdown', onDown, true)
     return () => document.removeEventListener('pointerdown', onDown, true)
-  }, [editing, props])
+  }, [editing])
 
   const shapeUnknown = photo !== null && (photo.widthPx <= 0 || photo.heightPx <= 0)
   const drawn =
@@ -192,7 +198,6 @@ export function CardZoneImage(props: CardZoneImageProps) {
               top: px(drawn.yMm - box.yMm),
               width: px(drawn.widthMm),
               height: px(drawn.heightMm),
-              objectFit: 'contain',
             }}
           />
         </button>

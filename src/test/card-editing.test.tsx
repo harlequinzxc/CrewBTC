@@ -37,6 +37,7 @@ function props(card: CardModel) {
     onBeginPictureEdit: vi.fn(),
     onEndPictureEdit: vi.fn(),
     onImageChange: vi.fn(),
+    onSelectionChange: vi.fn(),
   }
 }
 
@@ -85,11 +86,17 @@ describe('typing into a card', () => {
 })
 
 describe('formatting a text box', () => {
-  const base = { zone: 'body' as const, style: DEFAULT_TEXT_STYLE, onChange: vi.fn() }
+  const base = {
+    zone: 'body' as const,
+    style: DEFAULT_TEXT_STYLE,
+    active: DEFAULT_TEXT_STYLE,
+    selection: null,
+    onChange: vi.fn(),
+  }
 
   beforeEach(() => base.onChange.mockClear())
 
-  it('toggles bold', () => {
+  it('toggles bold for the whole box when nothing is selected', () => {
     render(<CardTextBar {...base} />)
     fireEvent.click(screen.getByRole('button', { name: 'Bold' }))
     expect(base.onChange).toHaveBeenCalledWith({ ...DEFAULT_TEXT_STYLE, bold: true })
@@ -97,16 +104,16 @@ describe('formatting a text box', () => {
 
   it('sets the ink colour', () => {
     render(<CardTextBar {...base} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Text colour #b91c1c' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Text colour Red' }))
     expect(base.onChange).toHaveBeenCalledWith({ ...DEFAULT_TEXT_STYLE, color: '#b91c1c' })
   })
 
   it('sets a highlight and can clear it again', () => {
     render(<CardTextBar {...base} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Highlight #bbf7d0' }))
-    expect(base.onChange).toHaveBeenCalledWith({ ...DEFAULT_TEXT_STYLE, highlight: '#bbf7d0' })
+    fireEvent.click(screen.getByRole('button', { name: 'Green highlight' }))
+    expect(base.onChange).toHaveBeenCalledWith({ ...DEFAULT_TEXT_STYLE, highlight: '#86efac' })
 
-    render(<CardTextBar {...base} style={{ ...DEFAULT_TEXT_STYLE, highlight: '#bbf7d0' }} />)
+    render(<CardTextBar {...base} active={{ ...DEFAULT_TEXT_STYLE, highlight: '#86efac' }} />)
     fireEvent.click(screen.getAllByRole('button', { name: 'No highlight' })[0]!)
     expect(base.onChange).toHaveBeenLastCalledWith({ ...DEFAULT_TEXT_STYLE, highlight: null })
   })
@@ -114,6 +121,27 @@ describe('formatting a text box', () => {
   it('says which box it will change', () => {
     render(<CardTextBar {...base} />)
     expect(screen.getByText('bottom text')).toBeInTheDocument()
+  })
+
+  it('says when it will restyle only a selection', () => {
+    render(<CardTextBar {...base} selection={{ start: 2, end: 7 }} />)
+    expect(screen.getByText('selection')).toBeInTheDocument()
+  })
+
+  it('names the button for the selection when text is selected', () => {
+    render(<CardTextBar {...base} selection={{ start: 0, end: 4 }} />)
+    expect(screen.getByRole('button', { name: 'Bold selection' })).toBeInTheDocument()
+  })
+
+  it('reports the selection’s own style, not the box’s', () => {
+    render(
+      <CardTextBar
+        {...base}
+        selection={{ start: 0, end: 4 }}
+        active={{ bold: true, color: '#b91c1c', highlight: '#86efac' }}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Bold selection' })).toHaveAttribute('aria-pressed', 'true')
   })
 })
 

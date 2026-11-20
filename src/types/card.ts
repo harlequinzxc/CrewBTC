@@ -31,6 +31,18 @@ export const DEFAULT_BODY_STYLE: TextStyle = {
 export const TEXT_COLORS = ['#111827', '#b91c1c', '#15803d', '#1d4ed8'] as const
 export const HIGHLIGHT_COLORS = ['#fde68a', '#bbf7d0', '#bfdbfe', '#fecaca'] as const
 
+/** Extra highlight inks that read as pen marks on a printed card. */
+export const REFERENCE_HIGHLIGHTS = {
+  red: '#fca5a5',
+  green: '#86efac',
+  amber: '#fde68a',
+} as const
+
+import type { TextRun } from './text-runs'
+
+export type { TextRun } from './text-runs'
+
+
 /** An extracted dish photo with the pixel shape it must be drawn at. */
 export interface PhotoSource {
   readonly dataUrl: string
@@ -194,6 +206,9 @@ export function fitInsideMm(
 export interface Card {
   readonly headerText: string
   readonly bodyText: string
+  /** Selection-level styling, empty when the whole box shares one style. */
+  readonly headerRuns?: readonly TextRun[]
+  readonly bodyRuns?: readonly TextRun[]
   readonly photo: PhotoSource | null
   readonly headerStyle: TextStyle
   readonly bodyStyle: TextStyle
@@ -213,6 +228,8 @@ export function cardFromPage(
   return {
     headerText: scan.headerText,
     bodyText: scan.bodyText,
+    headerRuns: [],
+    bodyRuns: [],
     photo: scan.photo,
     headerStyle: DEFAULT_TEXT_STYLE,
     bodyStyle: DEFAULT_BODY_STYLE,

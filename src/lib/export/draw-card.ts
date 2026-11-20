@@ -1,10 +1,11 @@
 import type { PDFFont, PDFImage, PDFOperator, PDFPage, RGB } from '@cantoo/pdf-lib'
 import type { ClipOps } from './band-clip'
 import { mmToPt, ptToMm } from '../units'
-import { layoutBand } from './text-band'
+import { layoutStyledBand } from './styled-band'
+import type { StyledSegment } from './styled-band'
 import { pushBandClip } from './band-clip'
 import { cardZones, containRectMm, fitInsideMm } from '../../types/card'
-import type { Card, RectMm } from '../../types/card'
+import type { Card, RectMm, TextRun } from '../../types/card'
 
 /**
  * Drawing one card onto an output page.
@@ -46,6 +47,7 @@ interface PaintTextInput {
   readonly canvas: CardCanvas
   readonly zone: RectMm
   readonly text: string
+  readonly runs: readonly TextRun[]
   readonly bold: boolean
   readonly color: string
   readonly highlight: string | null
@@ -59,45 +61,63 @@ function paintText(input: PaintTextInput): void {
   const { canvas, zone, text } = input
   if (text.trim() === '' || zone.widthMm <= 0 || zone.heightMm <= 0) return
 
-  const font = input.bold ? canvas.bold : canvas.regular
-  const measure = (candidate: string, sizePt: number): number =>
-    ptToMm(font.widthOfTextAtSize(candidate, sizePt))
+  const fontFor = (bold: boolean): PDFFont => (bold ? canvas.bold : canvas.regular)
+  const measureAt = (candidate: string, sizePt: number, bold: boolean): number =>
+    ptToMm(fontFor(bold).widthOfTextAtSize(candidate, sizePt))
 
-  const layout = layoutBand(
-    text,
+  const layout = layoutStyledBand(
+    {
+      text,
+      base: { text: '', bold: input.bold, color: input.color, highlight: input.highlight },
+      runs: input.runs,
+    },
     zone.yMm,
     zone.widthMm,
     zone.heightMm,
     input.maxPt,
     LINE_HEIGHT,
-    measure,
+    measureAt,
     { paddingMm: PADDING_MM },
   )
-  const ink = hexToRgb(input.color, input.fallback, input.rgb)
-  const highlight = input.highlight === null ? null : hexToRgb(input.highlight, input.fallback, input.rgb)
+
+  const inkOf = (hex: string): RGB => hexToRgb(hex, input.fallback, input.rgb)
 
   for (const line of layout.lines) {
-    if (highlight !== null) {
-      const widthPt = font.widthOfTextAtSize(line.text, line.sizePt)
-      canvas.page.drawRectangle({
-        x: mmToPt(zone.xMm + PADDING_MM),
-        // Behind the glyphs, one line high, with a little air on either side.
-        y: canvas.sheetHeightPt - mmToPt(line.yMm) - line.sizePt * 0.25,
-        width: Math.min(mmToPt(zone.widthMm - PADDING_MM), widthPt + mmToPt(0.4)),
-        height: line.sizePt * 1.15,
-        color: highlight,
-      })
-    }
+    // Segments are drawn left to right, each in its own weight and ink, so a bold word
+    // and a red instruction print exactly as they look on screen.
+    let xMm = zone.xMm + PADDING_MM
 
-    canvas.page.drawText(line.text, {
-      x: mmToPt(zone.xMm + PADDING_MM),
-      y: canvas.sheetHeightPt - mmToPt(line.yMm),
-      size: line.sizePt,
-      font,
-      color: ink,
-    })
+    for (const segment of line.segments) {
+      const font = fontFor(segment.bold)
+      const widthPt = font.widthOfTextAtSize(segment.text, line.sizePt)
+      const widthMm = ptToMm(widthPt)
+
+      if (segment.highlight !== null) {
+        canvas.page.drawRectangle({
+          x: mmToPt(xMm),
+          // Behind the glyphs, one line high, with a little air on either side.
+          y: canvas.sheetHeightPt - mmToPt(line.yMm) - line.sizePt * 0.25,
+          width: Math.min(mmToPt(zone.xMm + zone.widthMm - xMm), widthPt + mmToPt(0.4)),
+          height: line.sizePt * 1.15,
+          color: inkOf(segment.highlight),
+        })
+      }
+
+      canvas.page.drawText(segment.text, {
+        x: mmToPt(xMm),
+        y: canvas.sheetHeightPt - mmToPt(line.yMm),
+        size: line.sizePt,
+        font,
+        color: inkOf(segment.color),
+      })
+
+      xMm += widthMm
+    }
   }
 }
+
+/** Kept for callers that only need the plain-text line boxes. */
+export type { StyledSegment }
 
 export interface DrawCardInput {
   readonly lib: {
@@ -135,6 +155,7 @@ export async function drawCard(input: DrawCardInput): Promise<boolean> {
     canvas,
     zone: zones.header,
     text: card.headerText,
+    runs: card.headerRuns ?? [],
     bold: card.headerStyle.bold,
     color: card.headerStyle.color,
     highlight: card.headerStyle.highlight,
@@ -147,6 +168,7 @@ export async function drawCard(input: DrawCardInput): Promise<boolean> {
     canvas,
     zone: zones.footer,
     text: card.bodyText,
+    runs: card.bodyRuns ?? [],
     bold: card.bodyStyle.bold,
     color: card.bodyStyle.color,
     highlight: card.bodyStyle.highlight,

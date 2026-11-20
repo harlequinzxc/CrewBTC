@@ -22,6 +22,8 @@ export interface CardProps {
   readonly onEndEdit: () => void
   readonly onTextChange: (zone: 'header' | 'body', text: string) => void
   readonly onStyleChange: (zone: 'header' | 'body', style: Card['headerStyle']) => void
+  /** Reports the caret's selection in the box being edited, for the formatting bar. */
+  readonly onSelectionChange: (zone: 'header' | 'body', selection: { readonly start: number; readonly end: number } | null) => void
   readonly onBeginPictureEdit: () => void
   readonly onEndPictureEdit: () => void
   readonly onImageChange: (transform: Card['imageTransform']) => void
@@ -71,7 +73,9 @@ export function Card(props: CardProps) {
         widthMm={header.widthMm}
         heightMm={header.heightMm}
         style={card.headerStyle}
+        runs={card.headerRuns ?? []}
         editing={editing === 'header'}
+        onSelectionChange={(selection) => props.onSelectionChange('header', selection)}
         maxPt={9}
         placeholder="Dish code · Dish name"
         onBeginEdit={() => props.onBeginTextEdit('header')}
@@ -99,7 +103,9 @@ export function Card(props: CardProps) {
         widthMm={footer.widthMm}
         heightMm={footer.heightMm}
         style={card.bodyStyle}
+        runs={card.bodyRuns ?? []}
         editing={editing === 'body'}
+        onSelectionChange={(selection) => props.onSelectionChange('body', selection)}
         maxPt={8}
         placeholder="Plating steps"
         onBeginEdit={() => props.onBeginTextEdit('body')}
