@@ -102,6 +102,45 @@ export function useClickProbe(version: string): { readonly arm: () => void } {
         }
         document.addEventListener('pointerdown', onDocument, true)
 
+        /*
+          Whether the field *ever existed*, which no sample can tell you.
+
+          Every sample so far was taken after the press had settled, and all of them said
+          "no field". That cannot distinguish a field that was never rendered from one that
+          was rendered and removed in the same gesture — and those are different bugs with
+          different fixes. So the DOM itself is watched: a field that appears and goes is
+          recorded as such, with the times.
+        */
+        const fieldSeen = { appeared: 0, removed: 0 }
+        const observer = new MutationObserver((records) => {
+          for (const record of records) {
+            for (const node of record.addedNodes) {
+              if (node instanceof HTMLTextAreaElement && node.getAttribute('aria-label') === 'Edit card text') {
+                fieldSeen.appeared += 1
+                note('field-mount', 'a field WAS rendered')
+              }
+            }
+            for (const node of record.removedNodes) {
+              if (node instanceof HTMLTextAreaElement && node.getAttribute('aria-label') === 'Edit card text') {
+                fieldSeen.removed += 1
+                note('field-unmount', `the field was removed (+${(performance.now() - t0).toFixed(0)}ms)`)
+              }
+            }
+          }
+        })
+        observer.observe(document.body, { childList: true, subtree: true })
+
+        /*
+          And whether anything threw while the press was being handled. A React handler that
+          throws is not a crash the user sees: it is reported, the state update is abandoned,
+          and the next paint looks exactly like "nothing happened".
+        */
+        const onError = (event: Event): void => {
+          const message = event instanceof ErrorEvent ? event.message : 'unknown error'
+          note('error', `an exception was thrown: ${message.slice(0, 90)}`)
+        }
+        window.addEventListener('error', onError)
+
         const sample = (): void => {
           if (zone !== null && zone !== undefined) {
             if (zone.getAttribute('data-press-handled') === 'true') {
@@ -147,6 +186,16 @@ export function useClickProbe(version: string): { readonly arm: () => void } {
             finished.push('the press reached the document, but neither the button nor the rescue acted')
           } else if (!said.has('field')) {
             finished.push('the press was handled, but no field ever appeared')
+          }
+          observer.disconnect()
+          window.removeEventListener('error', onError)
+          if (fieldSeen.appeared > 0 && fieldSeen.removed > 0) {
+            finished.push(
+              'a field was rendered and then removed before the gesture ended —',
+              'something is closing the editor as soon as it opens',
+            )
+          } else if (fieldSeen.appeared > 0 && !document.querySelector('textarea[aria-label="Edit card text"]')) {
+            finished.push('a field was rendered and is now gone')
           }
           draw()
           console.info('[crewbtc click probe]\n' + panel.textContent)

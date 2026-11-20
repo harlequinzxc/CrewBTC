@@ -28,7 +28,27 @@ test('a working press reports every step of the timeline', async ({ page }) => {
   expect(text).toContain('the document saw the press')
   expect(text).toContain('the button handler ran')
   expect(text).toContain('a field appeared')
+  // The field's whole life is watched, not just sampled: it must be seen arriving.
+  expect(text).toContain('a field WAS rendered')
 })
+
+/*
+  The distinction that four releases could not make: "no field" was reported for both a
+  field that never existed and one that existed and was removed before anything sampled the
+  page. The observer records the removal, so the two read differently.
+*/
+test('a field that is removed after mounting is reported as such', async ({ page }) => {
+  await uploadPdf(page)
+  await page.evaluate(() => {
+    new MutationObserver(() => {
+      const field = document.querySelector('textarea[aria-label="Edit card text"]')
+      if (field !== null) (field as HTMLTextAreaElement).blur()
+    }).observe(document.body, { childList: true, subtree: true })
+  })
+  const text = await run(page)
+  expect(text).toContain('a field WAS rendered')
+})
+
 
 test('a press stopped below the document reports the rescue stepping in', async ({ page }) => {
   await uploadPdf(page)

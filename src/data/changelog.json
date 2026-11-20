@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.9.9",
+    "date": "2026-11-20",
+    "title": "The editor stops closing itself the moment it opens",
+    "highlights": [
+      "Found it: the text box was being closed by a blur that had nothing to do with the user. The field ended its edit on any blur at all \u2014 and a freshly focused field blurs on its own when the window loses focus, when the page scrolls, or from the layout shift caused by the field appearing. It opened and closed within a few milliseconds of the press, which is why every report for four releases said \u201cno field\u201d while the field had, in fact, existed",
+      "An edit now ends because of something the user did: Escape, a press somewhere else, or focus genuinely moving to another control. A blur to nothing keeps the editor open and puts the caret back, because a field that is open but not focused takes no typing and looks exactly as broken as one that never opened",
+      "The diagnostic now watches the field\u2019s whole life rather than sampling it. It reports a field that was rendered and removed separately from one that never appeared \u2014 the distinction that took four releases to make \u2014 and reports any exception thrown while the press is handled",
+      "Two new browser tests cover the halves of this: a stray blur must leave the editor open and focused with typing still working, and a press on the backdrop must still close it. The first fails without the fix"
+    ]
+  },
+  {
     "version": "1.9.8",
     "date": "2026-11-20",
     "title": "The press no longer needs a lookup to find the box it belongs to",
