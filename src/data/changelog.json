@@ -1,141 +1,14 @@
 [
   {
-    "version": "1.9.11",
-    "date": "2026-11-20",
-    "title": "One sheet opens the editor, not every sheet at once",
-    "highlights": [
-      "Fixed the flicker you reported. \u201cWhich card is being edited\u201d was tracked by cell number alone, and every sheet draws the same cell numbers \u2014 so opening cell 3 opened a text field on every sheet in the stack. Several fields then pull the caret back and forth continuously, which is a field that flickers rather than one you can type in. The report showed it precisely: the browser was focused on a TEXTAREA while the app\u2019s own field said it was not",
-      "Editing now records which sheet it is on, not just which cell, so only that sheet opens a field. Selection already worked this way; editing was the one place that did not",
-      "This is also the likely cause of text jumping between cells when deleting. With a field open on more than one sheet, a keystroke is delivered to whichever field currently holds focus, and that field can belong to a different card than the one you clicked",
-      "New test renders a sheet with and without the edit state and requires exactly one field, or none"
-    ]
-  },
-  {
-    "version": "1.9.10",
-    "date": "2026-11-20",
-    "title": "A text box no longer closes because it lost focus",
-    "highlights": [
-      "The actual cause, found at last: something on the machine reporting this takes focus away one frame after any text field appears. The field treated every focus loss as \u201cthe user finished\u201d, so it closed itself a millisecond after opening. The report proved it: \u201ca field WAS rendered\u201d at +15ms, \u201cthe field was removed\u201d at +16ms",
-      "Ignoring only a blur to nothing was not enough, because the blur carries a target and looks exactly like a deliberate move. So focus no longer ends an edit at all. Editing ends when you press Escape, press another card, or press on the canvas around the sheets \u2014 all things you actually did",
-      "The caret is taken back when focus is stolen, because a field that is open but unfocused accepts no typing and looks just as broken as one that never opened",
-      "Fixed a bug this change would otherwise have introduced: pressing the canvas ground called the sheet\u2019s selection directly and stepped over the new dismissal, so it did not close the editor. And pressing another card\u2019s text moves the editor to that card, which the old test misread as a failure because it counted fields instead of asking which card the field was on",
-      "One deliberate trade: a keyboard user pressing Tab out of a text box leaves it open. Closing on focus loss has now been proven, in this app, to close the editor before a caret can be placed in it at all"
-    ]
-  },
-  {
-    "version": "1.9.9",
-    "date": "2026-11-20",
-    "title": "The editor stops closing itself the moment it opens",
-    "highlights": [
-      "Found it: the text box was being closed by a blur that had nothing to do with the user. The field ended its edit on any blur at all \u2014 and a freshly focused field blurs on its own when the window loses focus, when the page scrolls, or from the layout shift caused by the field appearing. It opened and closed within a few milliseconds of the press, which is why every report for four releases said \u201cno field\u201d while the field had, in fact, existed",
-      "An edit now ends because of something the user did: Escape, a press somewhere else, or focus genuinely moving to another control. A blur to nothing keeps the editor open and puts the caret back, because a field that is open but not focused takes no typing and looks exactly as broken as one that never opened",
-      "The diagnostic now watches the field\u2019s whole life rather than sampling it. It reports a field that was rendered and removed separately from one that never appeared \u2014 the distinction that took four releases to make \u2014 and reports any exception thrown while the press is handled",
-      "Two new browser tests cover the halves of this: a stray blur must leave the editor open and focused with typing still working, and a press on the backdrop must still close it. The first fails without the fix"
-    ]
-  },
-  {
-    "version": "1.9.8",
-    "date": "2026-11-20",
-    "title": "The press no longer needs a lookup to find the box it belongs to",
-    "highlights": [
-      "Fixed the reported bug: the press arrived, the handler ran, and no field appeared. The handler found the code that opens the box by looking it up in a map \u2014 and when the lookup found nothing, it did nothing, silently, while still counting as handled. That is why every diagnostic for four releases said \u201cthe press handler ran\u201d next to \u201cno field\u201d",
-      "The handler is now given the code to run instead of looking it up, so the ordinary path cannot fail this way at all. A missing map entry is now harmless rather than silent",
-      "The new report line showed it: \u201c+21ms the button handler ran\u201d followed by no field, which ruled out the press never arriving and pointed straight at what the handler did next",
-      "New test presses a box the map has never seen and requires it to open. Put the lookup back and the test fails, which is the reported symptom exactly"
-    ]
-  },
-  {
-    "version": "1.9.7",
-    "date": "2026-11-20",
-    "title": "The diagnostic stops guessing, and says when it cannot see",
-    "highlights": [
-      "Fixed the diagnostic itself. The line that reported whether the press handler ran was measured in the browser\u2019s very first listen to the press \u2014 before the press had been handed to anything \u2014 so it always answered \u201cdid not run\u201d. A real report was read as if that meant something. The report is now a timeline: each step is recorded at the moment it happens, and a step is only called missing once the whole gesture is over",
-      "The report now answers the question that decides the fix. It can tell whether the press survives as far as the page at all. If it does not, nothing inside the app can ever act on it, and the report says so plainly instead of blaming the text box or the rescue",
-      "Three new browser tests hold the diagnostic to this: a working press, a press stopped part-way down, and a press stopped above the page must each produce a different, correct report"
-    ]
-  },
-  {
-    "version": "1.9.6",
-    "date": "2026-11-20",
-    "title": "The diagnostic now says whether the rescue caught the press",
-    "highlights": [
-      "\u201cNo field\u201d had two explanations and now has three: the press never reached the button, the press reached it and the edit was discarded, or the rescue was supposed to step in and did not. The report names which of the three happened, so the next report is the last one",
-      "Fixed the arrival line itself: it asked whether the pressed element had a marker, and a target that is not an element answered \u201cno\u201d to a question it was never asked, so the report could have blamed an absent handler for a press that was handled"
-    ]
-  },
-  {
-    "version": "1.9.5",
-    "date": "2026-11-20",
-    "title": "Opening a card\u2019s text no longer depends on the press arriving",
-    "highlights": [
-      "The text edit now has a second way in. If a press on a text box is stopped before it reaches the box \u2014 by anything between the browser and the page \u2014 the sheet notices and opens the field itself, so the box opens either way",
-      "The rescue is installed once per sheet, not once per text box. The first version put a listener inside every box: a twelve-card sheet installed twenty-four of them, one press ran all of them, they fought, and no field opened at all \u2014 which reproduced the very bug it was meant to cure. A missing wire is now a compile error rather than a box that silently stops opening",
-      "The rescue never runs during a press that is already working. It waits for the press to finish and only steps in if the box\u2019s own handler never ran; otherwise the field would open and close within the same gesture, which is exactly what the first version did",
-      "New browser test severs both of the button\u2019s own ways in and requires the field to still open, exactly once. With the rescue disabled the test fails, so it tests the rescue and not something else"
-    ]
-  },
-  {
-    "version": "1.9.4",
-    "date": "2026-11-20",
-    "title": "A one-click diagnostic for \u201cthe text will not open\u201d",
-    "highlights": [
-      "Added a magnifier button beside the version. Press it, then click a card\u2019s text, and it reports which build is running, which element the browser actually delivered the press to, whether the text box is the height it claims to be, and whether a field opened and kept the caret",
-      "The report now answers the question that decides the fix: \u201cno field\u201d means the press never started an edit, while \u201cfield present, focus is BODY\u201d means it opened and something took the caret. Those are different bugs with different fixes",
-      "Checking every release by rebuilding it and driving a real mouse press confirms 1.7.0 through 1.8.0 work, 1.8.1 does not, and 1.8.2 onwards do. The cause in 1.8.1 was a press that did not suppress the browser\u2019s default handling; adding that one call is what fixes it"
-    ]
-  },
-  {
-    "version": "1.9.3",
-    "date": "2026-11-20",
-    "title": "Clicking a file brings its card into view",
-    "highlights": [
-      "Clicking a file now scrolls its card into view, not just its sheet. A sheet is twelve cells tall, so on a window shorter than the page the card could sit below the fold while its ring was drawn somewhere you could not see",
-      "The card is centred when it fits, aligned to its top when the window is shorter than the card, and the canvas is left alone when the card is already comfortably visible. This works the same whether the thumbnail strip is expanded or collapsed",
-      "Fixed a regression introduced in 1.8.1 and present in every version since: pressing a card\u2019s text did not begin an edit unless the browser\u2019s default press handling was suppressed explicitly. Adding `preventDefault` to the press is what makes a single click work",
-      "The click probe now also reports what happened after the press \u2014 whether a field appeared, and whether anything took the caret away"
-    ]
-  },
-  {
-    "version": "1.9.2",
-    "date": "2026-11-20",
-    "title": "Typing no longer replaces the whole dish name",
-    "highlights": [
-      "Fixed: clicking into a card\u2019s text selected all of it, so the first character you typed replaced the entire name \u2014 type \u201c!\u201d into \u201cKung Pao Chicken\u201d and you were left with \u201c!\u201d. That is why editing appeared not to work at all. The caret now goes to the end, and clicking within the text places it where you clicked",
-      "Added: the build number sits quietly beside the app name, so you can always tell which version is actually running",
-      "The app now asks for a newer version as soon as it opens, and again a few seconds later, instead of waiting for the browser\u2019s next navigation. Updates should no longer need several reloads to take effect",
-      "Two new real-browser tests cover exactly this: typing into existing text must append, and the top bar must name the build"
-    ]
-  },
-  {
-    "version": "1.9.1",
-    "date": "2026-11-20",
-    "title": "Re-run says what is actually wrong, and a way to report a dead click",
-    "highlights": [
-      "Fixed: \u201cRe-run all files\u201d answered \u201cNothing to re-run \u2014 Add PDFs first\u201d on a restored session, next to a list of files that had plainly been added. A saved session keeps the results, not the uploads, so the message now says the PDFs need adding again and why",
-      "Added: press Shift+? and then click, and the app reports which build is running, which element the browser actually delivered the press to, and how tall the text box is compared with the band it stands for. A click that lands on the photo instead of the text now says so outright",
-      "The Playwright suite covers re-run on a restored session, so that message cannot regress into the one it used to give"
-    ]
-  },
-  {
-    "version": "1.9.0",
-    "date": "2026-11-20",
-    "title": "Clicking a card\u2019s text now edits it \u2014 found in a real browser",
-    "highlights": [
-      "Fixed: the bottom quarter of every card\u2019s text band ignored clicks. The target-size rule forced every text box to 32px tall, but a header band at fit-to-width is about 24px \u2014 so the box overhung the photo below it, and the photo took those clicks",
-      "Fixed: card edits were lost on reload. The batch came back and the edits did not, because the card store read the saved snapshot before it had finished loading from disk",
-      "The Playwright suite now runs for real instead of reporting NOT RUN, and it is part of the gate: 12 tests against the production build cover clicking, the canvas not moving, the editor not shifting, reloads, undo and offline",
-      "Those tests caught both defects above. Neither was visible to the component tests, which have no layout and no hit-testing"
-    ]
-  },
-  {
     "version": "1.8.2",
     "date": "2026-11-20",
-    "title": "A real browser in the loop, and one focus fix behind it",
+    "title": "The text box stops closing itself, and only one sheet opens it",
     "highlights": [
-      "Added a Playwright suite that runs against the production build, covering the three things jsdom cannot see: whether a click actually lands on the text, whether the canvas moves when editing starts, and whether the edited text stays put when the formatting bar appears",
-      "Fixed: focus was taken in an effect, one frame after the field mounted. In that window the browser\u2019s own press handling focused whatever sat under the pointer, so the caret landed wherever the mouse was rather than at the start of the text",
-      "The press now suppresses the browser\u2019s default press behaviour and focus is taken in the same commit that mounts the field, so there is no unfocused frame",
-      "Escape now closes the editor from the text itself, because the formatting bar floats over the pane and can sit between the key and the field"
+      "Fixed the reported bug: clicking a card\u2019s text did nothing. The truth was not that the press was lost \u2014 it always arrived and always ran the handler. There were two faults, and each hid the other",
+      "First: which card was being edited was recorded by cell number, and every sheet draws the same cell numbers. Opening cell 3 therefore opened a text field on every sheet in the stack, and the fields took the caret from each other in a loop. That is the flicker. Editing now records the sheet it began on, so only that sheet opens a field, exactly as selecting a card already worked",
+      "Second: an edit ended whenever the field lost focus, and a field loses focus for reasons nobody chose \u2014 the window losing focus, a scroll, the layout shift from the field appearing. With an editor open on more than one sheet the caret is contested, so the box could open and close within a millisecond. Edits now end on Escape, on a press on another card, or on a press on the canvas around the sheets",
+      "Why it took so long: fixing either fault alone left the bug. Suppressing the default press handling, moving when focus is taken, and opening the box from a fallback listener were all real improvements that could not have worked on their own, and each one was measured against a field that was closing itself before anything could see it",
+      "The lesson recorded in docs/ROOT-CAUSE-text-editing.md: when a container changes from showing one item to showing all of them, every key that identifies a place must be re-read. A bare index is a place only while there is one list"
     ]
   },
   {
