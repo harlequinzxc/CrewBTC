@@ -80,12 +80,24 @@ function paintText(input: PaintTextInput): void {
     { paddingMm: PADDING_MM },
   )
 
+  // Centre a short block in its band, exactly as the preview does. `layoutBand` places the
+  // first baseline `padding + size` below the box top; when the block is shorter than the
+  // inner height, half the remainder belongs above it.
+  const blockMm = layout.lines.length * layout.sizePt * LINE_HEIGHT * ptToMm(1)
+  // Never lifts an overflowing block: slack is what the inner box has left over, so text
+  // cannot be drawn outside its own band.
+  const slackMm = Math.max(0, zone.heightMm - 2 * PADDING_MM - blockMm)
+  const centreMm = slackMm / 2
+
   const inkOf = (hex: string): RGB => hexToRgb(hex, input.fallback, input.rgb)
 
   for (const line of layout.lines) {
     // Segments are drawn left to right, each in its own weight and ink, so a bold word
     // and a red instruction print exactly as they look on screen.
     let xMm = zone.xMm + PADDING_MM
+    // Baselines and their highlight rectangles both shift by the same offset, so the
+    // highlight stays behind its glyphs.
+    const yMm = line.yMm + centreMm
 
     for (const segment of line.segments) {
       const font = fontFor(segment.bold)
@@ -96,7 +108,7 @@ function paintText(input: PaintTextInput): void {
         canvas.page.drawRectangle({
           x: mmToPt(xMm),
           // Behind the glyphs, one line high, with a little air on either side.
-          y: canvas.sheetHeightPt - mmToPt(line.yMm) - line.sizePt * 0.25,
+          y: canvas.sheetHeightPt - mmToPt(yMm) - line.sizePt * 0.25,
           width: Math.min(mmToPt(zone.xMm + zone.widthMm - xMm), widthPt + mmToPt(0.4)),
           height: line.sizePt * 1.15,
           color: inkOf(segment.highlight),
@@ -105,7 +117,7 @@ function paintText(input: PaintTextInput): void {
 
       canvas.page.drawText(segment.text, {
         x: mmToPt(xMm),
-        y: canvas.sheetHeightPt - mmToPt(line.yMm),
+        y: canvas.sheetHeightPt - mmToPt(yMm),
         size: line.sizePt,
         font,
         color: inkOf(segment.color),

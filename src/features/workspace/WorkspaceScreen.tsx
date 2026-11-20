@@ -80,7 +80,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     [pageRefs, batch.documents],
   )
 
-  useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm)
+  useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm, sheet.grid.cellWidthMm)
 
   const exporter = useCardExport({
     settings: sheet.settings,

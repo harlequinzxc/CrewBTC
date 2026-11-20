@@ -94,11 +94,17 @@ won't fit rather than printing a broken sheet.
 
 ### Cards are 52 × 67 mm by default
 
-Each card splits into a **10 mm** top box, a **42 mm** photo, and a **15 mm** bottom
-box. That split is a starting point, not a rule — every card has its own, adjustable
-with two sliders. Nothing can be tuned into an overlap: there's a minimum for each text
-box and a minimum for the photo, so a card can never become two text boxes with no
-picture.
+Each card splits into a top box, a photo, and a bottom box — and the split follows the
+text. A one-line dish name with two bullets gives the photo about **78%** of the card,
+because a box that is taller than its words is paper spent on nothing. A four-bullet
+method buys its lines the room instead, and the type never shrinks to make a box look
+tidy.
+
+That split is a starting point, not a rule: every card has its own, adjustable with two
+fields. Nothing can be tuned into an overlap — there's a minimum for each text box and a
+minimum for the photo, so a card can never become two text boxes with no picture. Text
+sits in the middle of its box rather than at the top, so raising a box spreads the air
+on both sides of the words instead of opening one gap beneath them.
 
 ## What it won't do
 

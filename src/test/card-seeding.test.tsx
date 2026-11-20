@@ -162,11 +162,13 @@ describe('fine-tuning one card', () => {
     fireEvent.pointerDown(cells[0] as HTMLElement)
     fireEvent.change(await screen.findByLabelText('Top'), { target: { value: '30' } })
 
-    // Select the second card: it must still be at its default, not the first card's.
+    // Select the second card: it must still be at its own seeded height, not the first
+    // card's 30. Its bands come from its own text ("CHK-02" is one short line), so the
+    // value is derived rather than a constant — what matters is that it did not move.
     fireEvent.pointerDown(cells[1] as HTMLElement)
     await waitFor(() => {
       const top = screen.getByLabelText('Top') as HTMLInputElement
-      expect(Number(top.value)).toBe(10)
+      expect(Number(top.value)).toBeLessThan(30)
     })
   })
 
