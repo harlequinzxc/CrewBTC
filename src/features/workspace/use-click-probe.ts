@@ -51,7 +51,7 @@ export function useClickProbe(version: string): { readonly arm: () => void } {
         // a box taller than its band overhangs the photo, and the photo takes the press.
         const zone = (press.target as Element | null)?.closest?.(
           'button[aria-label^="Card text:"]',
-        )
+        ) as HTMLElement | null
         if (zone !== null && zone !== undefined) {
           const box = zone.getBoundingClientRect()
           const declared = /height:\s*([\d.]+)px/.exec(zone.getAttribute('style') ?? '')?.[1]
@@ -61,59 +61,95 @@ export function useClickProbe(version: string): { readonly arm: () => void } {
         }
 
         /*
-          Then watch what the app does with it.
+          Everything below is a *timeline*, because everything that matters happens after
+          this handler returns.
 
-          The hit-test above answers "did the press reach the text". This answers the next
-          question: did a field appear, and did anything take the caret away again. Those
-          are different failures and they need different fixes, so the report must not stop
-          at the one that happens to be easy to measure.
+          This handler runs at window capture: the first stop on the press's path, before
+          the press has been delivered to anything. An earlier version asked "did the
+          button's handler run?" and "did the rescue open it?" right here — before either
+          could possibly have happened — and printed "did not run" and "did not open it".
+          Both answers were guaranteed by the moment they were asked, so neither meant
+          anything. A real report was read as if they did.
+
+          So: facts are recorded when they happen, and the absences are declared only once
+          the whole gesture is over.
         */
-        const seen: string[] = []
+        const t0 = press.timeStamp
+        const facts: string[] = []
+        const said = new Set<string>()
+
+        const note = (key: string, what: string): void => {
+          if (said.has(key)) return
+          said.add(key)
+          const delta = performance.now() - t0
+          const elapsed = Number.isFinite(delta) && delta > 0 ? delta : 0
+          facts.push(`+${elapsed.toFixed(0)}ms  ${what}`)
+        }
+
         /*
-          And whether the handler that starts an edit ran at all.
+          The question this handler is uniquely placed to answer, because it runs first.
 
-          "No field" has two very different causes: the press never reached the code that
-          opens the box, or it did and the state it set was thrown away. Marking the button
-          from `onPress` distinguishes them without a debugger, which matters when the
-          report comes from a machine I cannot attach to.
+          A listener added to a later node during dispatch still fires for the event in
+          flight, so adding one to `document` from here reports whether the press survives
+          as far as the node the rescue watches. If it never fires, the press is stopped
+          above `document` and nothing inside the page can see it — which is the difference
+          between "the rescue is wrong" and "the rescue is blind".
         */
-        const handlerRan =
-          (press.target as Element | null)?.closest?.('[data-press-handled]') != null
-        seen.push(handlerRan ? 'the press handler ran' : 'the press handler did not run')
-        if (!handlerRan) {
-          seen.push(
-            document.querySelector('[data-text-gesture-opened]') === null
-              ? 'the fallback did not open it'
-              : 'the fallback opened it',
-          )
+        const onDocument = (event: Event): void => {
+          if (event !== press) return
+          note('document', 'the document saw the press')
+          document.removeEventListener('pointerdown', onDocument, true)
         }
-        const capture = (): boolean => {
-          const field = document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Edit card text"]')
-          seen.push(
-            field === null
-              ? 'no field'
-              : document.activeElement === field
-                ? 'field focused'
-                : `field present, focus is ${document.activeElement?.tagName ?? 'none'}`,
-          )
-          return field !== null
-        }
-        window.setTimeout(() => {
-          capture()
-          window.setTimeout(() => {
-            const opened = capture()
-            lines.push(`after the press: ${seen.join(' -> ')}`)
-            if (!opened) {
-              lines.push('the field never appeared — the press did not start an edit')
+        document.addEventListener('pointerdown', onDocument, true)
+
+        const sample = (): void => {
+          if (zone !== null && zone !== undefined) {
+            if (zone.getAttribute('data-press-handled') === 'true') {
+              note('handler', 'the button handler ran')
             }
-            console.info('[crewbtc click probe]\n' + lines.join('\n'))
-            panel.textContent = lines.join('\n') + '\n\n(click anywhere to dismiss)'
-          }, 400)
-        }, 60)
+            if (zone.hasAttribute('data-text-gesture-opened')) {
+              note('rescue', 'the rescue opened it')
+            }
+          }
+          const field = document.querySelector<HTMLTextAreaElement>(
+            'textarea[aria-label="Edit card text"]',
+          )
+          if (field !== null) {
+            note(
+              'field',
+              document.activeElement === field
+                ? 'a field appeared, focused'
+                : `a field appeared, focus is ${document.activeElement?.tagName ?? 'nothing'}`,
+            )
+            if (document.activeElement !== field) {
+              note('blur', `focus is not in the field: ${document.activeElement?.tagName ?? 'nothing'}`)
+            }
+          }
+        }
 
-        console.info('[crewbtc click probe]\n' + lines.join('\n'))
+        for (const delay of [0, 16, 60, 140, 260, 500]) window.setTimeout(sample, delay)
 
-        // Also on screen: the user is not necessarily in the console.
+        /*
+          Then the verdict, once: the gesture is over, so an absence is finally a fact.
+          Nothing is said at all if every step was seen, because there is nothing to say.
+        */
+        window.setTimeout(() => {
+          if (!said.has('document')) {
+            finished.push(
+              'the press never reached the document — it is being stopped above the page,',
+              'so nothing inside the app can act on it',
+            )
+          } else if (zone !== null && zone !== undefined && !said.has('handler') && !said.has('rescue')) {
+            finished.push('the press reached the document, but neither the button nor the rescue acted')
+          } else if (!said.has('field')) {
+            finished.push('the press was handled, but no field ever appeared')
+          }
+          draw()
+          console.info('[crewbtc click probe]\n' + panel.textContent)
+        }, 620)
+
+        // Also on screen: the user is not necessarily in the console, and the panel is
+        // rewritten as the timeline fills so what is on screen is the finished report.
         const panel = document.createElement('div')
         panel.setAttribute('role', 'status')
         panel.setAttribute('data-click-probe', '')
@@ -122,7 +158,12 @@ export function useClickProbe(version: string): { readonly arm: () => void } {
           'padding:10px 12px;border-radius:8px;background:#18181b;color:#fafafa;' +
           'font:12px/1.5 ui-monospace,SFMono-Regular,monospace;white-space:pre-wrap;' +
           'box-shadow:0 8px 24px rgba(0,0,0,.4);border:1px solid #3f3f46'
-        panel.textContent = lines.join('\n') + '\n\n(click anywhere to dismiss)'
+        const finished: string[] = []
+        const draw = (): void => {
+          const body = [...lines, '', ...facts, '', ...finished]
+          panel.textContent = body.join('\n') + '\n\n(click anywhere to dismiss)'
+        }
+        draw()
         document.body.appendChild(panel)
 
         const dismiss = (): void => {
