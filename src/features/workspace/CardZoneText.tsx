@@ -188,7 +188,7 @@ export function CardZoneText(props: CardZoneTextProps) {
       onPress={(event) => {
         // Proof of arrival for the click probe: see `use-click-probe`.
         ;(event.currentTarget as HTMLElement).dataset.pressHandled = 'true'
-        props.gesture.press(event)
+        props.gesture.press(event, props.onBeginEdit)
       }}
       attach={(element) => props.gesture.register(element, props.onBeginEdit)}
       onKeyDown={(event) => {

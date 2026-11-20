@@ -107,6 +107,10 @@ export function useClickProbe(version: string): { readonly arm: () => void } {
             if (zone.getAttribute('data-press-handled') === 'true') {
               note('handler', 'the button handler ran')
             }
+            const registered = zone.getAttribute('data-press-begin')
+            if (registered === 'unregistered') {
+              note('map', 'the fallback did not know this box (harmless since v1.9.8)')
+            }
             if (zone.hasAttribute('data-text-gesture-opened')) {
               note('rescue', 'the rescue opened it')
             }
