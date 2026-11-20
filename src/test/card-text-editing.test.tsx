@@ -80,6 +80,22 @@ describe('editing text for real', () => {
     expect(await screen.findByLabelText('Edit card text')).toBeInTheDocument()
   })
 
+  it('puts the caret at the end instead of selecting everything', async () => {
+    // Selecting the whole box means the first keystroke wipes the dish name. Type one
+    // character into "Kung Pao Chicken" and you get "X" — which looks exactly like the
+    // text being uneditable, and was reported as such.
+    render(<App />)
+    fireEvent.click(screen.getAllByRole('button', { name: /add pdfs/i })[0]!)
+    const zone = await screen.findByRole('button', { name: /Card text: CHK-01/ })
+
+    fireEvent.pointerDown(zone, { button: 0 })
+    const field = (await screen.findByLabelText('Edit card text')) as HTMLTextAreaElement
+
+    expect(field.selectionStart).toBe(field.value.length)
+    expect(field.selectionEnd).toBe(field.value.length)
+    expect(field.selectionStart).not.toBe(0)
+  })
+
   it('keeps keyboard activation working, where there is no pointer at all', async () => {
     render(<App />)
     fireEvent.click(screen.getAllByRole('button', { name: /add pdfs/i })[0]!)

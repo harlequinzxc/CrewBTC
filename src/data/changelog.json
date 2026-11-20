@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.9.2",
+    "date": "2026-11-20",
+    "title": "Typing no longer replaces the whole dish name",
+    "highlights": [
+      "Fixed: clicking into a card\u2019s text selected all of it, so the first character you typed replaced the entire name \u2014 type \u201c!\u201d into \u201cKung Pao Chicken\u201d and you were left with \u201c!\u201d. That is why editing appeared not to work at all. The caret now goes to the end, and clicking within the text places it where you clicked",
+      "Added: the build number sits quietly beside the app name, so you can always tell which version is actually running",
+      "The app now asks for a newer version as soon as it opens, and again a few seconds later, instead of waiting for the browser\u2019s next navigation. Updates should no longer need several reloads to take effect",
+      "Two new real-browser tests cover exactly this: typing into existing text must append, and the top bar must name the build"
+    ]
+  },
+  {
     "version": "1.9.1",
     "date": "2026-11-20",
     "title": "Re-run says what is actually wrong, and a way to report a dead click",

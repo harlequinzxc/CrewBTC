@@ -33,6 +33,27 @@ test('one click on a card text band puts a caret in it', async ({ page }) => {
   await expect(field).toHaveValue(/TYPED/)
 })
 
+test('typing into existing text appends instead of replacing it', async ({ page }) => {
+  await uploadPdf(page)
+
+  // Put a real dish name in the header, the way a parsed card arrives.
+  await textZones(page).first().click()
+  const field = page.getByLabel('Edit card text')
+  await field.fill('Kung Pao Chicken')
+  await page.keyboard.press('Escape')
+  await expect(textZones(page).first()).toHaveAttribute('aria-label', /Kung Pao Chicken/)
+
+  // Click into the middle of it, exactly where a user aims, and type one character.
+  const box = await textZones(page).first().boundingBox()
+  expect(box).not.toBeNull()
+  await page.mouse.click(box!.x + 60, box!.y + box!.height / 2)
+
+  await expect(field).toBeVisible()
+  // Focus used to call `select()`, so this keystroke replaced the entire name.
+  await page.keyboard.type('!')
+  await expect(field).toHaveValue(/Kung Pao Chicken!/)
+})
+
 test('the canvas does not move when editing begins', async ({ page }) => {
   await uploadPdf(page)
 
