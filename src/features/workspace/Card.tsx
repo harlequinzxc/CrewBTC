@@ -1,3 +1,4 @@
+import { CardCornerLabels } from './CardCornerLabels'
 import { cn } from '../../lib/cn'
 import { cardZones } from '../../types/card'
 import type { Card, RectMm } from '../../types/card'
@@ -19,6 +20,7 @@ export interface CardProps {
   readonly selected: boolean
   readonly editing: CardZone | null
   readonly pictureEditing: boolean
+  readonly onCornerChange?: ((patch: Pick<Card, 'numberStart'> | Pick<Card, 'cornerLabel'>) => void) | undefined
   readonly onSelect: () => void
   readonly onBeginTextEdit: (zone: 'header' | 'body') => void
   readonly onEndEdit: () => void
@@ -77,6 +79,7 @@ export function Card(props: CardProps) {
       }}
       onPointerDown={props.onSelect}
     >
+      {props.onCornerChange === undefined ? null : <CardCornerLabels card={card} scale={scale} widthMm={cell.widthMm} onChange={props.onCornerChange} />}
       <CardZoneText
         gesture={props.gesture}
         text={card.headerText}

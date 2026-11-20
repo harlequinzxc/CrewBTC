@@ -1,6 +1,8 @@
 /** Sheet and cell geometry for imposition. All values in millimetres. */
 
 export interface SheetSettings {
+  /** Sheet-wide text size multiplier. */
+  readonly textScale?: number
   /** Paper width in millimetres. */
   readonly sheetWidthMm: number
   /** Paper height in millimetres. */

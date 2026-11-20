@@ -170,3 +170,14 @@ describe('selection-level styling', () => {
     expect(withEmptyRuns).toBe(withoutRuns)
   })
 })
+
+describe('corner overlays in print', () => {
+  it('prints the number and entered label in equal grey boxes, not the placeholder', async () => {
+    const content = await exportOne(makeCard({ photo: null, displayNumber: 40, cornerLabel: 'AB123' }))
+    expect(content).toContain('<3430> Tj')
+    expect(content).toContain('<4142313233> Tj')
+    expect(content).not.toContain('<5858585858> Tj')
+    // The same grey fill is set once per corner box.
+    expect(content.match(/0\.8941176470588236 0\.8941176470588236 0\.9058823529411765 rg/g)).toHaveLength(2)
+  })
+})

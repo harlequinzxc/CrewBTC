@@ -59,6 +59,7 @@ export interface SheetPaperProps {
   readonly onBeginPictureEdit: (cellIndex: number, key: string) => void
   readonly onEndPictureEdit: () => void
   readonly onImageChange: (key: string, transform: Card['imageTransform']) => void
+  readonly onCornerChange?: ((key: string, patch: Pick<Card, 'numberStart'> | Pick<Card, 'cornerLabel'>) => void) | undefined
   readonly onBandsChange: (key: string, bands: Card['bands']) => void
   /** Gives every card one card's band split. */
   readonly onMatchBands?: ((bands: Card['bands']) => void) | undefined
@@ -133,6 +134,7 @@ export function SheetPaper(props: SheetPaperProps) {
           onBeginPictureEdit={props.onBeginPictureEdit}
           onEndPictureEdit={props.onEndPictureEdit}
           onImageChange={props.onImageChange}
+          onCornerChange={props.onCornerChange}
           onBandsChange={props.onBandsChange}
           onMatchBands={props.onMatchBands}
           onPhotoReplace={props.onPhotoReplace}

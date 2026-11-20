@@ -137,7 +137,6 @@ export function CardSheet(props: CardSheetProps) {
   const editZone = editing === null || editing.zone === 'picture' ? null : editing.zone
   const barCard =
     editing === null ? blankCard(grid.cellHeightMm) : (cards[editing.key] ?? blankCard(grid.cellHeightMm))
-
   const activeZone = editing === null ? null : editing.zone
 
   return (
@@ -238,6 +237,7 @@ export function CardSheet(props: CardSheetProps) {
                   props.onCardChange(key, bandsInto(card, bands, grid.cellHeightMm))
                 }
               }}
+              onCornerChange={(key, patch) => apply(key, (current) => ({ ...current, ...patch }))}
               onBandsChange={(key, bands) =>
                 apply(key, (current) => ({ ...current, bands: clampBands(bands, grid.cellHeightMm) }))
               }

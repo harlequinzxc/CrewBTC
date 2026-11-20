@@ -73,15 +73,16 @@ export async function clearSnapshot(): Promise<void> {
 /**
  * Reject an unknown shape rather than coercing it (§5: validate before trusting storage).
  *
- * Version mismatch is a *discard*, not a migration: this is a cache of a session, not a
- * record of anything the user owns, and there is nothing in it that cannot be rebuilt by
- * opening the PDFs again. Pretending to migrate an old snapshot would be a promise this
- * code cannot keep.
+ * Version 1 is migrated without discarding edited cards. Unknown future versions are
+ * rejected rather than read as a shape this build cannot understand.
  */
 export function validate(raw: UnknownSnapshot): WorkspaceSnapshot | null {
   if (typeof raw !== 'object' || raw === null) return null
   const value = raw as Partial<WorkspaceSnapshot>
-  if (value.version !== SNAPSHOT_VERSION) return null
+  const version = (raw as { version?: unknown }).version
+  // v1 cards have no corner fields; those fields are optional, so their defaults are
+  // resolved at render time. Preserve the entire old snapshot while upgrading it.
+  if (version !== 1 && version !== SNAPSHOT_VERSION) return null
   if (!Array.isArray(value.documents)) return null
   if (typeof value.cards !== 'object' || value.cards === null) return null
 

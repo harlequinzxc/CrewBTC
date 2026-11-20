@@ -108,68 +108,30 @@ describe('a page lands on a populated card', () => {
 })
 
 describe('fine-tuning one card', () => {
-  it('offers the card inspector once a card is selected', async () => {
-    const cell = await placeCard()
-    // Nothing selected: the inspector is about the document, not a card.
-    expect(screen.queryByLabelText('Top')).not.toBeInTheDocument()
-
-    fireEvent.pointerDown(cell)
-    expect(await screen.findByLabelText('Top')).toBeInTheDocument()
-    expect(screen.getByLabelText('Bottom')).toBeInTheDocument()
-    expect(screen.getByLabelText('Text')).toBeInTheDocument()
-  })
-
-  it('resizes the picture when the top height changes', async () => {
-    const cell = await placeCard()
-    await waitFor(() => expect(document.querySelector('[data-image]')).not.toBeNull())
-
-    fireEvent.pointerDown(cell)
-    const box = (): string => (document.querySelector('[data-image]') as HTMLElement).style.height
-    const before = box()
-
-    fireEvent.change(await screen.findByLabelText('Top'), { target: { value: '30' } })
-    expect(box()).not.toBe(before)
-  })
-
-  it('writes the card numbers into the inspector, never into the sheet', async () => {
+  it('keeps only sheet controls in the inspector when a card is selected', async () => {
     const cell = await placeCard()
     fireEvent.pointerDown(cell)
-
-    const inspector = await screen.findByRole('complementary', { name: 'Inspector' })
-    // The controls live outside the drawn sheet, so they cannot be clipped by a card's
-    // edge on the bottom row — and there are no slider tracks left anywhere on it.
-    expect(inspector.querySelector('input[aria-label="Top"]')).not.toBeNull()
-    expect(document.querySelector('[data-cell] input[type="range"]')).toBeNull()
-    expect(document.querySelectorAll('input[type="range"]')).toHaveLength(0)
+    const inspector = screen.getByRole('complementary', { name: 'Inspector' })
+    expect(inspector.querySelector('[aria-label="Top"]')).toBeNull()
+    expect(inspector.querySelector('[aria-label="Bottom"]')).toBeNull()
+    expect(screen.getByLabelText('All text size')).toBeInTheDocument()
   })
 
-  it('keeps each card’s heights to itself', async () => {
-    // Two pages, so there are two cards to tell apart.
+  it('numbers following cards and allows a corner label', async () => {
     mutable.metrics = { pageCount: 2, widthPt: 420, heightPt: 595 }
-    mutable.copies = {
-      1: { header: 'CHK-01', footer: '• One' },
-      2: { header: 'CHK-02', footer: '• Two' },
-    }
-    mutable.photos = {
-      1: { dataUrl: 'data:image/png;base64,ONE', widthPx: 360, heightPx: 300 },
-      2: { dataUrl: 'data:image/png;base64,TWO', widthPx: 360, heightPx: 300 },
-    }
-
+    mutable.copies = { 1: { header: 'One', footer: '' }, 2: { header: 'Two', footer: '' } }
+    mutable.photos = {}
     await placeCard()
-    const cells = document.querySelectorAll('[data-cell]')
-    expect(cells.length).toBeGreaterThanOrEqual(2)
-
-    fireEvent.pointerDown(cells[0] as HTMLElement)
-    fireEvent.change(await screen.findByLabelText('Top'), { target: { value: '30' } })
-
-    // Select the second card: it must still be at its own seeded height, not the first
-    // card's 30. Its bands come from its own text ("CHK-02" is one short line), so the
-    // value is derived rather than a constant — what matters is that it did not move.
-    fireEvent.pointerDown(cells[1] as HTMLElement)
-    await waitFor(() => {
-      const top = screen.getByLabelText('Top') as HTMLInputElement
-      expect(Number(top.value)).toBeLessThan(30)
-    })
+    await waitFor(() => expect(screen.getAllByLabelText('Card number')).toHaveLength(2))
+    const numbers = screen.getAllByLabelText('Card number') as HTMLSelectElement[]
+    expect(numbers.map((input) => input.value)).toEqual(['1', '2'])
+    fireEvent.change(numbers[0]!, { target: { value: '40' } })
+    expect(numbers.map((input) => input.value)).toEqual(['40', '1'])
+    const labels = screen.getAllByLabelText('Card corner label') as HTMLInputElement[]
+    expect(labels[0]?.placeholder).toBe('XXXXX')
+    fireEvent.change(labels[0]!, { target: { value: 'ABC' } })
+    expect(labels[0]?.value).toBe('ABC')
+    expect(labels[1]?.value).toBe('')
   })
 
   afterEach(() => {

@@ -1,3 +1,4 @@
+import { numberedCards } from './numbered-cards'
 import { useCallback, useMemo, useState } from 'react'
 import { TopBar } from '../../components/layout/TopBar'
 import { Inspector } from './Inspector'
@@ -82,12 +83,14 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const seeds = useCardSeeds(pageRefs, sheet.grid, batch.documents)
   useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm, sheet.grid.cellWidthMm)
 
+  const visibleCards = useMemo(() => numberedCards(cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale ?? 1), [cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale])
+
   const exporter = useCardExport({
     settings: sheet.settings,
     grid: sheet.grid,
     pages: pageRefs,
     drawCutMarks: showCutMarks,
-    cards: cardStore.cards,
+    cards: visibleCards,
     notify,
   })
 
@@ -190,7 +193,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           grid={sheet.grid}
           pages={pageRefs}
           showCutMarks={showCutMarks}
-          cards={cardStore.cards}
+          cards={visibleCards}
           selectedCell={selectedCell}
           selectionSheet={selectionSheet}
           onSelectCell={selectCell}
@@ -207,7 +210,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
               sheets={sheets}
               sheet={sheet.settings}
               grid={sheet.grid}
-              cards={cardStore.cards}
+              cards={visibleCards}
               activeIndex={sheetIndex}
               onSelectSheet={goToSheet}
               collapsed={stripCollapsed}

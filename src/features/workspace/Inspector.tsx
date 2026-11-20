@@ -1,5 +1,4 @@
 import { cn } from '../../lib/cn'
-import { CardSection } from './inspector/CardSection'
 import { SheetSection } from './inspector/SheetSection'
 import type { Card, CardBands } from '../../types/card'
 import type { GridLayout, SheetSettings as SheetSettingsValue } from '../../types/imposition'
@@ -58,18 +57,6 @@ export function Inspector(props: InspectorProps) {
         props.open ? 'lg:flex' : undefined,
       )}
     >
-      {props.card !== null && props.cellIndex !== null ? (
-        <CardSection
-          card={props.card}
-          cellIndex={props.cellIndex}
-          cellHeightMm={props.cellHeightMm}
-          units={props.units}
-          onBandsChange={props.onBandsChange}
-          onTextScaleChange={props.onTextScaleChange}
-          onReset={props.onResetCard}
-        />
-      ) : null}
-
       <SheetSection
         sheet={props.sheet}
         grid={props.grid}

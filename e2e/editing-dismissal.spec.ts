@@ -101,8 +101,9 @@ test('pressing another card moves the editor to that card', async ({ page }) => 
     )
   expect(await where()).toBe('0')
 
-  const other = await page.locator('[data-cell="1"]').first().boundingBox()
-  await page.mouse.click(other!.x + 10, other!.y + 10)
+  // Click the second card's text, not its new corner-number dropdown.
+  const other = await textZones(page).nth(2).boundingBox()
+  await page.mouse.click(other!.x + other!.width / 2, other!.y + other!.height / 2)
   await expect(page.getByLabel('Edit card text')).toHaveCount(1)
   expect(await where()).toBe('1')
 })
