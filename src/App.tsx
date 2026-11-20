@@ -63,7 +63,10 @@ function Workspace() {
   const seeds = useMemo<readonly CardSeed[]>(
     () =>
       pageRefs.map((page, index) => {
-        const document = batch.documents.find((item) => item.id === page.documentId)
+        // `documentId` on a PageRef is the *file name* (the exporter resolves source
+        // bytes by it), not the internal id. Matching on `id` silently missed every
+        // document, so every card was seeded empty — no photo, no text.
+        const document = batch.documents.find((item) => item.fileName === page.documentId)
         const copy = document?.copies[page.pageNumber]
         return {
           key: cardKey(index, page.documentId, page.pageNumber),

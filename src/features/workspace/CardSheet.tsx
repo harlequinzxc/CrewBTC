@@ -3,10 +3,11 @@ import { cutMarksFor, planSheets } from '../../lib/imposition/sheet'
 import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'
 import { cardKey } from '../../types/card'
-import type { Card, CardBands, ImageTransform, TextStyle } from '../../types/card'
+import type { Card, ImageTransform, TextStyle } from '../../types/card'
 import { useElementSize } from '../../lib/use-element-size'
 import { Card as CardView } from './Card'
 import { CardTextBar } from './CardTextBar'
+import { BandPanel } from './BandPanel'
 import { blankCard } from './use-cards'
 import type { CardZone } from './Card'
 
@@ -55,28 +56,12 @@ export function CardSheet(props: CardSheetProps) {
     [cards, grid.cellHeightMm, props],
   )
 
-  // The sheet's arithmetic is worth showing even with nothing placed yet: it is how a
-  // bad cell size or margin is discovered, and it should not need a PDF to appear.
-  const summary = (
-    <div className="flex h-9 shrink-0 items-center gap-3 overflow-x-auto border-b border-zinc-800 px-3">
-      <span className="tabular whitespace-nowrap text-xs text-zinc-300">
-        {grid.columns} × {grid.rows} = {grid.cellCount} cells
-      </span>
-      <span className="tabular whitespace-nowrap text-xs text-zinc-500">
-        {grid.utilisationPercent}% of paper
-      </span>
-    </div>
-  )
-
   if (grid.isEmpty) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        {summary}
-        <div className="grid flex-1 place-items-center p-6 text-center">
-          <p className="max-w-xs text-sm text-zinc-400">
-            No cell fits on this sheet. Reduce the cell size, the gutter, or the margin.
-          </p>
-        </div>
+      <div className="grid flex-1 place-items-center p-6 text-center">
+        <p className="max-w-xs text-sm text-zinc-400">
+          No cell fits on this sheet. Reduce the cell size, the gutter, or the margin.
+        </p>
       </div>
     )
   }
@@ -90,6 +75,17 @@ export function CardSheet(props: CardSheetProps) {
   const scale = Number.isFinite(raw) && raw > 0 ? raw : 1
 
   const activeZone = editing === null ? null : editing.zone
+
+  // The selected card, resolved once for the docked panel.
+  const selectedPlacement =
+    props.selectedCell === null
+      ? undefined
+      : first?.placements.find((item) => item.cellIndex === props.selectedCell)
+  const selectedKey =
+    props.selectedCell === null || selectedPlacement === undefined
+      ? null
+      : cardKey(props.selectedCell, selectedPlacement.documentId, selectedPlacement.pageNumber)
+  const selectedCard = selectedKey === null ? null : (cards[selectedKey] ?? null)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -199,9 +195,6 @@ export function CardSheet(props: CardSheetProps) {
                 onImageChange={(transform: ImageTransform) =>
                   apply(key, (current) => ({ ...current, imageTransform: transform }))
                 }
-                onBandsChange={(bands: CardBands) =>
-                  apply(key, (current) => ({ ...current, bands }))
-                }
               />
             )
           })}
@@ -220,6 +213,18 @@ export function CardSheet(props: CardSheetProps) {
             />
           ))}
         </div>
+      </div>
+
+      <div className="shrink-0 border-t border-zinc-800 bg-zinc-900/60">
+        <BandPanel
+          card={selectedCard}
+          cellIndex={props.selectedCell ?? 0}
+          cellHeightMm={grid.cellHeightMm}
+          onChange={(bands) => {
+            if (selectedKey === null) return
+            apply(selectedKey, (current) => ({ ...current, bands }))
+          }}
+        />
       </div>
 
       <p className="shrink-0 px-3 pb-2 text-xs text-zinc-500">

@@ -1,6 +1,6 @@
 import { cn } from '../../lib/cn'
 import { cardZones } from '../../types/card'
-import type { Card, CardBands, RectMm } from '../../types/card'
+import type { Card, RectMm } from '../../types/card'
 import { CardZoneImage } from './CardZoneImage'
 import { CardZoneText } from './CardZoneText'
 
@@ -24,11 +24,7 @@ export interface CardProps {
   readonly onBeginPictureEdit: () => void
   readonly onEndPictureEdit: () => void
   readonly onImageChange: (transform: Card['imageTransform']) => void
-  readonly onBandsChange: (bands: CardBands) => void
 }
-
-/** Two millimetres per nudge of a band slider — fine enough to tune, coarse enough to see. */
-const BAND_STEP_MM = 0.5
 
 /**
  * One card on the sheet: top text, photo, bottom text.
@@ -102,73 +98,6 @@ export function Card(props: CardProps) {
         onStyle={(style) => props.onStyleChange('body', style)}
       />
 
-      {selected ? (
-        <BandTuner
-          bands={card.bands}
-          cellHeightMm={cell.heightMm}
-          scale={scale}
-          onChange={props.onBandsChange}
-          onPointerDown={(event) => event.stopPropagation()}
-        />
-      ) : null}
-    </div>
-  )
-}
-
-interface BandTunerProps {
-  readonly bands: CardBands
-  readonly cellHeightMm: number
-  readonly scale: number
-  readonly onChange: (bands: CardBands) => void
-  readonly onPointerDown: (event: React.PointerEvent) => void
-}
-
-/**
- * The two sliders that split this card, above the card's bottom edge.
- *
- * Deliberately per card and not per sheet: recipes differ, and one dish may need three
- * lines of instructions while the one beside it needs none.
- */
-function BandTuner(props: BandTunerProps) {
-  const { bands, cellHeightMm, onChange } = props
-  return (
-    <div
-      className="absolute -bottom-1 left-0 z-10 w-full translate-y-full rounded-md border border-zinc-300 bg-white/95 px-1.5 py-1 shadow-sm"
-      onPointerDown={props.onPointerDown}
-      style={{ fontSize: 9 }}
-    >
-      <label className="flex items-center gap-1">
-        <span className="w-8 shrink-0 text-zinc-500">top</span>
-        <input
-          type="range"
-          aria-label="Header height"
-          min={6}
-          max={Math.max(6, cellHeightMm - 18)}
-          step={BAND_STEP_MM}
-          value={bands.headerMm}
-          onChange={(event) => onChange({ ...bands, headerMm: Number(event.target.value) })}
-          className="h-2 min-w-0 flex-1 accent-sky-500"
-        />
-        <span className="w-8 shrink-0 text-right tabular-nums text-zinc-600">
-          {bands.headerMm.toFixed(1)}
-        </span>
-      </label>
-      <label className="flex items-center gap-1">
-        <span className="w-8 shrink-0 text-zinc-500">bot</span>
-        <input
-          type="range"
-          aria-label="Footer height"
-          min={6}
-          max={Math.max(6, cellHeightMm - 18)}
-          step={BAND_STEP_MM}
-          value={bands.footerMm}
-          onChange={(event) => onChange({ ...bands, footerMm: Number(event.target.value) })}
-          className="h-2 min-w-0 flex-1 accent-sky-500"
-        />
-        <span className="w-8 shrink-0 text-right tabular-nums text-zinc-600">
-          {bands.footerMm.toFixed(1)}
-        </span>
-      </label>
     </div>
   )
 }

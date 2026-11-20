@@ -8,6 +8,17 @@ export interface ReleaseNote {
 /** Single source of truth for release notes, kept in sync with package.json (§9). */
 export const CHANGELOG: readonly ReleaseNote[] = [
   {
+    version: '1.0.1',
+    date: '2026-11-19',
+    title: 'Fixed: cards arrived empty, and the band sliders were hidden',
+    highlights: [
+      'Fixed: a page was placed on the sheet but its card was seeded empty, so no photo and no text appeared — the lookup matched a document’s internal id against the file name the sheet uses',
+      'The top and bottom sliders now sit in a docked panel under the sheet, where nothing can clip or cover them',
+      'Selecting a card is enough to tune it; the sliders no longer have to be hunted for on the card itself',
+      'The panel draws the three-zone split and names the picture height, so the effect of a drag is visible as a number',
+    ],
+  },
+  {
     version: '1.0.0',
     date: '2026-11-19',
     title: 'Rebuilt around a three-zone card',
