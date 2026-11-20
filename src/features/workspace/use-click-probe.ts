@@ -77,11 +77,16 @@ export function useClickProbe(version: string): { readonly arm: () => void } {
           from `onPress` distinguishes them without a debugger, which matters when the
           report comes from a machine I cannot attach to.
         */
-        seen.push(
-          (press.target as Element | null)?.closest?.('[data-press-handled]') === null
-            ? 'the press handler did not run'
-            : 'the press handler ran',
-        )
+        const handlerRan =
+          (press.target as Element | null)?.closest?.('[data-press-handled]') != null
+        seen.push(handlerRan ? 'the press handler ran' : 'the press handler did not run')
+        if (!handlerRan) {
+          seen.push(
+            document.querySelector('[data-text-gesture-opened]') === null
+              ? 'the fallback did not open it'
+              : 'the fallback opened it',
+          )
+        }
         const capture = (): boolean => {
           const field = document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Edit card text"]')
           seen.push(

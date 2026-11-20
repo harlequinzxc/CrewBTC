@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.9.6",
+    "date": "2026-11-20",
+    "title": "The diagnostic now says whether the rescue caught the press",
+    "highlights": [
+      "\u201cNo field\u201d had two explanations and now has three: the press never reached the button, the press reached it and the edit was discarded, or the rescue was supposed to step in and did not. The report names which of the three happened, so the next report is the last one",
+      "Fixed the arrival line itself: it asked whether the pressed element had a marker, and a target that is not an element answered \u201cno\u201d to a question it was never asked, so the report could have blamed an absent handler for a press that was handled"
+    ]
+  },
+  {
     "version": "1.9.5",
     "date": "2026-11-20",
     "title": "Opening a card\u2019s text no longer depends on the press arriving",
