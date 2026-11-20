@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { resetSession, textZones, uploadPdf } from './fixtures'
+import { textZones, uploadPdf } from './fixtures'
 
 /**
  * The suite this harness exists for: **one click on a card's text edits it.**
@@ -16,12 +16,6 @@ import { resetSession, textZones, uploadPdf } from './fixtures'
  * These assertions are about what a *browser* does: hit-testing, computed layout, and the
  * real mousedown → focus → mouseup sequence.
  */
-
-test.beforeEach(async ({ page }) => {
-  // A clean profile per test: the workspace restores from IndexedDB, so a leftover
-  // snapshot would make the second test start with the first one's batch.
-  await resetSession(page)
-})
 
 test('one click on a card text band puts a caret in it', async ({ page }) => {
   await uploadPdf(page)
@@ -41,19 +35,32 @@ test('one click on a card text band puts a caret in it', async ({ page }) => {
 
 test('the canvas does not move when editing begins', async ({ page }) => {
   await uploadPdf(page)
-  const pane = page.getByTestId('sheet-pane')
 
-  // Park the canvas somewhere that is not the top, so a scroll would be visible.
-  await pane.evaluate((node) => {
-    node.scrollTop = 240
+  // The canvas scroller is the element with a real vertical range; several shells overflow
+  // by a few pixels. Pick by range so the test fails loudly if nothing can scroll at all.
+  const handle = await page.evaluateHandle(() =>
+    [...document.querySelectorAll<HTMLElement>('div')].find(
+      (node) => node.scrollHeight - node.clientHeight > 100 && getComputedStyle(node).overflowY === 'auto',
+    ) ?? null,
+  )
+  const scroller = handle.asElement()
+  expect(scroller, 'no scrollable canvas found').not.toBeNull()
+
+  // Park the canvas somewhere that is not the top, then click a band that is still on
+  // screen — both of which a user would do.
+  const before = await scroller!.evaluate((node) => {
+    node.scrollTop = 120
+    return node.scrollTop
   })
-  const before = await pane.evaluate((node) => node.scrollTop)
+  expect(before).toBe(120)
 
-  await textZones(page).first().click()
+  // A zone that the scroll did not push out of the viewport.
+  const target = page.locator('button[aria-label^="Card text:"]').filter({ hasNot: page.locator('[hidden]') })
+  await target.nth(1).click()
   await expect(page.getByLabel('Edit card text')).toBeVisible()
 
-  const after = await pane.evaluate((node) => node.scrollTop)
-  expect(after).toBe(before)
+  const after = await scroller!.evaluate((node) => node.scrollTop)
+  expect(after, 'editing must not move the canvas').toBe(before)
 })
 
 test('the text being edited does not shift when the formatting bar appears', async ({ page }) => {

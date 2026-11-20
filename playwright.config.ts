@@ -24,13 +24,41 @@ export default defineConfig({
   expect: { timeout: 8_000 },
   use: {
     baseURL: 'http://127.0.0.1:4173',
+    // A fresh context per test, and service workers blocked: the PWA precaches the shell,
+    // so a reused profile serves the *previous* build and every measurement silently lies.
+    // That is not hypothetical — it produced two identical "before" and "after" runs while
+    // this suite was being written.
+    serviceWorkers: 'block',
+    // NOTE: e2e/offline.spec.ts re-enables the worker via `test.use({ serviceWorkers:
+    // 'allow' })`; nothing else may, or the precache serves a stale build.
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+        // A sandbox without Playwright's own download can point at any Chromium it already
+        // has. `LD_LIBRARY_PATH` rides along because a statically-fetched build may need
+        // its own NSS/NSRP next to it.
+        launchOptions: {
+          executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH,
+          env: { ...process.env, LD_LIBRARY_PATH: process.env.CHROMIUM_LD_LIBRARY_PATH ?? '' },
+          args: [
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-software-rasterizer',
+            '--in-process-gpu',
+            // No `--single-process`: it makes the browser die between tests when several
+            // pages share one process, which reads as an app failure and is not one.
+            '--use-gl=swiftshader',
+            '--disable-features=Vulkan',
+          ],
+        },
+      },
     },
   ],
   webServer: {

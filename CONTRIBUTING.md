@@ -357,11 +357,16 @@ npx playwright install chromium   # once, needs network
 npm run test:e2e
 ```
 
-The sandbox this repo is developed in has no browser binary and cannot reach the download
-CDN, so `npm run gate` runs `gate:e2e`, which reports **`NOT RUN`** with the test count
-rather than failing with a launch error. It never claims a pass. On a machine with a
-browser the same suite runs for real; treat a `NOT RUN` here as an open gate, not a green
-one.
+Where that CDN is blocked, `bash scripts/fetch-chromium.sh` gets a real Chromium from npm
+instead and prints the two environment variables the config reads. `npm run gate` runs
+`gate:e2e`, which executes the suite if a browser can be found and otherwise reports
+**`NOT RUN`** with the test count — it never claims a pass. Treat `NOT RUN` as an open
+gate, not a green one.
+
+Blocked service workers matter: the app is a PWA, so a reused browser profile serves a
+**precached previous build** and every measurement silently describes the wrong code. The
+config blocks service workers everywhere except `offline.spec.ts`, which exists to test
+them.
 
 Every spec says why it exists. The short version: jsdom has no layout, no hit-testing and
 no default browser behaviour, so a click swallowed by an element that mounted between press

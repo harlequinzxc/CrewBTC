@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.9.0",
+    "date": "2026-11-20",
+    "title": "Clicking a card\u2019s text now edits it \u2014 found in a real browser",
+    "highlights": [
+      "Fixed: the bottom quarter of every card\u2019s text band ignored clicks. The target-size rule forced every text box to 32px tall, but a header band at fit-to-width is about 24px \u2014 so the box overhung the photo below it, and the photo took those clicks",
+      "Fixed: card edits were lost on reload. The batch came back and the edits did not, because the card store read the saved snapshot before it had finished loading from disk",
+      "The Playwright suite now runs for real instead of reporting NOT RUN, and it is part of the gate: 12 tests against the production build cover clicking, the canvas not moving, the editor not shifting, reloads, undo and offline",
+      "Those tests caught both defects above. Neither was visible to the component tests, which have no layout and no hit-testing"
+    ]
+  },
+  {
     "version": "1.8.2",
     "date": "2026-11-20",
     "title": "A real browser in the loop, and one focus fix behind it",

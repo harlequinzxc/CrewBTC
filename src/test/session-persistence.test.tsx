@@ -90,6 +90,41 @@ describe('a reload', () => {
     expect(pickFiles).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps a card edit, not just the batch', async () => {
+    // The batch surviving is the easy half, and it is the half that passed while every
+    // edit was being thrown away. `useCards` initialised its state from the snapshot with
+    // `useState(() => ...)`, which runs once, on the first render — and at that moment the
+    // snapshot does not exist yet, because it is still being read from IndexedDB. The cards
+    // came back re-parsed from the documents, so the sheet looked restored and the edits
+    // were gone.
+    const first = render(<App />)
+    await load()
+    await waitFor(async () => expect(await readSnapshot()).not.toBeNull(), { timeout: 2000 })
+
+    const zone = screen.getAllByRole('button', { name: /card text:/i })[0]!
+    fireEvent.pointerDown(zone, { button: 0 })
+    const field = await screen.findByLabelText('Edit card text')
+    fireEvent.change(field, { target: { value: 'EDITED BEFORE RELOAD' } })
+    fireEvent.blur(field)
+    expect(screen.getAllByRole('button', { name: /card text:/i })[0]?.getAttribute('aria-label'))
+      .toContain('EDITED BEFORE RELOAD')
+
+    await waitFor(async () => {
+      const stored = await readSnapshot()
+      const texts = Object.values(stored?.cards ?? {}).map((card) => card.headerText)
+      expect(texts).toContain('EDITED BEFORE RELOAD')
+    }, { timeout: 2000 })
+
+    first.unmount()
+    render(<App />)
+
+    await waitFor(
+      () => expect(screen.getAllByRole('button', { name: /card text:/i })[0]?.getAttribute('aria-label'))
+        .toContain('EDITED BEFORE RELOAD'),
+      { timeout: 3000 },
+    )
+  })
+
   it('does not resurrect a batch the user cleared', async () => {
     // Clearing writes an empty snapshot, and restoring that is correct: undo is the
     // toast's job for its lifetime, and after that the decision stands.
