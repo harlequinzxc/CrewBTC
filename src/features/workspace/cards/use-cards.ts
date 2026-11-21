@@ -177,6 +177,7 @@ export function useSeedCards(
   store: CardStore,
   seeds: readonly CardSeed[],
   cellHeightMm: number,
+  defaults?: CardBands,
 ): void {
   /**
    * `seedCard` only writes where no card exists, so re-running over a seed that is already
@@ -194,12 +195,13 @@ export function useSeedCards(
     for (const seed of seeds) {
       store.seedCard(seed.key, {
         ...blankCard(cellHeightMm),
+        ...(defaults === undefined ? {} : { bands: clampBands(defaults, cellHeightMm) }),
         headerText: seed.headerText,
         bodyText: seed.bodyText,
         photo: seed.photo,
       })
     }
-  }, [seeds, store, cellHeightMm])
+  }, [seeds, store, cellHeightMm, defaults])
 }
 
 export { cardKey }

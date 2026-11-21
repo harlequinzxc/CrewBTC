@@ -32,4 +32,14 @@ describe('export reporting', () => {
     await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.objectContaining({ variant: 'warning', title: 'Export incomplete' })))
     expect(mock.download).toHaveBeenCalledOnce()
   })
+  it('exports the visible sheet rather than the first one', async () => {
+    mock.write.mockResolvedValue({ bytes: new Uint8Array([1]), sheetCount: 1, cardsDrawn: 1, cardsSkipped: 0 })
+    const pages = Array.from({ length: grid.cellCount + 1 }, (_, index) => ({ ...page, pageNumber: index + 1 }))
+    const { result } = renderHook(() => useCardExport({ settings: DEFAULT_SHEET, grid, pages, drawCutMarks: false, cards: {}, notify: vi.fn(), sheetIndex: 1 }))
+    act(() => result.current.exportCurrent())
+    await waitFor(() => expect(mock.write).toHaveBeenCalled())
+    expect(mock.write.mock.calls[0]?.[0].pages).toEqual([pages[grid.cellCount]])
+    expect(mock.download).toHaveBeenCalledWith(expect.any(Uint8Array), 'crewbtc-sheet-2.pdf')
+  })
+
 })

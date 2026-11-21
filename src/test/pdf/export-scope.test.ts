@@ -8,9 +8,8 @@ import { computeGrid } from '../../lib/imposition/grid'
  * "This sheet" has to mean something.
  *
  * The export menu offers the sheet you are looking at, and every sheet after it — two
- * routes that must differ in what they write, not just in which handler they call. The
- * export hook produces the first one by handing the writer only the pages the first sheet
- * holds, so this test pins the arithmetic that makes that a real slice.
+ * routes that must differ in what they write, not just in which handler they call.
+ * The hook regression also exercises selecting a later sheet.
  */
 const page = (index: number): PageRef => ({
   documentId: `doc-${index}.pdf`,

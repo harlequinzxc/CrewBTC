@@ -11,7 +11,7 @@ export interface CardExportApi {
   readonly busy: boolean
   /** Every sheet, in order, as one PDF. */
   readonly exportAll: () => void
-  /** Just the sheet being looked at — the first one, since that is the one drawn. */
+  /** Just the sheet currently visible in the editor. */
   readonly exportCurrent: () => void
   /** Whether a second sheet exists, and so whether "current" means anything. */
   readonly hasMoreThanOneSheet: boolean
@@ -23,6 +23,7 @@ export interface CardExportOptions {
   readonly pages: readonly PageRef[]
   readonly drawCutMarks: boolean
   readonly cards: Readonly<Record<string, Card>>
+  readonly sheetIndex?: number
   readonly notify: (input: ToastInput) => void
 }
 
@@ -38,16 +39,10 @@ export function useCardExport(options: CardExportOptions): CardExportApi {
   const [busy, setBusy] = useState(false)
 
   const plans = planSheets(pages, grid)
-  const firstSheetPages = plans[0]?.placements.length ?? 0
+  const sheetIndex = Math.max(0, Math.min(options.sheetIndex ?? 0, plans.length - 1))
 
-  /**
-   * `pages` narrowed to the first sheet.
-   *
-   * The exporter already slices `pages` into sheets itself, so handing it only the pages
-   * that belong to the first sheet produces exactly that sheet — one page of output —
-   * without the export path needing a mode flag.
-   */
-  const currentSheetPages = pages.slice(0, firstSheetPages)
+  // Each sheet consumes exactly cellCount input pages, even if a placement is skipped.
+  const currentSheetPages = pages.slice(sheetIndex * grid.cellCount, (sheetIndex + 1) * grid.cellCount)
 
   const run = useCallback(
     (selection: readonly PageRef[], filename: string) => {
@@ -94,8 +89,8 @@ export function useCardExport(options: CardExportOptions): CardExportApi {
 
   const exportAll = useCallback(() => run(pages, 'crewbtc-cards.pdf'), [run, pages])
   const exportCurrent = useCallback(
-    () => run(currentSheetPages, 'crewbtc-sheet-1.pdf'),
-    [run, currentSheetPages],
+    () => run(currentSheetPages, `crewbtc-sheet-${sheetIndex + 1}.pdf`),
+    [run, currentSheetPages, sheetIndex],
   )
 
   return { busy, exportAll, exportCurrent, hasMoreThanOneSheet: plans.length > 1 }

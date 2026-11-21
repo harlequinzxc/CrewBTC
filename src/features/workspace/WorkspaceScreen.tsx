@@ -30,6 +30,9 @@ import { useProject } from './project/use-project'
 import { useCutGuides } from './sheet/use-cut-guides'
 import { useKeywords } from './project/use-keywords'
 import { useAutoFormat } from './cards/use-auto-format'
+import { useReview } from './review/use-review'
+import { jumpToReviewIssue } from './review/use-review-jump'
+import { useCardDefaults } from './cards/use-card-defaults'
 import { PdfPreview } from './preview/PdfPreview'
 import type { Project } from '../../lib/project/project'
 import type { useToasts } from '../../components/ui/use-toasts'
@@ -42,8 +45,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const [showCutMarks, setShowCutMarks] = useCutGuides()
   const [keywords, setKeywords] = useKeywords()
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [stripCollapsed, setStripCollapsed] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false); const [stripCollapsed, setStripCollapsed] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(true)
   const [previewOpen, setPreviewOpen] = useState(false)
   useUpdateNotice(() => {
@@ -71,18 +73,11 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     cards: cardStore.cards,
     activeId: batch.activeId,
   })
+  const cardDefaults = useCardDefaults()
   const seeds = useCardSeeds(pageRefs, sheet.grid, batch.documents)
-  useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm)
+  useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm, cardDefaults.bands)
   const autoFormat = useAutoFormat(cardStore, seeds, keywords, notify)
   const visibleCards = useMemo(() => numberedCards(cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale ?? DEFAULT_TEXT_SCALE), [cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale])
-  const exporter = useCardExport({
-    settings: sheet.settings,
-    grid: sheet.grid,
-    pages: pageRefs,
-    drawCutMarks: showCutMarks,
-    cards: visibleCards,
-    notify,
-  })
   const toggleStrip = useCallback(() => setStripCollapsed((collapsed) => !collapsed), [])
   const toggleInspector = useCallback(() => setInspectorOpen((open) => !open), [])
   const clearSelection = useCallback(() => setSelectedCell(null), [])
@@ -92,14 +87,12 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     notify,
     clearSelection,
   })
-
   const handleAdd = useCallback(() => {
     void (async () => {
       const files = await pickFiles()
       if (files.length > 0) batch.addFiles(files)
     })()
   }, [batch])
-
   const applyProject = useCallback((project: Project) => {
     batch.replaceProject(project.snapshot.documents, project.snapshot.activeId)
     cardStore.restoreCards(project.snapshot.cards)
@@ -127,8 +120,17 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     setSelectedCell,
   })
   const sheetCount = sheets.length
+  const review = useReview(sheets, sheet.grid, visibleCards)
+  const exporter = useCardExport({
+    settings: sheet.settings,
+    grid: sheet.grid,
+    pages: pageRefs,
+    drawCutMarks: showCutMarks,
+    cards: visibleCards,
+    sheetIndex,
+    notify,
+  })
   const reveal = usePageReveal(pageRefs, sheet.grid, selectCell, goToSheet)
-
   const selectionKey = selectedCardKey(
     selectedCell,
     sheet.grid,
@@ -136,8 +138,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     selectionSheet ?? 0,
   )
   const selectedCard = selectionKey === null ? null : (visibleCards[selectionKey] ?? null)
-
-
   return (
     <div className="flex h-[100svh] max-h-[100svh] w-full flex-col overflow-hidden bg-surface-canvas">
       <TopBar
@@ -159,10 +159,11 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         hasBatch={hasBatch}
         inspectorOpen={inspectorOpen}
         onToggleInspector={toggleInspector}
+        reviewLabel={review.status === 'checking' ? 'Checking…' : review.status === 'error' ? 'Review unavailable' : `Review ${review.issues.length}`}
+        onReview={() => { setInspectorOpen(true); window.requestAnimationFrame(() => document.getElementById('batch-review')?.focus()) }}
         previewOpen={previewOpen}
         onTogglePreview={() => setPreviewOpen((open) => !open)}
       />
-
       <main className="relative flex min-h-0 flex-1">
         <aside
           aria-label="Files"
@@ -180,7 +181,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
             onReveal={reveal.onReveal}
           />
         </aside>
-
         <CentrePane
           documentsLoaded={hasBatch}
           busy={batch.busy}
@@ -214,7 +214,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
             />
           }
         />
-
         {previewOpen && hasBatch && sheetCount > 0 ? <PdfPreview sheetCount={sheetCount} initialSheet={sheetIndex} onClose={() => setPreviewOpen(false)} settings={sheet.settings} grid={sheet.grid} pages={pageRefs} drawCutMarks={showCutMarks} cards={visibleCards} /> : null}
         <Inspector
           card={selectedCard}
@@ -232,11 +231,14 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           onAutomate={autoFormat.apply}
           onRemoveFormatting={autoFormat.remove}
           canAutomate={autoFormat.available}
+          review={hasBatch ? { ...review, onJump: (issue) => jumpToReviewIssue(issue, goToSheet, selectCell) } : undefined}
+          defaultBands={cardDefaults.bands}
+          onSaveDefaults={cardDefaults.save}
+          onResetDefaults={cardDefaults.reset}
           busy={batch.busy || project.busy}
           open={inspectorOpen}
         />
       </main>
-
       <SettingsDialog
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}

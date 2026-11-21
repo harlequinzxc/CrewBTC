@@ -134,6 +134,7 @@ describe('the inspector can be given back to the sheet', () => {
   const renderInspector = (open: boolean) =>
     render(
       <Inspector
+        defaultBands={{ headerMm: 7.28, footerMm: 35.45 }} onSaveDefaults={() => undefined} onResetDefaults={() => undefined}
         card={null}
         cellIndex={null}
         units="mm"
@@ -188,6 +189,7 @@ describe('the inspector can be given back to the sheet', () => {
     const { rerender } = renderInspector(false)
     rerender(
       <Inspector
+        defaultBands={{ headerMm: 7.28, footerMm: 35.45 }} onSaveDefaults={() => undefined} onResetDefaults={() => undefined}
         card={null}
         cellIndex={null}
         units="mm"

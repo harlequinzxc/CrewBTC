@@ -112,8 +112,10 @@ is on. The active sheet is the one with the accent border.
 2. Drag PDFs onto the window, or use **Add PDFs**.
 3. Pick a card, then edit its text, colour and photo.
 4. Drag the selected card’s dividers; check the heights in the inspector.
-5. Open **Preview PDF** beside Export to inspect the generated PDF as you edit. Navigate sheets and zoom or fit the preview; it updates shortly after changes. On narrower windows it overlays part of the editor.
-6. **Save** an editable project if needed. **Export** makes a print PDF; the arrow offers all sheets as one PDF.
+5. Open **Preview PDF** beside Export to inspect the generated PDF as you edit. Navigate sheets, zoom, fit or expand the preview; it updates shortly after changes. On narrower windows it overlays part of the editor.
+6. Use **Review** to find possible print issues and missing card content, and jump to each affected card. Warnings are advisory: missing content can be intentional, and the check does not replace inspecting the PDF.
+7. To reuse band heights, select a card and choose **Use selected card** under New card defaults. The saved heights apply only to newly seeded cards; text size remains sheet-wide.
+8. **Save** an editable project if needed. **Export** makes a print PDF; the arrow offers all sheets as one PDF.
 
 Your sheet settings are remembered between visits.
 
@@ -157,10 +159,8 @@ Being straight about the limits is more useful than discovering them at the prin
   one per page, are still to come.
 - **Portable typefaces only.** Print output uses the standard PDF fonts, so nothing
   needs embedding. Uploading a brand font isn't built yet.
-- **This sheet export currently exports the first sheet**, even when another sheet is
-  visible. Use **All sheets** to export the complete project.
 - **Corner labels have print limits.** Long labels are truncated to the box and characters
-  unsupported by the standard PDF font are omitted. Check the exported PDF.
+  unsupported by the standard PDF font are replaced. Check the exported PDF.
 - **Mixed page sizes.** Each document uses the first page’s dimensions for its page references.
 - **It assumes the PDFs look alike.** The app reads a title above the picture and steps
   below it. Wildly inconsistent layouts will need fixing by hand — which is what the

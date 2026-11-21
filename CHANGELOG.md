@@ -58,6 +58,11 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - The optional live PDF preview uses the export writer and PDF.js, updates after a short
   debounce, and supports sheet navigation and zoom. It splits the workspace at 1280 px and
   wider and overlays it on narrower supported windows. Failed or partial renders are reported.
+- This sheet exports the sheet visible in the editor. Batch review flags missing card
+  content, likely text overflow, unsupported characters, and corner label truncation;
+  warnings are advisory and link to the affected card. The preview can expand full screen.
+- A locally saved band-height preset applies to newly seeded cards, clamped to cell size;
+  existing cards are unchanged. Text size is sheet-wide and remains separately remembered.
 - Clicking a photo enters adjustment; the sparkles copy a card's bands to others. Background
   removal uses a local classical cut-out with sensitivity and undo, not a downloaded model.
 - Number boxes wrap from 40 to 1. Editable right-hand labels propagate forward from an
@@ -100,14 +105,12 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - Units once failed to persist because an IndexedDB store with an inline key was given a
   separate key to `put`. Keep the real-storage regression test as well as browser coverage.
 - Content-based automatic band sizing and editable inspector band fields were replaced with
-  fixed new-card defaults, draggable dividers and read-only current-value inspection.
+  configurable new-card band defaults, draggable dividers and read-only current-value inspection.
 
 ## Known limitations and verification status
 
-- **This sheet** export currently selects the first sheet, not the sheet in view; use All
-  sheets for the complete project. This is documented, not fixed by the file reorganisation.
 - Long corner labels are truncated in print, and characters unsupported by the standard PDF
-  font are omitted. Text can also clip when a band is too short. Inspect the exported PDF.
+  font are replaced. Text can also clip when a band is too short. The advisory review flags likely issues but cannot guarantee a print-ready PDF; inspect the exported PDF.
 - Page references use the first page's dimensions for the entire source document. The app
   assumes similar PDF layouts; OCR is a fallback, not a full document-scanning workflow.
 - No PDF/X output intent, ZIP of separate sheets, font upload or mobile editor is implemented.
@@ -116,10 +119,15 @@ above it is not shown as release notes. `package.json` and the newest entry must
   best effort, not a claim that clearing files securely wipes all local data.
 - Chromium unit/browser gates do not prove installed-mode, all browsers, real OCR language
   data, service-worker update timing, or screen-reader behavior. Report unrun checks honestly.
-  The v1.14.0 full gate passed 499 unit tests and 67 Chromium browser tests. These results
+  The v1.15.0 full gate passed 504 unit tests and 69 Chromium browser tests; an additional 1024 px browser check passed separately. These results
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.15.0 — 2026-11-21 — Print review and card defaults
+
+- Export the sheet currently in view, and review possible print issues across the batch.
+- Expand the higher-resolution PDF preview and save selected band heights for new cards.
 
 ### 1.14.0 — 2026-11-21 — Live PDF preview
 

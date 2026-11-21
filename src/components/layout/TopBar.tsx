@@ -36,6 +36,8 @@ export interface TopBarProps {
   readonly hasMoreThanOneSheet: boolean
   readonly exporting: boolean
   readonly hasBatch: boolean
+  readonly reviewLabel?: string
+  readonly onReview?: () => void
   readonly previewOpen?: boolean
   readonly onTogglePreview?: () => void
   /** Whether the right rail is showing. It mirrors the Files rail: give the sheet width back. */
@@ -105,6 +107,7 @@ export function TopBar(props: TopBarProps) {
         <span className="tabular text-[11px] text-ink-muted">{summary}</span>
       </div>
 
+      {props.hasBatch && props.reviewLabel !== undefined ? <button type="button" data-target="dense" onClick={props.onReview} className="min-h-8 shrink-0 rounded border border-hairline px-2 text-xs text-ink-primary hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{props.reviewLabel}</button> : null}
       {/* Zoom sits dead centre: it is the control you reach for most while laying out. */}
       <div className="mx-auto flex items-center gap-0.5" aria-label="Sheet zoom">
         <button
