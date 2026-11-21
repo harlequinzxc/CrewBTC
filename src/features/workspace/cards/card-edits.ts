@@ -1,4 +1,4 @@
-import { applyToSelection, shiftRuns, styleAt } from '../../../types/text-runs'
+import { applyToSelection, shiftRuns, styleAt, styleBreakpoints } from '../../../types/text-runs'
 import { clampBands } from '../../../types/card'
 import type { Card, CardBands, TextRun, TextStyle } from '../../../types/card'
 
@@ -46,6 +46,37 @@ export function styleSelection(
     ...(style.uppercase === undefined ? {} : { uppercase: style.uppercase }),
     ...(style.align === undefined ? {} : { align: style.align }),
   })
+  return zone === 'header' ? { ...card, headerRuns: next } : { ...card, bodyRuns: next }
+}
+
+/** Change only ink, retaining distinct formatting across a mixed selection. */
+export function colorInto(
+  card: Card,
+  zone: Zone,
+  selection: { readonly start: number; readonly end: number } | null,
+  color: string,
+): Card {
+  const runs = runsOf(card, zone)
+  if (selection === null) {
+    const original = styleOf(card, zone)
+    const base = { ...original, color, highlight: original.highlight === color ? null : original.highlight }
+    // Inherit the new box ink so Clear formatting can restore it later.
+    const colored = runs.map(({ color: _previousColor, ...run }) =>
+      run.highlight === color ? { ...run, highlight: null } : run,
+    )
+    return zone === 'header'
+      ? { ...card, headerStyle: base, headerRuns: colored }
+      : { ...card, bodyStyle: base, bodyRuns: colored }
+  }
+  const points = [selection.start, ...styleBreakpoints(runs, textOf(card, zone).length)
+    .filter((point) => point > selection.start && point < selection.end), selection.end]
+  let next = runs
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const start = points[i]!
+    const highlight = styleAt(styleOf(card, zone), next, start).highlight
+    next = applyToSelection(styleOf(card, zone), next, { start, end: points[i + 1]! },
+      { color, ...(highlight === color ? { highlight: null } : {}) })
+  }
   return zone === 'header' ? { ...card, headerRuns: next } : { ...card, bodyRuns: next }
 }
 

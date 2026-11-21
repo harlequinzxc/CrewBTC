@@ -24,8 +24,9 @@ being left blank. It needs a connection the first time, and it reads English onl
 text underneath.
 
 - Both text boxes are real text fields. Type in them, add or remove lines, and select
-  text to format it. **Bold**, ink colour and a red / green / amber highlight apply to
-  whatever you have selected; with nothing selected they set the whole box.
+  text to format it. **CROCKERIES** and **CONDIMENTS** apply their callout styles;
+  **DIRECTIONS** makes text red. **Bold** and **Clear formatting** are also available.
+  Controls apply to the selection, or to the whole box when nothing is selected.
 - The photo is never stretched. Click it to enter adjustment mode, then drag to move it
   or scroll to zoom. Click outside or press `Escape` when finished. The image is clipped
   to its box. The scissors remove a plain background locally, with sensitivity and undo;

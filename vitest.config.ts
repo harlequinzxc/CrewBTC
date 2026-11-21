@@ -1,4 +1,4 @@
-import { releaseNotesPlugin } from './release-notes-plugin.js'
+import { releaseNotesPlugin } from './scripts/release-notes-plugin.js'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 

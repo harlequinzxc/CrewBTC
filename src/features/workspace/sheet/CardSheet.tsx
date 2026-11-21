@@ -11,7 +11,7 @@ import { blankCard } from '../cards/use-cards'
 import { CANVAS_PADDING } from './use-sheet-zoom'
 import { sheetOffsets } from './sheet-stack'
 import { useSheetScroll } from './use-sheet-scroll'
-import { activeStyle, bandsInto, styleInto, styleSelection, textInto } from '../cards/card-edits'
+import { activeStyle, bandsInto, colorInto, styleInto, styleSelection, textInto } from '../cards/card-edits'
 import { useTextEditGesture } from '../cards/use-text-edit-gesture'
 import { useEditDismissal } from '../cards/use-edit-dismissal'
 import type { CardZone } from '../cards/Card'
@@ -138,7 +138,6 @@ export function CardSheet(props: CardSheetProps) {
   const barCard =
     editing === null ? blankCard(grid.cellHeightMm) : (cards[editing.key] ?? blankCard(grid.cellHeightMm))
   const activeZone = editing === null ? null : editing.zone
-
   return (
     // `relative` is load-bearing: without it the absolutely-positioned formatting bar
     // resolved against the app root and sat at y=0, over the top bar and Export.
@@ -150,6 +149,7 @@ export function CardSheet(props: CardSheetProps) {
           style={barCard[editZone === 'header' ? 'headerStyle' : 'bodyStyle']}
           selection={selection}
           active={activeStyle(barCard, editZone, selection)}
+          onColor={(color) => apply(editing.key, (card) => colorInto(card, editZone, selection, color))}
           onChange={(style) => {
             const zone = editZone
             apply(editing.key, (card) =>

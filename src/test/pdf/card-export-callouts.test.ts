@@ -138,6 +138,19 @@ describe('CONDIMENTS in the exported card', () => {
   })
 })
 
+describe('DIRECTIONS in the exported card', () => {
+  it('prints red text for both the whole box and a selected run', async () => {
+    const red = /0\.72549\d*\s+0\.10980\d*\s+0\.10980\d*\s+rg/
+    const whole = await exportOne(makeCard({ bodyStyle: { bold: true, color: '#b91c1c', highlight: null } }))
+    const selected = await exportOne(makeCard({ bodyRuns: [{ start: 0, end: 5, color: '#b91c1c' }] }))
+    const plain = await exportOne(makeCard())
+    expect(whole).toMatch(red)
+    expect(selected).toMatch(red)
+    expect(plain).not.toMatch(red)
+    expect(drawnText(selected).join(' ')).toContain('Plate')
+  })
+})
+
 describe('a centred heading', () => {
   it('always starts further from the edge than a flush-left one', async () => {
     const left = await exportOne(makeCard({ headerStyle: { bold: true, color: '#111827', highlight: null } }))
