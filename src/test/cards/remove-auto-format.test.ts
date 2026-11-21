@@ -7,7 +7,7 @@ import { styleAt } from '../../types/text-runs'
 describe('remove callout formatting', () => {
   it('clears all three callouts while retaining text, bullets, unrelated styles and bold', () => {
     const card = { ...blankCard(67), headerText: 'plate', bodyText: 'plate drizzle salt blue', bodyRuns: [{ start: 19, end: 23, color: '#15803d', bold: false }] }
-    const formatted = automateCard(card, { crockeries: 'plate', directions: 'drizzle', condiments: 'salt' })
+    const formatted = { ...automateCard(card, { crockeries: 'plate', directions: 'drizzle', condiments: 'salt' }), headerText: 'PLATE', headerRuns: [{ start: 0, end: 5, bold: true, color: '#ffffff', highlight: '#b91c1c', uppercase: true }] }
     const result = removeCalloutFormatting(formatted)
     expect(result.headerText).toBe('PLATE')
     expect(result.bodyText).toBe('• PLATE drizzle salt blue')

@@ -16,6 +16,15 @@ describe('automated formatting', () => {
     expect(get(result, result.bodyText.indexOf('soy sauce'))).toMatchObject({ color: '#111827', highlight: '#86efac' })
     expect(automateCard(result, keywords)).toEqual(result)
   })
+  it('leaves matching top text and its existing styles entirely untouched', () => {
+    const headerRuns = [{ start: 0, end: 5, color: '#15803d', bold: false }]
+    const card = { ...blankCard(67), headerText: 'plate drizzle soy sauce', headerRuns, bodyText: 'plate' }
+    const result = automateCard(card, keywords)
+    expect(result.headerText).toBe(card.headerText)
+    expect(result.headerStyle).toEqual(card.headerStyle)
+    expect(result.headerRuns).toEqual(headerRuns)
+    expect(result.bodyText).toBe('• PLATE')
+  })
   it('does not match partial words and leaves empty lines and already numbered bullets alone', () => {
     const card = { ...blankCard(67), bodyText: 'plateful\n1. plate\n- drizzle\n\n  ' }
     const result = automateCard(card, keywords)

@@ -28,10 +28,10 @@ text underneath.
   **DIRECTIONS** makes text red. **Bold** and **Clear formatting** are also available.
   Controls apply to the selection, or to the whole box when nothing is selected.
 - In the inspector, enter keywords or phrases (one per line) for each callout and choose
-  **Automate formatting** after cards are populated. Matches ignore case and respect whole
-  word boundaries. It adds bullets to non-empty bottom-text lines, not visual wraps, and
+  **Automate formatting** after cards are populated. It affects bottom text only; matches
+  ignore case and respect whole word boundaries. It adds bullets to non-empty bottom-text lines, not visual wraps, and
   converts leading dash-space markers to bullets, and leaves existing bullets and numbered
-  lines alone. **Remove formatting** clears callout colours without removing bullets or
+  lines alone. **Remove formatting** clears callout colours in both zones without removing bullets or
   restoring original casing; matching manually applied colours are also cleared. Review the
   results; CROCKERIES changes matched text to uppercase. Undo is available for cards not
   subsequently edited.
