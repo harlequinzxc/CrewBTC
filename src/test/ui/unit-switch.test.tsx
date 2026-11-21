@@ -90,7 +90,7 @@ describe('the unit setting reaches the card readout', () => {
 
   it('shows actual bands in the selected unit and text as a percentage', () => {
     render(<CardReadout card={{ ...card, textScale: 0.8 }} cellIndex={0} units="cm" />)
-    expect(screen.getByLabelText('Top value')).toHaveTextContent('0.73 cm')
+    expect(screen.getByLabelText('Top value')).toHaveTextContent('0.86 cm')
     expect(screen.getByLabelText('Bottom value')).toHaveTextContent('3.55 cm')
     expect(screen.getByLabelText('Text value')).toHaveTextContent('80%')
   })

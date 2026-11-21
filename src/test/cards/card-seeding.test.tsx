@@ -114,7 +114,7 @@ describe('fine-tuning one card', () => {
     const inspector = screen.getByRole('complementary', { name: 'Inspector' })
     expect(inspector.querySelector('[aria-label="Top value"]')).toHaveTextContent('mm')
     expect(inspector.querySelector('[aria-label="Bottom value"]')).toHaveTextContent('mm')
-    expect(inspector.querySelector('[aria-label="Text value"]')).toHaveTextContent('80%')
+    expect(inspector.querySelector('[aria-label="Text value"]')).toHaveTextContent('90%')
     expect(inspector.querySelector('input[aria-label="Top"]')).toBeNull()
     fireEvent.change(screen.getByLabelText('All text size'), { target: { value: '125' } })
     expect(inspector.querySelector('[aria-label="Text value"]')).toHaveTextContent('125%')

@@ -3,6 +3,7 @@ import { SNAPSHOT_VERSION } from '../../../types/persisted'
 import type { WorkspaceSnapshot } from '../../../types/persisted'
 import { writeSnapshot } from '../../../lib/storage/snapshot'
 import { sweepProjectSources } from '../../../lib/storage/project-sources'
+import type { StationWorkspace } from '../../../types/station'
 import type { Card } from '../../../types/card'
 import type { IngestedDocument } from '../../../types/document'
 
@@ -61,9 +62,11 @@ export function useSaveSession(
     readonly documents: readonly IngestedDocument[]
     readonly cards: Readonly<Record<string, Card>>
     readonly activeId: string | null
+    readonly stations: readonly StationWorkspace[]
+    readonly activeStationId: string
   },
 ): void {
-  const { documents, cards, activeId } = input
+  const { documents, cards, activeId, stations, activeStationId } = input
 
   useEffect(() => {
     if (!hydrated) return
@@ -73,6 +76,7 @@ export function useSaveSession(
         documents,
         cards,
         activeId,
+        stations, activeStationId,
         savedAt: new Date().toISOString(),
       }
       // An empty batch is a snapshot too: the user cleared the files, and restoring them
@@ -81,5 +85,5 @@ export function useSaveSession(
       void writeSnapshot(next).then(() => sweepProjectSources()).catch(() => undefined)
     }, 400)
     return () => window.clearTimeout(timer)
-  }, [hydrated, documents, cards, activeId])
+  }, [hydrated, documents, cards, activeId, stations, activeStationId])
 }

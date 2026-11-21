@@ -1,3 +1,4 @@
+import { PageFilter } from '../stations/PageFilter'
 import { BatchQueue } from './BatchQueue'
 import type { IngestedDocument } from '../../../types/document'
 import type { PagePlacement } from '../sheet/sheet-navigation'
@@ -16,6 +17,7 @@ export interface LeftPaneProps {
   readonly onAdd: () => void
   readonly onReRun: () => void
   readonly onClear: () => void
+  readonly onPages: (documentId: string, pages: readonly number[]) => void
   readonly busy: boolean
   readonly placements: ReadonlyMap<string, ReadonlyMap<number, PagePlacement>>
   readonly onReveal: (document: IngestedDocument) => void
@@ -35,6 +37,7 @@ export function LeftPane(props: LeftPaneProps) {
         placements={props.placements}
         onReveal={props.onReveal}
       />
+      {props.documents.filter((document) => document.id === props.activeId).map((document) => <PageFilter key={document.id} document={document} onChange={(pages) => props.onPages(document.id, pages)} />)}
     </div>
   )
 }

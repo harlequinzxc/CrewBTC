@@ -24,6 +24,8 @@ export interface DocumentMetrics {
 export type IngestStatus = 'queued' | 'parsing' | 'parsed' | 'failed'
 
 export interface IngestedDocument {
+  /** Undefined means all pages; otherwise only these 1-based pages belong to this station. */
+  readonly includedPages?: readonly number[]
   readonly id: string
   readonly fileName: string
   readonly byteLength: number

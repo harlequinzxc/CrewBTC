@@ -22,10 +22,10 @@ describe('new card defaults', () => {
     const other = renderHook(() => useCardDefaults())
     expect(other.result.current.bands).toEqual({ headerMm: 10, footerMm: 20 })
     act(() => other.result.current.reset())
-    expect(other.result.current.bands).toEqual({ headerMm: 7.28, footerMm: 35.45 })
+    expect(other.result.current.bands).toEqual({ headerMm: 8.56, footerMm: 35.45 })
   })
   it('rejects damaged saved defaults', () => {
     localStorage.setItem('crewbtc.card-bands.v1', '{"headerMm":-1,"footerMm":100}')
-    expect(renderHook(() => useCardDefaults()).result.current.bands).toEqual({ headerMm: 7.28, footerMm: 35.45 })
+    expect(renderHook(() => useCardDefaults()).result.current.bands).toEqual({ headerMm: 8.56, footerMm: 35.45 })
   })
 })

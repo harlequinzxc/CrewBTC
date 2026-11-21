@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { DEFAULT_TEXT_SCALE } from '../../../types/card-typography'
 import { clampTextScale } from '../../../types/card'
 import { DEFAULT_SHEET } from '../../../types/imposition'
 import type { SheetSettings } from '../../../types/imposition'
@@ -16,7 +15,7 @@ function readStored(): SheetSettings | null {
     const parsed: unknown = JSON.parse(raw)
     if (typeof parsed !== 'object' || parsed === null) return null
     const candidate = parsed as Partial<SheetSettings>
-    const merged: SheetSettings = { ...DEFAULT_SHEET, ...candidate, textScale: clampTextScale(typeof candidate.textScale === 'number' ? candidate.textScale : DEFAULT_TEXT_SCALE) }
+    const merged: SheetSettings = { ...DEFAULT_SHEET, ...candidate, textScale: clampTextScale(typeof candidate.textScale === 'number' ? candidate.textScale : 0.8) }
     return validateSheet(merged).ok ? merged : null
   } catch {
     return null

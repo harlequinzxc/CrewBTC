@@ -71,8 +71,8 @@ way, so 21 cm and 210 mm are the same sheet.
 
 ## Save and open editable projects
 
-Use **Save** in the top bar to download a `.crewbtc` project. It contains your editable
-cards, photos, labels, sheet settings, formatting keywords and available original PDFs. **Open** loads that
+Use **Save** in the top bar to download a `.crewbtc` project. It contains all station workspaces, editable cards, photos, labels, sheet settings,
+formatting keywords and available original PDFs. **Open** loads that
 file in CrewBTC, including on another computer; it replaces the current workspace after
 confirmation. Export PDF remains the separate print-only action. Save a project again
 when you make changes: the downloaded file does not update automatically.
@@ -85,6 +85,16 @@ originals are reclaimed after the Undo window when local storage is available; o
 retained copies may require clearing browser site data.
 Project files and locally stored originals can contain your source documents: keep them
 private and clear browser site data if you need to remove the local copies.
+
+## Station workspaces and printing
+
+Use **+ New station** to create a named tab, and switch tabs to edit each station's PDFs and cards. Sheet and inspector settings are shared. New cards start with the station name in the corner label; you can still edit labels and their existing forward propagation applies. Renaming a tab does not change labels already on cards.
+
+If a PDF has pages for different stations, add it to each relevant station, select the PDF in the Files rail, and choose **Choose pages for this station**. Enter `all`, `none`, or page numbers and ranges such as `1,3-5`. Excluded card edits remain stored if you include those pages again.
+
+Choose **Print selection** in the top bar to select whole stations and/or individual cards. The generated-PDF preview packs the selected cards together across stations to minimise wasted cells. Exporting this selection does not move or change the original cards. The usual Export button still exports the active station's current sheet or all its sheets.
+
+**New project** clears all stations after confirmation, leaving shared inspector settings and saved defaults in place. Save first if you need the current work. Existing single-workspace projects and sessions open as one station. New project files cannot be opened by older versions of CrewBTC.
 
 ## Zooming the sheet
 
@@ -115,7 +125,7 @@ is on. The active sheet is the one with the accent border.
 5. Open **Preview PDF** beside Export to inspect the generated PDF as you edit. Navigate sheets, zoom, fit or expand the preview; it updates shortly after changes. On narrower windows it overlays part of the editor.
 6. Use **Review** to find possible print issues and missing card content, and jump to each affected card. Warnings are advisory: missing content can be intentional, and the check does not replace inspecting the PDF.
 7. To reuse band heights, select a card and choose **Use selected card** under New card defaults. The saved heights apply only to newly seeded cards; text size remains sheet-wide.
-8. **Save** an editable project if needed. **Export** makes a print PDF; the arrow offers all sheets as one PDF.
+8. **Save** an editable project if needed. **Export** prints the active station; **Print selection** combines chosen cards from any station.
 
 Your sheet settings are remembered between visits.
 
@@ -140,10 +150,10 @@ won't fit rather than printing a broken sheet.
 
 ### Cards are 52 × 67 mm by default
 
-Each newly extracted card starts with a **7.28 mm top band** and a **35.45 mm bottom
+Each newly extracted card starts with an **8.56 mm top band** and a **35.45 mm bottom
 band**, where the cell has room. Smaller cells clamp the split to preserve photo space.
 Existing cards keep their own measurements. Drag the dividers to adjust individual bands;
-the inspector displays their current heights. Text size starts at **80%** and is set for
+the inspector displays their current heights. Text size starts at **90%** and is set for
 the whole sheet. Text wraps rather than automatically shrinking; content that exceeds a
 band is clipped, so check it before printing.
 

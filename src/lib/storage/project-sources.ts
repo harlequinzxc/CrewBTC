@@ -78,7 +78,7 @@ export function sweepProjectSources(now = Date.now()): Promise<void> {
   return serial(async () => {
     const snapshot = await readSnapshot()
     if (snapshot === null) return // An unreadable snapshot is not proof that a file is unused.
-    const active = new Set(snapshot.documents.map((document) => document.id))
+    const active = new Set(snapshot.stations.flatMap((station) => station.documents.map((document) => document.id)))
     const database = await db()
     try {
       const tx = database.transaction('sources', 'readwrite')

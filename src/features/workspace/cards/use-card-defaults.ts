@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import type { CardBands } from '../../../types/card'
 
 const KEY = 'crewbtc.card-bands.v1'
-export const INITIAL_CARD_BANDS: CardBands = { headerMm: 7.28, footerMm: 35.45 }
+export const INITIAL_CARD_BANDS: CardBands = { headerMm: 8.56, footerMm: 35.45 }
 
 function read(): CardBands {
   try {

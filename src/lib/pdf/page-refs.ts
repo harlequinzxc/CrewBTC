@@ -20,6 +20,7 @@ export function toPageRefs(documents: readonly IngestedDocument[]): readonly Pag
     if (widthMm <= 0 || heightMm <= 0) continue
 
     for (let pageNumber = 1; pageNumber <= document.metrics.pageCount; pageNumber += 1) {
+      if (document.includedPages !== undefined && !document.includedPages.includes(pageNumber)) continue
       refs.push({
         // Placements and card keys use file name as the shared identity.
         documentId: document.fileName,

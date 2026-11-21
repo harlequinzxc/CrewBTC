@@ -51,7 +51,7 @@ const cards = (): Record<string, { headerText: string; bands: { headerMm: number
 describe('seeding', () => {
   it('starts newly extracted cards at the requested band heights', async () => {
     render(<Probe seeds={[seed('0|a.pdf|1', 'One')]} />)
-    await waitFor(() => expect(cards()['0|a.pdf|1']?.bands).toEqual({ headerMm: 7.28, footerMm: 35.45 }))
+    await waitFor(() => expect(cards()['0|a.pdf|1']?.bands).toEqual({ headerMm: 8.56, footerMm: 35.45 }))
   })
 
   it('writes every seed it is given', async () => {
@@ -76,7 +76,7 @@ describe('seeding', () => {
   it('never replaces a previously edited band split during seeding', async () => {
     const seeds = [seed('0|a.pdf|1', 'One')]
     const { rerender } = render(<Probe seeds={seeds} />)
-    await waitFor(() => expect(cards()['0|a.pdf|1']?.bands.headerMm).toBe(7.28))
+    await waitFor(() => expect(cards()['0|a.pdf|1']?.bands.headerMm).toBe(8.56))
     fireEvent.click(screen.getByRole('button', { name: 'edit bands' }))
     await waitFor(() => expect(cards()['0|a.pdf|1']?.bands).toEqual({ headerMm: 12, footerMm: 22 }))
     rerender(<Probe seeds={[...seeds]} />)
