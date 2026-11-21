@@ -1,5 +1,5 @@
-import { DropZone } from './DropZone'
-import { CardSheet } from './CardSheet'
+import { DropZone } from './files/DropZone'
+import { CardSheet } from './sheet/CardSheet'
 import type { ReactNode } from 'react'
 import type { PageRef } from '../../lib/imposition/sheet'
 import type { GridLayout, SheetSettings } from '../../types/imposition'

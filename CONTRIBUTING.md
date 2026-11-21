@@ -61,7 +61,7 @@ output for clipping or wrapping differences.
 src/
   components/ui/       design-system primitives (§2) — NumberField, ResetButton, Toast
   components/layout/   TopBar, DesktopOnlyNotice
-  features/workspace/  the card editor — Card, CardSheet, the Inspector, zone components
+  features/workspace/  editor shell; cards/, sheet/, files/, project/ and inspector/
   features/settings/   SettingsDialog (a native <dialog>), MotionProvider
   config/theme.ts      the palette and the single accent, as data
   lib/pdf/             extraction: ingest, recipe-text, food-photo, painted-box, ocr
@@ -70,7 +70,9 @@ src/
   lib/storage/         IndexedDB settings, session and original-source storage
   lib/project/         versioned portable project validation and encoding
   types/card.ts        the card model and the zone arithmetic
-  data/changelog.json  release notes, read by changelog.ts and aligned with package.json
+  data/changelog.ts    typed adapter for the Markdown release history
+src/test/              grouped unit tests and shared fixtures
+CHANGELOG.md           project memory, current state and canonical release history
 scripts/               the Appendix A/B gates
 ```
 
@@ -410,4 +412,6 @@ before running it.
 
 SemVer per §9: PATCH for fixes/docs/refactors, MINOR for new user-facing capability,
 MAJOR for breaking storage or API changes. Every release updates `package.json` **and**
-prepends an entry to `src/data/changelog.json`; the two must agree.
+prepends an entry to the release-history section of `CHANGELOG.md`; the two must agree.
+Update its current-state ledger whenever behavior, architecture or known gaps change.
+The build reads only the release section into the app, through `src/data/changelog.ts`.

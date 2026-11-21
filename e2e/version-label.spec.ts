@@ -16,7 +16,9 @@ test('the top bar names the build', async ({ page }) => {
   await page.goto('/')
   // Read the source of truth directly: importing the TS module would drag the app's
   // runtime into the test runner for one string.
-  const releases = JSON.parse(readFileSync('src/data/changelog.json', 'utf8')) as { version: string }[]
-  const expected = `v${releases[0]?.version ?? 'unknown'}`
+  const history = readFileSync('CHANGELOG.md', 'utf8').split('## Release history')[1] ?? ''
+  const version = /^### (\d+\.\d+\.\d+) —/m.exec(history)?.[1]
+  expect(version).toBeDefined()
+  const expected = `v${version}`
   await expect(page.getByRole('banner').getByText(expected, { exact: true })).toBeVisible()
 })
