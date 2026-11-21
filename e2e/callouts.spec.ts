@@ -173,8 +173,8 @@ test('the presets are one click, and the old swatch clutter is gone', async ({ p
 
   const bar = page.getByTestId('card-text-bar')
   await expect(bar).toBeVisible()
-  // Exactly the four controls the brief asks for — presets, Bold, Clear formatting.
-  await expect(bar.getByRole('button')).toHaveCount(4)
+  // The three callout controls, Bold, and Clear formatting.
+  await expect(bar.getByRole('button')).toHaveCount(5)
   await expect(bar.getByRole('button', { name: 'Bold' })).toBeVisible()
   await expect(bar.getByRole('button', { name: 'Clear formatting' })).toBeVisible()
   // The nine swatches that used to be here are gone, not merely hidden.

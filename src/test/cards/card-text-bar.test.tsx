@@ -18,9 +18,10 @@ describe('formatting a text box', () => {
     active: DEFAULT_TEXT_STYLE,
     selection: null,
     onChange: vi.fn(),
+    onColor: vi.fn(),
   }
 
-  beforeEach(() => base.onChange.mockClear())
+  beforeEach(() => { base.onChange.mockClear(); base.onColor.mockClear() })
 
   it('toggles bold for the whole box when nothing is selected', () => {
     // The box starts bold, so the toggle switches it *off* — asserting the toggle in the
@@ -40,6 +41,21 @@ describe('formatting a text box', () => {
       highlight: '#b91c1c',
       uppercase: true,
     })
+  })
+
+  it('puts DIRECTIONS between the presets and colours the active text red', () => {
+    render(<CardTextBar {...base} />)
+    const labels = screen.getAllByRole('button').map((button) => button.getAttribute('aria-label'))
+    expect(labels.slice(0, 3)).toEqual(['CROCKERIES callout', 'DIRECTIONS', 'CONDIMENTS callout'])
+    fireEvent.click(screen.getByRole('button', { name: 'DIRECTIONS' }))
+    expect(base.onColor).toHaveBeenCalledWith('#b91c1c')
+  })
+
+  it('colours a selection without discarding its active style', () => {
+    const active = { bold: false, color: '#111827', highlight: '#86efac', align: 'center' as const }
+    render(<CardTextBar {...base} selection={{ start: 1, end: 4 }} active={active} />)
+    fireEvent.click(screen.getByRole('button', { name: 'DIRECTIONS' }))
+    expect(base.onColor).toHaveBeenCalledWith('#b91c1c')
   })
 
   it('tags CONDIMENTS in one click: green fill, black ink, no capitals', () => {

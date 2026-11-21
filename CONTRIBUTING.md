@@ -99,8 +99,8 @@ stays correct after the box is recoloured.
 
 - `types/text-runs.ts` — the run model: clamping, `shiftRuns` (runs move with the text),
   `applyToSelection` (restyle only what is selected), `styleAt`.
-- `features/workspace/card-edits.ts` — the pure card edits the UI applies: `styleInto`,
-  `styleSelection`, `textInto`, `changedSpan`, `activeStyle`.
+- `features/workspace/cards/card-edits.ts` — the pure card edits the UI applies: `styleInto`,
+  `styleSelection`, `colorInto`, `textInto`, `changedSpan`, `activeStyle`.
 - `lib/export/styled-band.ts` — wraps per style segment, because a bold word measures
   wider than a regular one. A box with no runs takes the single-style path unchanged.
 - `draw-card.ts` — draws each segment at its own x offset, so printed output matches.

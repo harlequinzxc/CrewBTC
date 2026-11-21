@@ -9,7 +9,8 @@ rules see [CONTRIBUTING.md](CONTRIBUTING.md) and [ENGINEERING_RULES.md](ENGINEER
 Update the current-state sections when behavior, storage, architecture, or known gaps
 change. Record evidence and mark unverified behavior as such; do not erase historical
 release entries. Under **Release history**, add newest-first entries using the format
-`### VERSION — YYYY-MM-DD — TITLE` followed by one-line `- ` highlights. The app's typed
+`### VERSION — YYYY-MM-DD — TITLE` followed by one-line `- ` highlights. Dates use
+Singapore time (Asia/Singapore, UTC+8) and refer to the release commit date. The app's typed
 adapter parses that section for the in-app changelog and visible version; the state ledger
 above it is not shown as release notes. `package.json` and the newest entry must agree.
 
@@ -40,7 +41,9 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - Header and footer text default to bold black; the header is centred, the footer is
   top-aligned. Sheet-wide text starts at 80%; text wraps and can clip, but does not shrink
   implicitly. The inspector reads Top, Bottom and Text; dividers adjust bands. Single-click
-  presets apply formatting; CROCKERIES destructively uppercases stored text.
+  presets apply formatting; CROCKERIES destructively uppercases stored text. DIRECTIONS
+  applies red ink to selected text or the whole active box; an identical red highlight is
+  removed for legibility, while other formatting is retained.
 - Clicking a photo enters adjustment; the sparkles copy a card's bands to others. Background
   removal uses a local classical cut-out with sensitivity and undo, not a downloaded model.
 - Number boxes wrap from 40 to 1. Editable right-hand labels propagate forward from an
@@ -98,68 +101,75 @@ above it is not shown as release notes. `package.json` and the newest entry must
   best effort, not a claim that clearing files securely wipes all local data.
 - Chromium unit/browser gates do not prove installed-mode, all browsers, real OCR language
   data, service-worker update timing, or screen-reader behavior. Report unrun checks honestly.
-  The v1.10.2 full gate passed 479 unit tests and 59 Chromium browser tests; it is not
+  The v1.11.0 full gate passed 485 unit tests and 61 Chromium browser tests; it is not
   evidence for subsequent changes. Use `npm run gate` and inspect results for each release.
 
 ## Release history
 
-### 1.10.2 — 2026-11-19 — Organised workspace and project memory
+### 1.11.0 — 2026-11-21 — Red directions and Singapore release dates
+- Added DIRECTIONS to colour selected text or the active box red, including in exported PDFs.
+- Moved the release-notes build plugin into scripts/ without changing the changelog source.
+- Stabilised ingestion wiring tests by waiting for asynchronous processing to finish.
+- Corrected historical release dates against their commits using Singapore time.
+- Established Singapore time as the required timezone for changelog release dates.
+
+### 1.10.2 — 2026-11-21 — Organised workspace and project memory
 - Grouped workspace code and tests by responsibility without changing card editing, extraction or export.
 - Replaced the release-notes JSON with a Markdown project memory and state ledger; the in-app changelog reads the same release history.
 - Updated the engineering rule to maintain that Markdown file as the source of truth for release history and current project state.
 
-### 1.10.1 — 2026-11-19 — Reliable units and tidier local storage
+### 1.10.1 — 2026-11-21 — Reliable units and tidier local storage
 - Fixed: units selected in Settings and restored from projects now survive a reload.
 - Removed original PDFs are reclaimed after the Undo window when safe; Undo and re-opened projects keep their originals.
 - Removed unused code and updated the user and developer documentation to match the current editor.
 
-### 1.10.0 — 2026-11-19 — Save and open editable projects
+### 1.10.0 — 2026-11-21 — Save and open editable projects
 - Save an editable project containing cards, photos, labels, sheet settings and available original PDFs; open it on this or another computer.
 - Original PDFs are retained locally when storage allows. Older sessions without them can still save their cards, with a warning that re-running extraction needs the originals.
 - Opening a project confirms before replacing your current work; damaged or unsupported files leave it untouched.
 
-### 1.9.8 — 2026-11-19 — Export restored cards after reload
+### 1.9.8 — 2026-11-21 — Export restored cards after reload
 - Export uses saved cards and photos even after a reload, without needing the original PDF to remain in memory.
 - Incomplete exports now show a warning, and exports with no complete cards report an error instead of a misleading success.
 
-### 1.9.7 — 2026-11-19 — New card margins and a visible print border
+### 1.9.7 — 2026-11-21 — New card margins and a visible print border
 - Newly extracted cards start with a 7.28 mm top band and a 35.45 mm bottom band, where the cell has room. Existing cards keep their own measurements; smaller cells clamp the split to preserve photo space.
 - The printed card border is now drawn above the image and corner labels so it stays visible.
 
-### 1.9.6 — 2026-11-19 — Card measurements and editable label runs
+### 1.9.6 — 2026-11-21 — Card measurements and editable label runs
 - Select a card to see its Top and Bottom band heights and the current sheet-wide Text percentage in the inspector. These are read-only values; the dividers and sheet text control still make the changes.
 - Each right-hand corner label is editable. A change applies from that card onward until another card changes it; earlier cards keep their labels, and the same runs appear in the PDF.
 - Older saved cards are retained when sessions are upgraded. Their first corner label continues to supply the initial run.
 
-### 1.9.5 — 2026-11-19 — One shared corner label and a smaller print box
+### 1.9.5 — 2026-11-21 — One shared corner label and a smaller print box
 - The first card’s right-hand corner label now appears on all following populated cards, including across sheets. Edit the first card to change or clear every mirrored label.
 - Both grey corner boxes print with slightly less vertical padding, while keeping the same type size and centred text.
 - New sheet settings default to 80% text size. A previously saved text-size choice is kept.
 
-### 1.9.4 — 2026-11-19 — One text size across the card
+### 1.9.4 — 2026-11-21 — One text size across the card
 - The top and bottom text now use the same base size, and both corner fields use that same size and font. The sheet-wide Text size setting changes all four together on screen and in the PDF.
 - The grey corner boxes grow with the text size, keep a little space above and below it, and centre the text. The number dropdown remains selectable, but its arrow is not printed.
 
-### 1.9.3 — 2026-11-19 — Numbered corners, sheet-wide type and adjustable photo cut-outs
+### 1.9.3 — 2026-11-21 — Numbered corners, sheet-wide type and adjustable photo cut-outs
 - The inspector now focuses on sheet and print settings. A single Text size control changes all card text on screen and in the PDF; card band dividers remain draggable on the sheet.
 - Two equal light-grey corner fields sit over each populated card. Pick a number from 1 to 40; following cards count up across sheets and wrap after 40. The other field accepts a short label, and both fields print.
 - Background removal now has a sensitivity slider. Higher values remove a broader range of colours; change it and cut again to try the original photo at a different setting. Undo restores the original while the photo controls remain open.
 
-### 1.9.2 — 2026-11-19 — Cut the background off a dish, adjust a photo in one click, and text that stays put
+### 1.9.2 — 2026-11-21 — Cut the background off a dish, adjust a photo in one click, and text that stays put
 - New: a cut-out button inside the photo frame removes the background behind the dish, leaving it on a transparent field so the card's own paper shows through — on screen and in the printed PDF
 - The photo frame now opens on a single click. Moving, zooming and the margin buttons are one gesture away instead of two, and the same click still selects the card so its margins can be dragged
 - Clicking a text box no longer shifts the words. The first line was landing about 3px low when the field opened, which read as a flinch on every click; top and bottom boxes now begin on the same row in both states
 - Removing the background keeps the original: an undo button appears beside the cut-out once it has run, so a busy counter behind a plate can be put back without re-importing the file
 - Set the text size instead of it changing on you — the Text % control is the size knob, and dragging a margin now only re-wraps the words, never shrinks them
 
-### 1.9.1 — 2026-11-19 — Square cards that print framed, steps that start at the top, and same margins in one click
+### 1.9.1 — 2026-11-21 — Square cards that print framed, steps that start at the top, and same margins in one click
 - The steps now begin at the top of their box instead of floating in the middle. The name still centres, because it is a heading with nothing under it; a printed step list should start where a reader's eye expects it. The PDF follows the same rule, so a card tall enough to show the difference prints the same way
 - New: a sparkles button inside the photo frame, while you are adjusting it, gives every card the margins of the one you are looking at. Adjust one, tag it, done — rather than dragging twelve dividers to match
 - Cell corners are square. A cut card has no radius, and the preview was rounding something the print kept sharp
 - The cell border now prints. The preview has drawn one since the sheet existed and the export did not, so a card that looked like a card on screen printed as bare paper with only the registration marks saying where to cut
 - The formatting bar no longer says “whole box”. Every box starts that way, so the label said nothing and took room the presets need; “selection” still appears when a stretch of text is selected, because that is the case worth warning about
 
-### 1.9.0 — 2026-11-19 — Callout presets, bold black text, and the selection that was silently dropped
+### 1.9.0 — 2026-11-21 — Callout presets, bold black text, and the selection that was silently dropped
 - Fixed, and it was mine: no card could be selected. v1.8.2 changed the dismiss rule so a press on a card would end an edit — and in doing so dropped the page identity that press carried. The canvas compares that identity against each sheet to decide which card is highlighted, so it compared nothing against everything: no card ever drew as selected, and the band dividers, which only exist on the selected card, never appeared at all. That is why the photo could not be resized; the drag was never unreachable. Selection now passes the identity through, and dragging the dividers resizes the photo again
 - Fixed: clicking an empty bottom box made its hint vanish. The drawn box shows “Plating steps”; the field it becomes had no placeholder, so the box went blank and its grey text disappeared. The field now carries the same hint, in the same grey, at the same weight and alignment — the browser’s default placeholder ink is the field’s own colour at half strength, which is a different grey
 - All card text now starts bold and black, and the top box starts centred. It used to be plain black on top and plain red below, which described the PDF’s typography rather than the card a cook reads
@@ -167,13 +177,13 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - The capitals are drawn, never stored: “kung pao chicken” stays exactly that in the file and prints as KUNG PAO CHICKEN. Clearing the tag gives the lower case back, and the export carries the fill, the ink and the case into the PDF
 - Clear formatting puts a box back to the default look in one click, and Bold stays. The bar is four controls where it was nine
 
-### 1.8.3 — 2026-11-19 — The text box no longer changes when you click into it, and the formatting bar stopped covering the header
+### 1.8.3 — 2026-11-21 — The text box no longer changes when you click into it, and the formatting bar stopped covering the header
 - Fixed: clicking a card’s text made it jump. The drawn box and the field you type into were two different boxes — the drawn one carried a 4px padding and sat on the bare card, while the focused one carried 0.8mm of padding on a near-white plate with rounded corners. The moment the caret arrived, every letter moved. The drawn box now uses the focused box’s measurements, colour and plate, so what you see before clicking is exactly what you get after
 - Fixed: the formatting toolbar appeared across the very top of the window, over the zoom controls and the Export button. The bar is positioned against its nearest positioned ancestor, and the sheet had none — so the bar climbed all the way to the app root. One missing class; it now sits at the top of the canvas, below the header, and Export is never covered
 - Both are now held by tests that were shown to fail on the old code first: the box is compared before and after the caret arrives on seven computed properties and on the exact pixel the type starts at, and the bar is checked to start below the header and below Export
 - Described in full, the bar offers: the zone name, whether you are restyling the whole box or just the selection, a Bold toggle, four text colours and four highlight colours plus an off switch — and every control keeps your selection alive when you click it
 
-### 1.8.2 — 2026-11-20 — The text box stops closing itself, and only one sheet opens it
+### 1.8.2 — 2026-11-21 — The text box stops closing itself, and only one sheet opens it
 - Fixed the reported bug: clicking a card’s text did nothing. The truth was not that the press was lost — it always arrived and always ran the handler. There were two faults, and each hid the other
 - First: which card was being edited was recorded by cell number, and every sheet draws the same cell numbers. Opening cell 3 therefore opened a text field on every sheet in the stack, and the fields took the caret from each other in a loop. That is the flicker. Editing now records the sheet it began on, so only that sheet opens a field, exactly as selecting a card already worked
 - Second: an edit ended whenever the field lost focus, and a field loses focus for reasons nobody chose — the window losing focus, a scroll, the layout shift from the field appearing. With an editor open on more than one sheet the caret is contested, so the box could open and close within a millisecond. Edits now end on Escape, on a press on another card, or on a press on the canvas around the sheets
@@ -258,7 +268,7 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - Settings opens as a dialog over the sheet instead of replacing the whole screen
 - Every explanatory paragraph under the controls is gone — the labels do the work
 
-### 1.3.0 — 2026-11-19 — Zoom into the sheet, and shape a card by dragging it
+### 1.3.0 — 2026-11-20 — Zoom into the sheet, and shape a card by dragging it
 - The sheet zooms properly now: −, the percentage, +, and Fit in the toolbar, plus Ctrl/Cmd + wheel over the workspace
 - Fit is a mode — resizing the window keeps the sheet fitted until you step the zoom yourself, after which the pane scrolls
 - The floating slider and buttons over a photo are gone: double-click the frame to adjust, drag to pan, scroll to zoom, and Escape or a second double-click leaves with the framing kept
@@ -267,7 +277,7 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - A text scale control makes a card's type bigger or smaller without touching the picture band: the layout re-wraps until it fits
 - Fixed a band clamp that could leave a 6 mm photo where 12 mm was promised — it affected any card given a large header
 
-### 1.2.0 — 2026-11-19 — Format the words you select, not the whole box
+### 1.2.0 — 2026-11-20 — Format the words you select, not the whole box
 - Select some text and Bold, ink colour and highlight apply to just that stretch — the rest of the box keeps its own style
 - Red, green, amber and blue highlight boxes to match a reference card, plus an off switch
 - The formatting bar says whether it is about to change a selection or the whole box, so the two are never confused
@@ -276,40 +286,40 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - Picture controls were already complete — double-click to adjust, drag to pan, wheel or +/−/Reset to zoom — and now have tests covering each one
 - Panning no longer re-subscribes its listeners on every pointer move, which is what made dragging feel sticky
 
-### 1.1.1 — 2026-11-19 — Photos stay in their cell, and the three zones stop overlapping
+### 1.1.1 — 2026-11-20 — Photos stay in their cell, and the three zones stop overlapping
 - Cards are positioned from their own corner now — the preview was passing sheet coordinates into card-relative boxes, which shifted every zone down and right, pushing photos out of the cell and off the paper
 - The three zones stack with no overlap: header top, photo middle, footer bottom, tiling the card exactly
 - The card no longer obeys the 44 px control ladder. That ladder was a UI guideline, not geometry, and it was stretching a 10 mm header band to several times its real height
 - Text is typeset at the size the layout engine chose — it shrinks to fit a 52 mm wide band instead of growing past it, and lines are placed individually so the block can never outgrow its box
 - Every text and photo box has its own clipped, positioned container, so nothing can reach a neighbour
 
-### 1.1.0 — 2026-11-19 — Twelve cards per sheet, and a README written for people who print things
+### 1.1.0 — 2026-11-20 — Twelve cards per sheet, and a README written for people who print things
 - Default sheet now holds twelve 52 x 67 mm cards — three across, four down — instead of nine larger ones
 - Each card starts at 10 / 42 / 15 mm, derived from the cell height rather than fixed, so a different card size still gets a sensible split
 - Reset in the band panel now returns to that per-card default instead of a hardcoded 13 / 20 tuned for the old 90 mm card
 - The export panel no longer claims pages are embedded as vectors — it says what actually happens: vector text, photos at their extracted resolution
 - README rewritten for the people using the app; build commands, architecture and release process moved to CONTRIBUTING.md
 
-### 1.0.3 — 2026-11-19 — A deploy must reach a running client — now an engineering rule
+### 1.0.3 — 2026-11-20 — A deploy must reach a running client — now an engineering rule
 - §7 now requires all three parts of a working update path: a self-updating service worker, a controllerchange listener, and a visible reload affordance
 - The rule names the trap directly: a page keeps running the JavaScript it loaded at first paint, so an installed worker alone leaves the user on the old build
 - Auto-reload is allowed only where the app provably holds no unsaved state; otherwise the update is announced and the user chooses
 - The three conditions worth testing — not on first install, not during startup, once per worker — are written down with the code
 - §4.4 now notes that an installed PWA has no address bar, so the update notice is the only route to a new build
 
-### 1.0.2 — 2026-11-19 — New versions now tell you they are ready
+### 1.0.2 — 2026-11-20 — New versions now tell you they are ready
 - A deployed update used to take effect only after a manual refresh, because the page kept running the JavaScript it had already loaded
 - A “New version ready” notice now appears within a second or two of a new build taking over, with a Reload button
 - Reloading stays your choice: an automatic refresh would discard unsaved cards, which matters for a tab left open
 - The notice is not shown on a first install, and not while the page is still starting up
 
-### 1.0.1 — 2026-11-19 — Fixed: cards arrived empty, and the band sliders were hidden
+### 1.0.1 — 2026-11-20 — Fixed: cards arrived empty, and the band sliders were hidden
 - Fixed: a page was placed on the sheet but its card was seeded empty, so no photo and no text appeared — the lookup matched a document’s internal id against the file name the sheet uses
 - The top and bottom sliders now sit in a docked panel under the sheet, where nothing can clip or cover them
 - Selecting a card is enough to tune it; the sliders no longer have to be hunted for on the card itself
 - The panel draws the three-zone split and names the picture height, so the effect of a drag is visible as a number
 
-### 1.0.0 — 2026-11-19 — Rebuilt around a three-zone card
+### 1.0.0 — 2026-11-20 — Rebuilt around a three-zone card
 - Every cell is one card with three zones — top text, photo, bottom text — and each zone is edited in place
 - The Text tab and the sheet-wide Card Bands sliders are gone; a card carries its own top and bottom heights, tuned by selecting it
 - Upload now reads a page once and returns the dish photo, the name above it and the steps below it together

@@ -1,4 +1,4 @@
-import { releaseNotesPlugin } from './release-notes-plugin.js'
+import { releaseNotesPlugin } from './scripts/release-notes-plugin.js'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'

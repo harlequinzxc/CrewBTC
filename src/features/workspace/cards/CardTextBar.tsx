@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { Bold, Eraser } from 'lucide-react'
 import { cn } from '../../../lib/cn'
 import { DEFAULT_TEXT_STYLE } from '../../../types/card'
@@ -17,6 +18,7 @@ export interface CardTextBarProps {
   /** Effective style of the selection, or of the box when nothing is selected. */
   readonly active: TextStyle
   readonly onChange: (style: TextStyle) => void
+  readonly onColor: (color: string) => void
 }
 
 /** Keeps focus (and therefore the selection) in the text box while a control is used. */
@@ -25,11 +27,8 @@ const keepFocus = (event: React.PointerEvent): void => event.preventDefault()
 /**
  * The callout presets, Bold, and a way back to plain text.
  *
- * It used to be four text swatches and five highlight swatches — nine controls, and each
- * tag on a card took two of them in the right order. Two presets replace the pair with one
- * click and, more to the point, with one meaning: CROCKERIES is what the dish is served in
- * and CONDIMENTS is what it is served with, and the colours exist to make that distinction
- * readable rather than to be chosen for its own sake.
+ * CROCKERIES and CONDIMENTS apply complete styles; DIRECTIONS colours text red,
+ * removing a matching red highlight for legibility and retaining other formatting.
  *
  * The bar follows the selection, and says which it will change. With characters selected a
  * preset restyles only those; with the caret collapsed it restyles the whole box. Every
@@ -62,29 +61,47 @@ export function CardTextBar(props: CardTextBarProps) {
         {CALLOUT_PRESETS.map((preset) => {
           const on = current?.id === preset.id
           return (
-            <button
-              key={preset.id}
-              type="button"
-              data-target="dense"
-              data-preset={preset.id}
-              aria-pressed={on}
-              aria-label={`${preset.label} callout`}
-              title={preset.meaning}
-              onPointerDown={keepFocus}
-              // Clicking an active preset again clears it, so a mis-tag is one click to
-              // undo and does not require finding the Eraser.
-              onClick={() => onChange(on ? { ...style, highlight: null } : presetStyle(preset))}
-              className={cn(
-                buttonClass,
-                'border',
-                on
-                  ? 'border-ink-primary ring-1 ring-ink-primary'
-                  : 'border-hairline hover:border-hairline-strong focus-visible:border-ink-primary',
-              )}
-              style={{ background: preset.highlight, color: preset.color }}
-            >
-              {preset.label}
-            </button>
+            <Fragment key={preset.id}>
+              {preset.id === 'condiments' ? (
+                <button
+                  type="button"
+                  data-target="dense"
+                  data-preset="directions"
+                  aria-label="DIRECTIONS"
+                  aria-pressed={active.color === '#b91c1c'}
+                  title="Colour directions red"
+                  onPointerDown={keepFocus}
+                  onClick={() => props.onColor('#b91c1c')}
+                  className={cn(buttonClass, 'border border-hairline focus-visible:ring-2 focus-visible:ring-ink-primary',
+                    active.color === '#b91c1c' && 'ring-1 ring-ink-primary')}
+                  style={{ background: '#b91c1c', color: '#ffffff' }}
+                >
+                  DIRECTIONS
+                </button>
+              ) : null}
+              <button
+                type="button"
+                data-target="dense"
+                data-preset={preset.id}
+                aria-pressed={on}
+                aria-label={`${preset.label} callout`}
+                title={preset.meaning}
+                onPointerDown={keepFocus}
+                // Clicking an active preset again clears it, so a mis-tag is one click to
+                // undo and does not require finding the Eraser.
+                onClick={() => onChange(on ? { ...style, highlight: null } : presetStyle(preset))}
+                className={cn(
+                  buttonClass,
+                  'border',
+                  on
+                    ? 'border-ink-primary ring-1 ring-ink-primary'
+                    : 'border-hairline hover:border-hairline-strong focus-visible:border-ink-primary',
+                )}
+                style={{ background: preset.highlight, color: preset.color }}
+              >
+                {preset.label}
+              </button>
+            </Fragment>
           )
         })}
       </fieldset>

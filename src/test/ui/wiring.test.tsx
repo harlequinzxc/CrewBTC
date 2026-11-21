@@ -108,6 +108,8 @@ describe('Add PDFs is wired', () => {
     })
     expect(document.querySelector('[data-image]')).not.toBeNull()
     expect(screen.queryByText('Nothing selected')).not.toBeInTheDocument()
+    // Wait for source persistence and the final state update, not just progressive rows.
+    expect(await screen.findByText('1 PDF added')).toBeInTheDocument()
   })
 
   it('does nothing when the picker is cancelled', async () => {
@@ -136,5 +138,6 @@ describe('Add PDFs is wired', () => {
     expect(screen.getAllByText('two.pdf').length).toBeGreaterThan(0)
     // The queue reports its own size where the files are, not in the header.
     expect(screen.getByRole('complementary', { name: 'Files' })).toBeInTheDocument()
+    expect(await screen.findByText('2 PDFs added')).toBeInTheDocument()
   })
 })

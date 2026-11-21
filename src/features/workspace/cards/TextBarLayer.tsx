@@ -14,6 +14,7 @@ export interface TextBarLayerProps {
   readonly active: TextStyle
   readonly selection: { readonly start: number; readonly end: number } | null
   readonly onChange: (style: TextStyle) => void
+  readonly onColor: (color: string) => void
 }
 
 export function TextBarLayer(props: TextBarLayerProps) {
@@ -33,6 +34,7 @@ export function TextBarLayer(props: TextBarLayerProps) {
         selection={props.selection}
         active={props.active}
         onChange={props.onChange}
+        onColor={props.onColor}
       />
     </div>
   )
