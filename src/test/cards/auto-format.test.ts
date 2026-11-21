@@ -19,8 +19,15 @@ describe('automated formatting', () => {
   it('does not match partial words and leaves empty lines and already numbered bullets alone', () => {
     const card = { ...blankCard(67), bodyText: 'plateful\n1. plate\n- drizzle\n\n  ' }
     const result = automateCard(card, keywords)
-    expect(result.bodyText).toBe('• plateful\n1. PLATE\n- drizzle\n\n  ')
+    expect(result.bodyText).toBe('• plateful\n1. PLATE\n• drizzle\n\n  ')
     expect(get(result, 2).highlight).toBeNull()
+  })
+  it('changes only leading dash markers and keeps formatting offsets intact', () => {
+    const card = { ...blankCard(67), bodyText: '  - one\n- two\nUse - as text\n* three', bodyRuns: [{ start: 4, end: 7, color: '#15803d' }] }
+    const result = automateCard(card, EMPTY_KEYWORDS)
+    expect(result.bodyText).toBe('  • one\n• two\n• Use - as text\n* three')
+    expect(get(result, result.bodyText.indexOf('one')).color).toBe('#15803d')
+    expect(automateCard(result, EMPTY_KEYWORDS)).toEqual(result)
   })
   it('uses longest phrase first and a stable category priority for ties', () => {
     const card = { ...blankCard(67), bodyText: 'soy sauce' }

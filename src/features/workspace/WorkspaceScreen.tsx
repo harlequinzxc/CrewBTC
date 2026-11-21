@@ -229,6 +229,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           keywords={keywords}
           onKeywordsChange={setKeywords}
           onAutomate={autoFormat.apply}
+          onRemoveFormatting={autoFormat.remove}
           canAutomate={autoFormat.available}
           busy={batch.busy || project.busy}
           open={inspectorOpen}

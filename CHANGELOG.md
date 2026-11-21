@@ -47,10 +47,13 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - The inspector stores one keyword or phrase per line for each callout category. Automate
   formatting scans all occupied cards case-insensitively at whole-word boundaries, choosing
   the longest overlap then CROCKERIES, DIRECTIONS, CONDIMENTS for ties. It bullets non-empty
-  physical lines in bottom text, preserves existing bullets or numbered lists and does not
-  treat visual wrapping as a line break. It asks for confirmation because CROCKERIES changes
+  physical lines in bottom text, converts leading dash-space markers to bullets, preserves
+  existing bullets and numbered lists, and does not treat visual wrapping as a line break. It asks for confirmation because CROCKERIES changes
   stored text to uppercase; Undo restores only cards not subsequently edited. Lists persist
   locally and in projects. They start empty; no semantic inference or default keyword list.
+  Remove formatting clears the three callout colours on all occupied cards without removing
+  bullets or reversing uppercase text, and offers Undo. Stored styles have no preset origin,
+  so matching manually applied colours are also treated as callouts.
 - Clicking a photo enters adjustment; the sparkles copy a card's bands to others. Background
   removal uses a local classical cut-out with sensitivity and undo, not a downloaded model.
 - Number boxes wrap from 40 to 1. Editable right-hand labels propagate forward from an
@@ -109,11 +112,15 @@ above it is not shown as release notes. `package.json` and the newest entry must
   best effort, not a claim that clearing files securely wipes all local data.
 - Chromium unit/browser gates do not prove installed-mode, all browsers, real OCR language
   data, service-worker update timing, or screen-reader behavior. Report unrun checks honestly.
-  The v1.12.0 full gate passed 489 unit tests and 63 Chromium browser tests. An additional
-  Undo safety test passed separately afterward. These results are not evidence for later
-  changes; use `npm run gate` and inspect results for each release.
+  The v1.13.0 full gate passed 494 unit tests and 64 Chromium browser tests. These results
+  are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.13.0 — 2026-11-21 — Remove callout formatting and tidy bullets
+- Added Remove formatting below Automate formatting to clear callout colours across cards, with Undo.
+- Converted leading dash-space list markers to bullets during automated formatting.
+- Made the two buttons compact and vertically centred.
 
 ### 1.12.0 — 2026-11-21 — Keyword-based automated formatting
 - Add editable keyword lists to the inspector and apply CROCKERIES, DIRECTIONS and CONDIMENTS to matching text across occupied cards.

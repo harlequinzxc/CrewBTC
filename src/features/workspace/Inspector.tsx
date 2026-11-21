@@ -44,6 +44,7 @@ export interface InspectorProps {
   readonly keywords: Keywords
   readonly onKeywordsChange: (value: Keywords) => void
   readonly onAutomate: () => void
+  readonly onRemoveFormatting: () => void
   readonly canAutomate: boolean
   readonly busy: boolean
 }
@@ -62,7 +63,7 @@ export function Inspector(props: InspectorProps) {
       )}
     >
       {props.card !== null && props.cellIndex !== null ? <CardReadout card={props.card} cellIndex={props.cellIndex} units={props.units} /> : null}
-      <AutoFormatSection keywords={props.keywords} onChange={props.onKeywordsChange} onApply={props.onAutomate} available={props.canAutomate} busy={props.busy} />
+      <AutoFormatSection keywords={props.keywords} onChange={props.onKeywordsChange} onApply={props.onAutomate} onRemove={props.onRemoveFormatting} available={props.canAutomate} busy={props.busy} />
       <SheetSection
         sheet={props.sheet}
         grid={props.grid}
