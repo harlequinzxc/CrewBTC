@@ -1,8 +1,9 @@
+import { releaseNotesPlugin } from './release-notes-plugin.js'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [releaseNotesPlugin(), react()],
   test: {
     environment: 'jsdom',
     globals: true,

@@ -189,7 +189,8 @@ update can take an additional reload to take control.
 
 Build commands, architecture, the engineering rules and the release process live in
 [CONTRIBUTING.md](./CONTRIBUTING.md). The project is built against
-[ENGINEERING_RULES.md](./ENGINEERING_RULES.md).
+[ENGINEERING_RULES.md](./ENGINEERING_RULES.md). Current state, known limitations and
+release history are recorded in [CHANGELOG.md](./CHANGELOG.md).
 
 ## Licence
 
