@@ -1,0 +1,39 @@
+import { Section } from './Section'
+import type { Keywords } from '../../../types/format-keywords'
+
+interface Props {
+  readonly keywords: Keywords
+  readonly onChange: (value: Keywords) => void
+  readonly onApply: () => void
+  readonly available: boolean
+  readonly busy: boolean
+}
+
+export function AutoFormatSection({ keywords, onChange, onApply, available, busy }: Props) {
+  return (
+    <Section title="Automate formatting">
+      <p className="mb-2 text-[11px] text-ink-secondary">One keyword or phrase per line. Matching ignores case and applies to whole words.</p>
+      <div className="flex flex-col gap-2">
+        {(['crockeries', 'directions', 'condiments'] as const).map((category) => (
+          <label key={category} className="flex flex-col gap-1 text-[11px] font-medium uppercase text-ink-secondary">
+            {category}
+            <textarea
+              aria-label={`${category} keywords`}
+              value={keywords[category]}
+              onChange={(event) => onChange({ ...keywords, [category]: event.target.value })}
+              maxLength={10000}
+              rows={2}
+              className="w-full resize-y rounded border border-hairline bg-white px-2 py-1 text-xs normal-case text-[#111827] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+              placeholder="One per line"
+            />
+          </label>
+        ))}
+        {available ? (
+          <button type="button" disabled={busy} onClick={onApply} className="min-h-[44px] rounded bg-accent-solid px-2 text-xs font-semibold text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50">
+            Automate formatting
+          </button>
+        ) : null}
+      </div>
+    </Section>
+  )
+}

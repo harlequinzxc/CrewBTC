@@ -1,0 +1,72 @@
+import { expect, test } from '@playwright/test'
+import type { PDFArray } from '@cantoo/pdf-lib'
+import { textZones, uploadPdf } from './fixtures'
+
+test('format keywords and physical lines, undo, reload, and export', async ({ page }) => {
+  await uploadPdf(page)
+  await page.getByLabel('crockeries keywords').fill('plate')
+  await page.getByLabel('directions keywords').fill('drizzle')
+  await page.getByLabel('condiments keywords').fill('soy sauce')
+  await textZones(page).nth(1).click()
+  await page.getByLabel('Edit card text').fill('Put on plate\nDrizzle soy sauce onto a very long line that wraps visually\n• ready')
+  await page.keyboard.press('Escape')
+  page.on('dialog', (dialog) => void dialog.accept())
+  await page.getByRole('button', { name: 'Automate formatting' }).click()
+  await expect(textZones(page).nth(1)).toHaveAttribute('aria-label', /• Put on PLATE\n• Drizzle soy sauce/)
+  await page.getByRole('button', { name: 'Undo', exact: true }).click()
+  await expect(textZones(page).nth(1)).toHaveAttribute('aria-label', /Put on plate\nDrizzle soy sauce/)
+  await page.getByRole('button', { name: 'Automate formatting' }).click()
+  await page.waitForTimeout(900)
+  await page.reload()
+  await expect(page.getByLabel('crockeries keywords')).toHaveValue('plate')
+  await expect(page.getByLabel('directions keywords')).toHaveValue('drizzle')
+  await expect(textZones(page).nth(1)).toHaveAttribute('aria-label', /• Put on PLATE\n• Drizzle soy sauce/)
+  const pending = page.waitForEvent('download')
+  await page.getByLabel('Export PDF').click()
+  const download = await pending
+  const { readFile } = await import('node:fs/promises')
+  const { PDFDocument } = await import('@cantoo/pdf-lib')
+  const pdf = await PDFDocument.load(await readFile(await download.path()))
+  const streams = pdf.getPages()[0]!.node.Contents() as unknown as PDFArray
+  let content = ''
+  for (let i = 0; i < streams.size(); i += 1) {
+    const item = pdf.context.lookup(streams.get(i) as never) as { contents?: Uint8Array }
+    if (item.contents === undefined) continue
+    const unzip = new DecompressionStream('deflate')
+    const writer = unzip.writable.getWriter()
+    void writer.write(new Uint8Array(item.contents))
+    void writer.close()
+    content += await new Response(unzip.readable).text()
+  }
+  expect(content).toMatch(/0\.72549\d*\s+0\.10980\d*\s+0\.10980\d*\s+rg/)
+  expect(content).toContain('<504C415445> Tj')
+  expect(content).toMatch(/<95[0-9A-F]*>\s*Tj/i)
+})
+
+test('keyword settings transfer with the project to a fresh browser', async ({ page, browser }) => {
+  await uploadPdf(page)
+  await page.getByLabel('crockeries keywords').fill('bowl\nplate')
+  await page.getByLabel('directions keywords').fill('toss')
+  await page.getByLabel('condiments keywords').fill('salt')
+  const pending = page.waitForEvent('download')
+  await page.getByLabel('Save project').click()
+  const download = await pending
+  const { readFile } = await import('node:fs/promises')
+  const data = await readFile(await download.path())
+  const parsed = JSON.parse(data.toString()) as { version: number; keywords: { crockeries: string } }
+  expect(parsed.version).toBe(2)
+  expect(parsed.keywords.crockeries).toBe('bowl\nplate')
+  const context = await browser.newContext({ serviceWorkers: 'block' })
+  const fresh = await context.newPage()
+  await fresh.goto('/')
+  const chooser = fresh.waitForEvent('filechooser')
+  await fresh.getByLabel('Open project').click()
+  await (await chooser).setFiles({ name: 'project.crewbtc', mimeType: 'application/json', buffer: data })
+  await expect(fresh.getByLabel('crockeries keywords')).toHaveValue('bowl\nplate')
+  await expect(fresh.getByLabel('directions keywords')).toHaveValue('toss')
+  await expect(fresh.getByLabel('condiments keywords')).toHaveValue('salt')
+  await fresh.waitForTimeout(600)
+  await fresh.reload()
+  await expect(fresh.getByLabel('crockeries keywords')).toHaveValue('bowl\nplate')
+  await context.close()
+})
