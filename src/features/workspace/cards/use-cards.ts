@@ -33,6 +33,7 @@ export interface CardStore {
   readonly reset: () => void
   /** Put a whole set back, for Undo. Replaces rather than merges. */
   readonly restoreCards: (cards: Readonly<Record<string, Card>>) => void
+  readonly undoFormattedCards: (before: Readonly<Record<string, Card>>, after: Readonly<Record<string, Card>>) => void
 }
 
 /**
@@ -113,6 +114,17 @@ export function useCards(restore?: Readonly<Record<string, Card>> | null): CardS
     [],
   )
 
+  // Never undo across a later edit, clear, or project replacement.
+  const undoFormattedCards = useCallback((before: Readonly<Record<string, Card>>, after: Readonly<Record<string, Card>>) => {
+    setCards((current) => {
+      const next = { ...current }
+      for (const [key, oldCard] of Object.entries(before)) {
+        if (current[key] === after[key]) next[key] = oldCard
+      }
+      return next
+    })
+  }, [])
+
   // Memoised because `seedCard` is an effect dependency downstream: a fresh object each
   // render would re-run the seeding effect on every render for no reason at all.
   return useMemo(
@@ -126,8 +138,9 @@ export function useCards(restore?: Readonly<Record<string, Card>> | null): CardS
       setBands,
       reset,
       restoreCards,
+      undoFormattedCards,
     }),
-    [cards, setCard, seedCard, setText, setStyle, setImage, setBands, reset, restoreCards],
+    [cards, setCard, seedCard, setText, setStyle, setImage, setBands, reset, restoreCards, undoFormattedCards],
   )
 }
 

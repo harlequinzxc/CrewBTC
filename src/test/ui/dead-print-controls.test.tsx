@@ -77,6 +77,11 @@ describe('the inspector', () => {
         sheetErrors={{}}
         onSheetChange={() => undefined}
         onResetSheet={() => undefined}
+        keywords={{ crockeries: '', directions: '', condiments: '' }}
+        onKeywordsChange={() => undefined}
+        onAutomate={() => undefined}
+        canAutomate={false}
+        busy={false}
         showCutMarks
         onShowCutMarksChange={() => undefined}
         open

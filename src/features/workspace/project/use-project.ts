@@ -11,6 +11,7 @@ import { keepSource, releaseAll } from '../../../lib/export/doc-cache'
 import { releaseProxies } from '../../../lib/pdf/proxy-cache'
 import { decodeSource, encodeSource, parseProject } from '../../../lib/project/project'
 import type { Project } from '../../../lib/project/project'
+import type { Keywords } from '../../../types/format-keywords'
 
 interface Options {
   readonly documents: readonly IngestedDocument[]
@@ -19,11 +20,12 @@ interface Options {
   readonly sheet: SheetSettings
   readonly preferences: PageSettings
   readonly showCutMarks: boolean
+  readonly keywords: Keywords
   readonly apply: (project: Project) => void
   readonly notify: (toast: ToastInput) => void
 }
 
-export function useProject({ documents, cards, activeId, sheet, preferences, showCutMarks, apply, notify }: Options) {
+export function useProject({ documents, cards, activeId, sheet, preferences, showCutMarks, keywords, apply, notify }: Options) {
   const [busy, setBusy] = useState(false)
   const save = useCallback(() => {
     void (async () => {
@@ -34,7 +36,7 @@ export function useProject({ documents, cards, activeId, sheet, preferences, sho
           const bytes = await getProjectSource(doc.id)
           if (bytes !== null && new TextDecoder('latin1').decode(bytes.slice(0, 1024)).includes('%PDF-')) sources[doc.id] = encodeSource(bytes)
         }
-        const project: Project = { format: 'crewbtc-project', version: 1, snapshot: { version: SNAPSHOT_VERSION, documents, cards, activeId, savedAt: new Date().toISOString() }, sheet, preferences, showCutMarks, sources }
+        const project: Project = { format: 'crewbtc-project', version: 2, snapshot: { version: SNAPSHOT_VERSION, documents, cards, activeId, savedAt: new Date().toISOString() }, sheet, preferences, showCutMarks, keywords, sources }
         const json = JSON.stringify(project)
         parseProject(json) // Never download a project this version cannot reopen.
         const blob = new Blob([json], { type: 'application/json' })
@@ -54,7 +56,7 @@ export function useProject({ documents, cards, activeId, sheet, preferences, sho
         notify({ variant: 'error', title: 'Could not save project', description: 'Check the sheet settings and try again.' })
       } finally { setBusy(false) }
     })()
-  }, [documents, cards, activeId, sheet, preferences, showCutMarks, notify])
+  }, [documents, cards, activeId, sheet, preferences, showCutMarks, keywords, notify])
 
   const open = useCallback(() => {
     void (async () => {

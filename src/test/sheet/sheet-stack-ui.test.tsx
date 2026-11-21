@@ -142,6 +142,11 @@ describe('the inspector can be given back to the sheet', () => {
         sheetErrors={{}}
         onSheetChange={() => undefined}
         onResetSheet={() => undefined}
+        keywords={{ crockeries: '', directions: '', condiments: '' }}
+        onKeywordsChange={() => undefined}
+        onAutomate={() => undefined}
+        canAutomate={false}
+        busy={false}
         showCutMarks
         onShowCutMarksChange={() => undefined}
         open={open}
@@ -190,6 +195,11 @@ describe('the inspector can be given back to the sheet', () => {
         sheetErrors={{}}
         onSheetChange={() => undefined}
         onResetSheet={() => undefined}
+        keywords={{ crockeries: '', directions: '', condiments: '' }}
+        onKeywordsChange={() => undefined}
+        onAutomate={() => undefined}
+        canAutomate={false}
+        busy={false}
         showCutMarks
         onShowCutMarksChange={() => undefined}
         open

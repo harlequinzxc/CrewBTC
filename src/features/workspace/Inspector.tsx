@@ -1,6 +1,8 @@
 import { cn } from '../../lib/cn'
 import { CardReadout } from './inspector/CardReadout'
 import { SheetSection } from './inspector/SheetSection'
+import { AutoFormatSection } from './inspector/AutoFormatSection'
+import type { Keywords } from '../../types/format-keywords'
 import type { Card } from '../../types/card'
 import type { GridLayout, SheetSettings as SheetSettingsValue } from '../../types/imposition'
 import type { UnitSystem } from '../../lib/units'
@@ -39,6 +41,11 @@ export interface InspectorProps {
    * a property of the window and the toggle is a property of the session.
    */
   readonly open: boolean
+  readonly keywords: Keywords
+  readonly onKeywordsChange: (value: Keywords) => void
+  readonly onAutomate: () => void
+  readonly canAutomate: boolean
+  readonly busy: boolean
 }
 
 export function Inspector(props: InspectorProps) {
@@ -55,6 +62,7 @@ export function Inspector(props: InspectorProps) {
       )}
     >
       {props.card !== null && props.cellIndex !== null ? <CardReadout card={props.card} cellIndex={props.cellIndex} units={props.units} /> : null}
+      <AutoFormatSection keywords={props.keywords} onChange={props.onKeywordsChange} onApply={props.onAutomate} available={props.canAutomate} busy={props.busy} />
       <SheetSection
         sheet={props.sheet}
         grid={props.grid}

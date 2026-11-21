@@ -238,7 +238,9 @@ sources in place rather than proving them unused. Existing unmarked older orphan
 automatically removed. Clear browser site data to remove retained copies manually.
 
 Portable `.crewbtc` files are versioned JSON (`lib/project/project.ts`): snapshot, sheet,
-unit preference, cut guides and available base64 original PDFs. Validation happens before
+unit preference, cut guides, formatting keywords and available base64 original PDFs.
+Version 2 adds keyword lists; version 1 upgrades to empty lists, and older clients cannot
+open version 2 projects. Validation happens before
 replacing the workspace. Missing originals produce a warning; cards still export without
 source PDFs. Project files may be large and contain private content.
 

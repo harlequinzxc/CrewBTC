@@ -28,22 +28,22 @@ import { SettingsDialog } from '../settings/SettingsDialog'
 import { usePageSettings } from './project/use-page-settings'
 import { useProject } from './project/use-project'
 import { useCutGuides } from './sheet/use-cut-guides'
+import { useKeywords } from './project/use-keywords'
+import { useAutoFormat } from './cards/use-auto-format'
 import type { Project } from '../../lib/project/project'
 import type { useToasts } from '../../components/ui/use-toasts'
-
 /** One screen: files, the sheet, the inspector. No view state, no navigation rail. */
 export interface WorkspaceScreenProps {
   readonly notify: ReturnType<typeof useToasts>['show']
 }
-
 export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const { settings, update: updateSettings } = usePageSettings()
   const [showCutMarks, setShowCutMarks] = useCutGuides()
+  const [keywords, setKeywords] = useKeywords()
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [stripCollapsed, setStripCollapsed] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(true)
-
   useUpdateNotice(() => {
     notify({
       variant: 'info',
@@ -53,11 +53,8 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
       action: 'Reload',
     })
   })
-
   const probe = useClickProbe(CHANGELOG[0]?.version ?? 'unknown')
-
   const session = useRestoredSession()
-
   const batch = useBatch({
     notify,
     restore: session.snapshot?.documents ?? null,
@@ -67,15 +64,14 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const cardStore = useCards(session.snapshot?.cards ?? null)
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
   const zoom = useSheetZoom(sheet.settings.sheetWidthMm)
-
   useSaveSession(session.restored && batch.hydrated, {
     documents: batch.documents,
     cards: cardStore.cards,
     activeId: batch.activeId,
   })
-
   const seeds = useCardSeeds(pageRefs, sheet.grid, batch.documents)
   useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm)
+  const autoFormat = useAutoFormat(cardStore, seeds, keywords, notify)
 
   const visibleCards = useMemo(() => numberedCards(cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale ?? DEFAULT_TEXT_SCALE), [cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale])
 
@@ -112,9 +108,10 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     sheet.update(project.sheet)
     updateSettings(project.preferences)
     setShowCutMarks(project.showCutMarks)
+    setKeywords(project.keywords)
     setSelectedCell(null)
-  }, [batch, cardStore, sheet, updateSettings, setShowCutMarks])
-  const project = useProject({ documents: batch.documents, cards: cardStore.cards, activeId: batch.activeId, sheet: sheet.settings, preferences: settings, showCutMarks, apply: applyProject, notify })
+  }, [batch, cardStore, sheet, updateSettings, setShowCutMarks, setKeywords])
+  const project = useProject({ documents: batch.documents, cards: cardStore.cards, activeId: batch.activeId, sheet: sheet.settings, preferences: settings, showCutMarks, keywords, apply: applyProject, notify })
   const hasBatch = batch.documents.length > 0
   const {
     sheets,
@@ -229,6 +226,11 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           onResetSheet={sheet.reset}
           showCutMarks={showCutMarks}
           onShowCutMarksChange={setShowCutMarks}
+          keywords={keywords}
+          onKeywordsChange={setKeywords}
+          onAutomate={autoFormat.apply}
+          canAutomate={autoFormat.available}
+          busy={batch.busy || project.busy}
           open={inspectorOpen}
         />
       </main>

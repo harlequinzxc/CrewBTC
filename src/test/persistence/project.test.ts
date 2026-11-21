@@ -18,11 +18,15 @@ describe('editable project validation', () => {
   it('accepts a project with or without original PDFs', () => {
     const value = project()
     expect(parseProject(JSON.stringify(value)).snapshot.documents).toHaveLength(1)
+    expect(parseProject(JSON.stringify(value)).keywords).toEqual({ crockeries: '', directions: '', condiments: '' })
+    const keywords = { crockeries: 'plate', directions: 'pour', condiments: 'soy' }
+    expect(parseProject(JSON.stringify({ ...value, version: 2, keywords })).keywords).toEqual(keywords)
     expect(parseProject(JSON.stringify({ ...value, sources: {} })).sources).toEqual({})
   })
   it('rejects a future version and malformed nested content', () => {
     const value = project()
-    expect(() => parseProject(JSON.stringify({ ...value, version: 2 }))).toThrow()
+    expect(() => parseProject(JSON.stringify({ ...value, version: 3 }))).toThrow()
+    expect(() => parseProject(JSON.stringify({ ...value, version: 2, keywords: { crockeries: 42 } }))).toThrow()
     expect(() => parseProject(JSON.stringify({ ...value, sheet: { ...value.sheet, sheetWidthMm: -1 } }))).toThrow()
     expect(() => parseProject(JSON.stringify({ ...value, sources: { one: btoa('not a pdf') } }))).toThrow()
     expect(() => parseProject(JSON.stringify({ ...value, snapshot: { ...value.snapshot, cards: { card: { photo: null } } } }))).toThrow()

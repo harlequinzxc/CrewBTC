@@ -27,6 +27,11 @@ text underneath.
   text to format it. **CROCKERIES** and **CONDIMENTS** apply their callout styles;
   **DIRECTIONS** makes text red. **Bold** and **Clear formatting** are also available.
   Controls apply to the selection, or to the whole box when nothing is selected.
+- In the inspector, enter keywords or phrases (one per line) for each callout and choose
+  **Automate formatting** after cards are populated. Matches ignore case and respect whole
+  word boundaries. It adds bullets to non-empty bottom-text lines, not visual wraps, and
+  leaves existing bullets and numbered lines alone. Review the results; CROCKERIES changes
+  matched text to uppercase. Undo is available for cards not subsequently edited.
 - The photo is never stretched. Click it to enter adjustment mode, then drag to move it
   or scroll to zoom. Click outside or press `Escape` when finished. The image is clipped
   to its box. The scissors remove a plain background locally, with sensitivity and undo;
@@ -64,7 +69,7 @@ way, so 21 cm and 210 mm are the same sheet.
 ## Save and open editable projects
 
 Use **Save** in the top bar to download a `.crewbtc` project. It contains your editable
-cards, photos, labels, sheet settings and available original PDFs. **Open** loads that
+cards, photos, labels, sheet settings, formatting keywords and available original PDFs. **Open** loads that
 file in CrewBTC, including on another computer; it replaces the current workspace after
 confirmation. Export PDF remains the separate print-only action. Save a project again
 when you make changes: the downloaded file does not update automatically.
