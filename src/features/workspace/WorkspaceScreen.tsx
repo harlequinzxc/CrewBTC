@@ -30,6 +30,7 @@ import { useProject } from './project/use-project'
 import { useCutGuides } from './sheet/use-cut-guides'
 import { useKeywords } from './project/use-keywords'
 import { useAutoFormat } from './cards/use-auto-format'
+import { PdfPreview } from './preview/PdfPreview'
 import type { Project } from '../../lib/project/project'
 import type { useToasts } from '../../components/ui/use-toasts'
 /** One screen: files, the sheet, the inspector. No view state, no navigation rail. */
@@ -44,6 +45,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [stripCollapsed, setStripCollapsed] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(true)
+  const [previewOpen, setPreviewOpen] = useState(false)
   useUpdateNotice(() => {
     notify({
       variant: 'info',
@@ -72,9 +74,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const seeds = useCardSeeds(pageRefs, sheet.grid, batch.documents)
   useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm)
   const autoFormat = useAutoFormat(cardStore, seeds, keywords, notify)
-
   const visibleCards = useMemo(() => numberedCards(cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale ?? DEFAULT_TEXT_SCALE), [cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale])
-
   const exporter = useCardExport({
     settings: sheet.settings,
     grid: sheet.grid,
@@ -83,10 +83,8 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     cards: visibleCards,
     notify,
   })
-
   const toggleStrip = useCallback(() => setStripCollapsed((collapsed) => !collapsed), [])
   const toggleInspector = useCallback(() => setInspectorOpen((open) => !open), [])
-
   const clearSelection = useCallback(() => setSelectedCell(null), [])
   const { clearAll } = useClearBatch({
     batch,
@@ -161,9 +159,11 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         hasBatch={hasBatch}
         inspectorOpen={inspectorOpen}
         onToggleInspector={toggleInspector}
+        previewOpen={previewOpen}
+        onTogglePreview={() => setPreviewOpen((open) => !open)}
       />
 
-      <main className="flex min-h-0 flex-1">
+      <main className="relative flex min-h-0 flex-1">
         <aside
           aria-label="Files"
           className="hidden w-[220px] shrink-0 border-r border-hairline bg-surface-panel md:flex md:flex-col"
@@ -174,7 +174,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
             onSelectDocument={batch.select}
             onAdd={handleAdd}
             onReRun={batch.reRun}
-            onClear={clearAll}
+            onClear={() => { setPreviewOpen(false); clearAll() }}
             busy={batch.busy}
             placements={reveal.placements}
             onReveal={reveal.onReveal}
@@ -215,6 +215,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           }
         />
 
+        {previewOpen && hasBatch && sheetCount > 0 ? <PdfPreview sheetCount={sheetCount} initialSheet={sheetIndex} onClose={() => setPreviewOpen(false)} settings={sheet.settings} grid={sheet.grid} pages={pageRefs} drawCutMarks={showCutMarks} cards={visibleCards} /> : null}
         <Inspector
           card={selectedCard}
           cellIndex={selectionKey === null ? null : selectedCell}

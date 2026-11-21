@@ -1,4 +1,4 @@
-import { FolderOpen, Save, Maximize2, Minus, PanelRightClose, PanelRightOpen, Plus, Settings2 } from 'lucide-react'
+import { FolderOpen, Save, Eye, Maximize2, Minus, PanelRightClose, PanelRightOpen, Plus, Settings2 } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { ExportControl } from './ExportControl'
 import { CHANGELOG } from '../../data/changelog'
@@ -36,6 +36,8 @@ export interface TopBarProps {
   readonly hasMoreThanOneSheet: boolean
   readonly exporting: boolean
   readonly hasBatch: boolean
+  readonly previewOpen?: boolean
+  readonly onTogglePreview?: () => void
   /** Whether the right rail is showing. It mirrors the Files rail: give the sheet width back. */
   readonly inspectorOpen: boolean
   readonly onToggleInspector: () => void
@@ -191,6 +193,9 @@ export function TopBar(props: TopBarProps) {
         <Settings2 aria-hidden className="size-3.5" />
       </button>
 
+      <button id="pdf-preview-toggle" type="button" data-target="dense" aria-label="Preview PDF" title="Preview the generated PDF" aria-pressed={props.previewOpen ?? false} disabled={!props.hasBatch} onClick={props.onTogglePreview} className={cn(iconButton, 'flex w-auto gap-1 px-1.5', props.previewOpen && 'bg-surface-active text-ink-primary')}>
+        <Eye aria-hidden className="size-4" /><span className="text-[11px]">Preview</span>
+      </button>
       <ExportControl
         hasBatch={props.hasBatch}
         hasMoreThanOneSheet={props.hasMoreThanOneSheet}

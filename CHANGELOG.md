@@ -55,6 +55,9 @@ above it is not shown as release notes. `package.json` and the newest entry must
   Remove formatting clears the three callout colours in both zones on all occupied cards without removing
   bullets or reversing uppercase text, and offers Undo. Stored styles have no preset origin,
   so matching manually applied colours are also treated as callouts.
+- The optional live PDF preview uses the export writer and PDF.js, updates after a short
+  debounce, and supports sheet navigation and zoom. It splits the workspace at 1280 px and
+  wider and overlays it on narrower supported windows. Failed or partial renders are reported.
 - Clicking a photo enters adjustment; the sparkles copy a card's bands to others. Background
   removal uses a local classical cut-out with sensitivity and undo, not a downloaded model.
 - Number boxes wrap from 40 to 1. Editable right-hand labels propagate forward from an
@@ -113,10 +116,15 @@ above it is not shown as release notes. `package.json` and the newest entry must
   best effort, not a claim that clearing files securely wipes all local data.
 - Chromium unit/browser gates do not prove installed-mode, all browsers, real OCR language
   data, service-worker update timing, or screen-reader behavior. Report unrun checks honestly.
-  The v1.13.1 full gate passed 495 unit tests and 64 Chromium browser tests. These results
+  The v1.14.0 full gate passed 499 unit tests and 67 Chromium browser tests. These results
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.14.0 — 2026-11-21 — Live PDF preview
+
+- Preview the actual generated PDF while editing, with sheet navigation, zoom and responsive layout.
+- Report preview errors and skipped cards, and warn about the existing first-sheet export limitation.
 
 ### 1.13.1 — 2026-11-21 — Keep automated formatting in bottom text
 - Restricted keyword formatting and bullets to bottom text; top text and its existing styles remain untouched.
