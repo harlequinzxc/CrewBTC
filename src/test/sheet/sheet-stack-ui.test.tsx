@@ -145,6 +145,7 @@ describe('the inspector can be given back to the sheet', () => {
         keywords={{ crockeries: '', directions: '', condiments: '' }}
         onKeywordsChange={() => undefined}
         onAutomate={() => undefined}
+        onRemoveFormatting={() => undefined}
         canAutomate={false}
         busy={false}
         showCutMarks
@@ -198,6 +199,7 @@ describe('the inspector can be given back to the sheet', () => {
         keywords={{ crockeries: '', directions: '', condiments: '' }}
         onKeywordsChange={() => undefined}
         onAutomate={() => undefined}
+        onRemoveFormatting={() => undefined}
         canAutomate={false}
         busy={false}
         showCutMarks

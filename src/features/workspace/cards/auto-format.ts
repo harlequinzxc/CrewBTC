@@ -38,14 +38,18 @@ function bulletBody(card: Card): Card {
   const positions: number[] = []
   let offset = 0
   for (const line of text.split('\n')) {
-    if (line.trim() !== '' && !/^\s*(?:[•●▪◦*-]\s|\d+[.)]\s)/u.test(line)) positions.push(offset)
+    const dash = /^([ \t]*)- /u.exec(line)
+    if (dash !== null) {
+      const marker = offset + (dash[1]?.length ?? 0)
+      text = `${text.slice(0, marker)}•${text.slice(marker + 1)}`
+    } else if (line.trim() !== '' && !/^\s*(?:[•●▪◦*-]\s|\d+[.)]\s)/u.test(line)) positions.push(offset)
     offset += line.length + 1
   }
   for (const position of positions.reverse()) {
     text = `${text.slice(0, position)}• ${text.slice(position)}`
     runs = shiftRuns(runs, position, position, 2, text.length)
   }
-  return positions.length === 0 ? card : { ...card, bodyText: text, bodyRuns: runs }
+  return text === card.bodyText ? card : { ...card, bodyText: text, bodyRuns: runs }
 }
 
 function formatZone(card: Card, zone: 'header' | 'body', keywords: Keywords): Card {

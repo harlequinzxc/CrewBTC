@@ -80,6 +80,7 @@ describe('the inspector', () => {
         keywords={{ crockeries: '', directions: '', condiments: '' }}
         onKeywordsChange={() => undefined}
         onAutomate={() => undefined}
+        onRemoveFormatting={() => undefined}
         canAutomate={false}
         busy={false}
         showCutMarks

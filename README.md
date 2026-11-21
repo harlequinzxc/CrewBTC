@@ -30,8 +30,11 @@ text underneath.
 - In the inspector, enter keywords or phrases (one per line) for each callout and choose
   **Automate formatting** after cards are populated. Matches ignore case and respect whole
   word boundaries. It adds bullets to non-empty bottom-text lines, not visual wraps, and
-  leaves existing bullets and numbered lines alone. Review the results; CROCKERIES changes
-  matched text to uppercase. Undo is available for cards not subsequently edited.
+  converts leading dash-space markers to bullets, and leaves existing bullets and numbered
+  lines alone. **Remove formatting** clears callout colours without removing bullets or
+  restoring original casing; matching manually applied colours are also cleared. Review the
+  results; CROCKERIES changes matched text to uppercase. Undo is available for cards not
+  subsequently edited.
 - The photo is never stretched. Click it to enter adjustment mode, then drag to move it
   or scroll to zoom. Click outside or press `Escape` when finished. The image is clipped
   to its box. The scissors remove a plain background locally, with sensitivity and undo;
