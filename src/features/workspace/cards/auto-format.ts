@@ -52,18 +52,19 @@ function bulletBody(card: Card): Card {
   return text === card.bodyText ? card : { ...card, bodyText: text, bodyRuns: runs }
 }
 
-function formatZone(card: Card, zone: 'header' | 'body', keywords: Keywords): Card {
+function formatBody(card: Card, keywords: Keywords): Card {
+  const zone = 'body' as const
   let next = card
-  const text = zone === 'header' ? card.headerText : card.bodyText
+  const text = card.bodyText
   for (const match of findMatches(text, keywords)) {
     let end = match.end
     if (match.category === 'crockeries') {
-      const current = zone === 'header' ? next.headerText : next.bodyText
+      const current = next.bodyText
       const upper = current.slice(match.start, end).toUpperCase()
       if (upper !== current.slice(match.start, end)) {
         const changed = current.slice(0, match.start) + upper + current.slice(end)
-        const runs = shiftRuns(zone === 'header' ? next.headerRuns ?? [] : next.bodyRuns ?? [], match.start, end, upper.length, changed.length)
-        next = zone === 'header' ? { ...next, headerText: changed, headerRuns: runs } : { ...next, bodyText: changed, bodyRuns: runs }
+        const runs = shiftRuns(next.bodyRuns ?? [], match.start, end, upper.length, changed.length)
+        next = { ...next, bodyText: changed, bodyRuns: runs }
         end = match.start + upper.length
       }
     }
@@ -75,5 +76,5 @@ function formatZone(card: Card, zone: 'header' | 'body', keywords: Keywords): Ca
 }
 
 export function automateCard(card: Card, keywords: Keywords): Card {
-  return formatZone(formatZone(bulletBody(card), 'header', keywords), 'body', keywords)
+  return formatBody(bulletBody(card), keywords)
 }

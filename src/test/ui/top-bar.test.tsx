@@ -30,6 +30,14 @@ const render_ = (overrides: Partial<React.ComponentProps<typeof TopBar>> = {}) =
 }
 
 describe('the top bar', () => {
+  it('offers a pressed PDF preview toggle beside export', () => {
+    const props = render_({ previewOpen: false, onTogglePreview: vi.fn() })
+    const toggle = screen.getByRole('button', { name: 'Preview PDF' })
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(toggle)
+    expect(props.onTogglePreview).toHaveBeenCalledTimes(1)
+  })
+
   it('prints the paper size and the sheet count, once', () => {
     render_()
     expect(screen.getByText('210 × 297 mm · 2 sheets')).toBeInTheDocument()

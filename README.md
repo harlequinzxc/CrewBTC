@@ -28,10 +28,10 @@ text underneath.
   **DIRECTIONS** makes text red. **Bold** and **Clear formatting** are also available.
   Controls apply to the selection, or to the whole box when nothing is selected.
 - In the inspector, enter keywords or phrases (one per line) for each callout and choose
-  **Automate formatting** after cards are populated. Matches ignore case and respect whole
-  word boundaries. It adds bullets to non-empty bottom-text lines, not visual wraps, and
+  **Automate formatting** after cards are populated. It affects bottom text only; matches
+  ignore case and respect whole word boundaries. It adds bullets to non-empty bottom-text lines, not visual wraps, and
   converts leading dash-space markers to bullets, and leaves existing bullets and numbered
-  lines alone. **Remove formatting** clears callout colours without removing bullets or
+  lines alone. **Remove formatting** clears callout colours in both zones without removing bullets or
   restoring original casing; matching manually applied colours are also cleared. Review the
   results; CROCKERIES changes matched text to uppercase. Undo is available for cards not
   subsequently edited.
@@ -112,7 +112,8 @@ is on. The active sheet is the one with the accent border.
 2. Drag PDFs onto the window, or use **Add PDFs**.
 3. Pick a card, then edit its text, colour and photo.
 4. Drag the selected card’s dividers; check the heights in the inspector.
-5. **Save** an editable project if needed. **Export** makes a print PDF; the arrow offers all sheets as one PDF.
+5. Open **Preview PDF** beside Export to inspect the generated PDF as you edit. Navigate sheets and zoom or fit the preview; it updates shortly after changes. On narrower windows it overlays part of the editor.
+6. **Save** an editable project if needed. **Export** makes a print PDF; the arrow offers all sheets as one PDF.
 
 Your sheet settings are remembered between visits.
 
