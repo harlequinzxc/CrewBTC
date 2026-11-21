@@ -82,7 +82,7 @@ export function validate(raw: UnknownSnapshot): WorkspaceSnapshot | null {
   const version = (raw as { version?: unknown }).version
   // Older cards retain their labels; only the first legacy label starts a sequence.
   // New per-card restarts are optional and resolve from placement order at render time.
-  if (version !== 1 && version !== 2 && version !== SNAPSHOT_VERSION) return null
+  if (version !== 1 && version !== 2 && version !== 3 && version !== SNAPSHOT_VERSION) return null
   if (!Array.isArray(value.documents)) return null
   if (typeof value.cards !== 'object' || value.cards === null) return null
 
@@ -94,11 +94,34 @@ export function validate(raw: UnknownSnapshot): WorkspaceSnapshot | null {
   // Treating it as "nothing stored" would be relying on an accident to get the same
   // answer, and would make the record unable to express a real state.
 
+  let stations: WorkspaceSnapshot['stations']
+  let activeStationId: string
+  if (version === SNAPSHOT_VERSION) {
+    if (!Array.isArray(value.stations) || value.stations.length === 0 || typeof value.activeStationId !== 'string') return null
+    const seen = new Set<string>()
+    for (const station of value.stations) {
+      if (typeof station !== 'object' || station === null || typeof station.id !== 'string' || !station.id ||
+          seen.has(station.id) || typeof station.name !== 'string' || !station.name.trim() ||
+          !Array.isArray(station.documents) || !station.documents.every(isDocument) ||
+          typeof station.cards !== 'object' || station.cards === null || Array.isArray(station.cards) ||
+          (station.activeId !== null && typeof station.activeId !== 'string')) return null
+      seen.add(station.id)
+    }
+    if (!seen.has(value.activeStationId)) return null
+    stations = value.stations
+    activeStationId = value.activeStationId
+    const active = stations.find((station) => station.id === activeStationId)!
+    // The active station is authoritative; mirror fields are derived below.
+    return { version: SNAPSHOT_VERSION, documents: active.documents, cards: active.cards, activeId: active.activeId, stations, activeStationId, savedAt: typeof value.savedAt === 'string' ? value.savedAt : new Date().toISOString() }
+  }
+  activeStationId = 'station-default'
+  stations = [{ id: activeStationId, name: 'Station 1', documents, cards: value.cards as Record<string, Card>, activeId: typeof value.activeId === 'string' ? value.activeId : null }]
   return {
     version: SNAPSHOT_VERSION,
     documents,
     cards: value.cards as Record<string, Card>,
     activeId: typeof value.activeId === 'string' ? value.activeId : null,
+    stations, activeStationId,
     savedAt: typeof value.savedAt === 'string' ? value.savedAt : new Date().toISOString(),
   }
 }
@@ -116,6 +139,7 @@ function isDocument(value: unknown): value is IngestedDocument {
     typeof doc.id === 'string' &&
     typeof doc.fileName === 'string' &&
     typeof doc.status === 'string' &&
+    (doc.includedPages === undefined || (Array.isArray(doc.includedPages) && doc.includedPages.every((page) => Number.isInteger(page) && page > 0 && (doc.metrics == null || page <= doc.metrics.pageCount)) && new Set(doc.includedPages).size === doc.includedPages.length)) &&
     typeof doc.copies === 'object' &&
     doc.copies !== null &&
     typeof doc.photos === 'object' &&

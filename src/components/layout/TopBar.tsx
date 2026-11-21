@@ -27,6 +27,10 @@ export interface TopBarProps {
   readonly onProbe?: () => void
   readonly onFit: () => void
   readonly onOpenSettings: () => void
+  readonly onNewProject?: () => void
+  readonly onPrintSelection?: () => void
+  readonly anyProjectCards?: boolean
+  readonly hasProject?: boolean
   readonly onSaveProject?: () => void
   readonly onOpenProject?: () => void
   readonly projectBusy?: boolean
@@ -36,6 +40,8 @@ export interface TopBarProps {
   readonly hasMoreThanOneSheet: boolean
   readonly exporting: boolean
   readonly hasBatch: boolean
+  readonly reviewLabel?: string
+  readonly onReview?: () => void
   readonly previewOpen?: boolean
   readonly onTogglePreview?: () => void
   /** Whether the right rail is showing. It mirrors the Files rail: give the sheet width back. */
@@ -105,6 +111,7 @@ export function TopBar(props: TopBarProps) {
         <span className="tabular text-[11px] text-ink-muted">{summary}</span>
       </div>
 
+      {props.hasBatch && props.reviewLabel !== undefined ? <button type="button" data-target="dense" onClick={props.onReview} className="min-h-8 shrink-0 rounded border border-hairline px-2 text-xs text-ink-primary hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{props.reviewLabel}</button> : null}
       {/* Zoom sits dead centre: it is the control you reach for most while laying out. */}
       <div className="mx-auto flex items-center gap-0.5" aria-label="Sheet zoom">
         <button
@@ -160,10 +167,11 @@ export function TopBar(props: TopBarProps) {
         </button>
       </div>
 
+      <button type="button" data-target="dense" aria-label="New project" onClick={props.onNewProject} disabled={props.projectBusy} className={cn(iconButton, 'w-auto px-1.5')}>New</button>
       <button type="button" data-target="dense" aria-label="Open project" title="Open editable project" onClick={props.onOpenProject} disabled={props.projectBusy} className={cn(iconButton, 'w-auto gap-1 px-1.5 flex')}>
         <FolderOpen aria-hidden className="size-4" /><span className="text-[11px]">Open</span>
       </button>
-      <button type="button" data-target="dense" aria-label="Save project" title="Save editable project" onClick={props.onSaveProject} disabled={props.projectBusy || !props.hasBatch} className={cn(iconButton, 'w-auto gap-1 px-1.5 flex')}>
+      <button type="button" data-target="dense" aria-label="Save project" title="Save editable project" onClick={props.onSaveProject} disabled={props.projectBusy || !(props.hasProject ?? props.hasBatch)} className={cn(iconButton, 'w-auto gap-1 px-1.5 flex')}>
         <Save aria-hidden className="size-4" /><span className="text-[11px]">Save</span>
       </button>
 
@@ -196,6 +204,7 @@ export function TopBar(props: TopBarProps) {
       <button id="pdf-preview-toggle" type="button" data-target="dense" aria-label="Preview PDF" title="Preview the generated PDF" aria-pressed={props.previewOpen ?? false} disabled={!props.hasBatch} onClick={props.onTogglePreview} className={cn(iconButton, 'flex w-auto gap-1 px-1.5', props.previewOpen && 'bg-surface-active text-ink-primary')}>
         <Eye aria-hidden className="size-4" /><span className="text-[11px]">Preview</span>
       </button>
+      <button type="button" data-target="dense" aria-label="Print selection" onClick={props.onPrintSelection} disabled={!props.anyProjectCards || props.projectBusy} className={cn(iconButton, 'w-auto px-1.5')}>Select</button>
       <ExportControl
         hasBatch={props.hasBatch}
         hasMoreThanOneSheet={props.hasMoreThanOneSheet}

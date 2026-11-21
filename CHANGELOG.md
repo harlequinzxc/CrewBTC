@@ -36,10 +36,10 @@ above it is not shown as release notes. `package.json` and the newest entry must
 ## Implemented behavior and invariants
 
 - The default sheet is A4, 210 × 297 mm, with twelve 52 × 67 mm cells, 4 mm spacing and
-  margin. New cards start at top 7.28 mm and bottom 35.45 mm when feasible; smaller cells
+  margin. New cards start at top 8.56 mm and bottom 35.45 mm when feasible; smaller cells
   clamp the bands to retain photo space. Existing card measurements are not overwritten.
 - Header and footer text default to bold black; the header is centred, the footer is
-  top-aligned. Sheet-wide text starts at 80%; text wraps and can clip, but does not shrink
+  top-aligned. Sheet-wide text starts at 90%; text wraps and can clip, but does not shrink
   implicitly. The inspector reads Top, Bottom and Text; dividers adjust bands. Single-click
   presets apply formatting; CROCKERIES destructively uppercases stored text. DIRECTIONS
   applies red ink to selected text or the whole active box; an identical red highlight is
@@ -58,6 +58,14 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - The optional live PDF preview uses the export writer and PDF.js, updates after a short
   debounce, and supports sheet navigation and zoom. It splits the workspace at 1280 px and
   wider and overlays it on narrower supported windows. Failed or partial renders are reported.
+- Station tabs isolate batches and cards, while settings are shared. Page filters can place
+  different pages of an uploaded PDF in different station workspaces. Print selection packs
+  chosen stations/cards into temporary sheets and preserves the originals and their labels.
+- This sheet exports the sheet visible in the editor. Batch review flags missing card
+  content, likely text overflow, unsupported characters, and corner label truncation;
+  warnings are advisory and link to the affected card. The preview can expand full screen.
+- A locally saved band-height preset applies to newly seeded cards, clamped to cell size;
+  existing cards are unchanged. Text size is sheet-wide and remains separately remembered.
 - Clicking a photo enters adjustment; the sparkles copy a card's bands to others. Background
   removal uses a local classical cut-out with sensitivity and undo, not a downloaded model.
 - Number boxes wrap from 40 to 1. Editable right-hand labels propagate forward from an
@@ -73,8 +81,8 @@ above it is not shown as release notes. `package.json` and the newest entry must
 
 ## Persistence and portability
 
-- `crewbtc-session` IndexedDB stores a whole version-3 snapshot of documents, card edits and
-  selection. Versions 1 and 2 are accepted and upgraded; future versions are rejected.
+- `crewbtc-session` IndexedDB stores a whole version-4 snapshot with all stations and active
+  selection. Versions 1–3 migrate to one station; future versions are rejected.
   `crewbtc` IndexedDB stores page preferences; `crewbtc.sheet.v2`, `crewbtc.cut-guides` and `crewbtc.format-keywords.v1`
   are local-storage settings. See `src/lib/storage/` and the migration tests before changes.
 - `crewbtc-project-sources` stores original PDF bytes by document UUID. Removed sources are
@@ -83,8 +91,8 @@ above it is not shown as release notes. `package.json` and the newest entry must
   old unmarked orphan records are not automatically purged. Do not equate a missing source
   with missing editable cards; report missing originals instead of discarding work.
 - A `.crewbtc` project is versioned JSON with the snapshot, sheet, units, cut-guide setting,
-  formatting keywords and available base64 source PDFs. Version 2 adds keywords; version 1
-  opens with empty lists. Older app versions cannot open version 2 projects. Opening
+  formatting keywords and available base64 source PDFs. Version 3 contains stations; version 2
+  adds keywords and version 1 opens with empty lists. Older app versions cannot open version 3 projects. Opening
   validates before replacement and confirms before overwriting a populated workspace. Project files are explicit downloads, not live saves.
   Source files may contain private data; clearing site data also removes local workspace data.
 
@@ -100,14 +108,12 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - Units once failed to persist because an IndexedDB store with an inline key was given a
   separate key to `put`. Keep the real-storage regression test as well as browser coverage.
 - Content-based automatic band sizing and editable inspector band fields were replaced with
-  fixed new-card defaults, draggable dividers and read-only current-value inspection.
+  configurable new-card band defaults, draggable dividers and read-only current-value inspection.
 
 ## Known limitations and verification status
 
-- **This sheet** export currently selects the first sheet, not the sheet in view; use All
-  sheets for the complete project. This is documented, not fixed by the file reorganisation.
 - Long corner labels are truncated in print, and characters unsupported by the standard PDF
-  font are omitted. Text can also clip when a band is too short. Inspect the exported PDF.
+  font are replaced. Text can also clip when a band is too short. The advisory review flags likely issues but cannot guarantee a print-ready PDF; inspect the exported PDF.
 - Page references use the first page's dimensions for the entire source document. The app
   assumes similar PDF layouts; OCR is a fallback, not a full document-scanning workflow.
 - No PDF/X output intent, ZIP of separate sheets, font upload or mobile editor is implemented.
@@ -116,10 +122,21 @@ above it is not shown as release notes. `package.json` and the newest entry must
   best effort, not a claim that clearing files securely wipes all local data.
 - Chromium unit/browser gates do not prove installed-mode, all browsers, real OCR language
   data, service-worker update timing, or screen-reader behavior. Report unrun checks honestly.
-  The v1.14.0 full gate passed 499 unit tests and 67 Chromium browser tests. These results
+  The v1.16.0 full gate passed 511 unit tests and 74 Chromium browser tests. These results
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.16.0 — 2026-11-21 — Station workspaces and flexible printing
+
+- Organise PDF pages and editable cards in station workspaces, saved together in one project.
+- Select stations and individual cards for a compact combined PDF, with a generated preview.
+- Start a new project while keeping inspector settings; new defaults are 8.56 / 35.45 mm and 90% text.
+
+### 1.15.0 — 2026-11-21 — Print review and card defaults
+
+- Export the sheet currently in view, and review possible print issues across the batch.
+- Expand the higher-resolution PDF preview and save selected band heights for new cards.
 
 ### 1.14.0 — 2026-11-21 — Live PDF preview
 

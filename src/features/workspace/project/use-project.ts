@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react'
-import type { Card } from '../../../types/card'
-import type { IngestedDocument } from '../../../types/document'
+import type { StationWorkspace } from '../../../types/station'
 import type { PageSettings } from '../../../types/settings'
 import type { SheetSettings } from '../../../types/imposition'
 import type { ToastInput } from '../../../components/ui/use-toasts'
@@ -14,9 +13,8 @@ import type { Project } from '../../../lib/project/project'
 import type { Keywords } from '../../../types/format-keywords'
 
 interface Options {
-  readonly documents: readonly IngestedDocument[]
-  readonly cards: Readonly<Record<string, Card>>
-  readonly activeId: string | null
+  readonly stations: readonly StationWorkspace[]
+  readonly activeStationId: string
   readonly sheet: SheetSettings
   readonly preferences: PageSettings
   readonly showCutMarks: boolean
@@ -25,7 +23,9 @@ interface Options {
   readonly notify: (toast: ToastInput) => void
 }
 
-export function useProject({ documents, cards, activeId, sheet, preferences, showCutMarks, keywords, apply, notify }: Options) {
+export function useProject({ stations, activeStationId, sheet, preferences, showCutMarks, keywords, apply, notify }: Options) {
+  const documents = stations.flatMap((station) => station.documents)
+  const active = stations.find((station) => station.id === activeStationId)!
   const [busy, setBusy] = useState(false)
   const save = useCallback(() => {
     void (async () => {
@@ -36,7 +36,7 @@ export function useProject({ documents, cards, activeId, sheet, preferences, sho
           const bytes = await getProjectSource(doc.id)
           if (bytes !== null && new TextDecoder('latin1').decode(bytes.slice(0, 1024)).includes('%PDF-')) sources[doc.id] = encodeSource(bytes)
         }
-        const project: Project = { format: 'crewbtc-project', version: 2, snapshot: { version: SNAPSHOT_VERSION, documents, cards, activeId, savedAt: new Date().toISOString() }, sheet, preferences, showCutMarks, keywords, sources }
+        const project: Project = { format: 'crewbtc-project', version: 3, snapshot: { version: SNAPSHOT_VERSION, documents: active.documents, cards: active.cards, activeId: active.activeId, stations, activeStationId, savedAt: new Date().toISOString() }, sheet, preferences, showCutMarks, keywords, sources }
         const json = JSON.stringify(project)
         parseProject(json) // Never download a project this version cannot reopen.
         const blob = new Blob([json], { type: 'application/json' })
@@ -56,7 +56,7 @@ export function useProject({ documents, cards, activeId, sheet, preferences, sho
         notify({ variant: 'error', title: 'Could not save project', description: 'Check the sheet settings and try again.' })
       } finally { setBusy(false) }
     })()
-  }, [documents, cards, activeId, sheet, preferences, showCutMarks, keywords, notify])
+  }, [stations, activeStationId, active, documents, sheet, preferences, showCutMarks, keywords, notify])
 
   const open = useCallback(() => {
     void (async () => {
@@ -65,8 +65,8 @@ export function useProject({ documents, cards, activeId, sheet, preferences, sho
       setBusy(true)
       try {
         const project = parseProject(await file.text())
-        if (documents.length > 0 && !window.confirm('Opening a project replaces the current workspace. Save your current project first if you want to keep it. Continue?')) return
-        await cancelProjectRetirement(project.snapshot.documents.map((doc) => doc.id)).catch(() => undefined)
+        if ((documents.length > 0 || stations.length > 1 || stations.some((station) => station.name !== 'Station 1')) && !window.confirm('Opening a project replaces the current workspace. Save your current project first if you want to keep it. Continue?')) return
+        await cancelProjectRetirement(project.snapshot.stations.flatMap((station) => station.documents.map((doc) => doc.id))).catch(() => undefined)
         const decoded = Object.entries(project.sources).map(([id, data]) => [id, decodeSource(data)] as const)
         const persisted = await Promise.all(decoded.map(async ([id, bytes]) => {
           try { await putProjectSource(id, bytes); return true } catch { return false }
@@ -74,13 +74,13 @@ export function useProject({ documents, cards, activeId, sheet, preferences, sho
         releaseAll()
         releaseProxies()
         for (const [id, bytes] of decoded) {
-          const doc = project.snapshot.documents.find((item) => item.id === id)
+          const doc = project.snapshot.stations.flatMap((station) => station.documents).find((item) => item.id === id)
           if (doc !== undefined) keepSource(doc.fileName, bytes)
         }
         apply(project)
-        const retained = new Set(project.snapshot.documents.map((doc) => doc.id))
+        const retained = new Set(project.snapshot.stations.flatMap((station) => station.documents.map((doc) => doc.id)))
         void retireProjectSources(documents.filter((doc) => !retained.has(doc.id)).map((doc) => doc.id)).catch(() => undefined)
-        const missing = project.snapshot.documents.length - decoded.length
+        const missing = project.snapshot.stations.reduce((count, station) => count + station.documents.length, 0) - decoded.length
         if (missing > 0 || persisted.includes(false)) {
           notify({ variant: 'warning', title: 'Project opened with missing originals', description: 'Cards are editable, but some original PDFs may need to be added again for re-running or saving a complete project.' })
         } else {
@@ -90,6 +90,6 @@ export function useProject({ documents, cards, activeId, sheet, preferences, sho
         notify({ variant: 'error', title: 'Could not open project', description: 'The file is damaged or is not a supported CrewBTC project. Your current workspace was not changed.' })
       } finally { setBusy(false) }
     })()
-  }, [documents, apply, notify])
+  }, [stations, documents, apply, notify])
   return { save, open, busy }
 }

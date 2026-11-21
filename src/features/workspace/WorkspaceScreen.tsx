@@ -30,6 +30,18 @@ import { useProject } from './project/use-project'
 import { useCutGuides } from './sheet/use-cut-guides'
 import { useKeywords } from './project/use-keywords'
 import { useAutoFormat } from './cards/use-auto-format'
+import { useReview } from './review/use-review'
+import { jumpToReviewIssue } from './review/use-review-jump'
+import { useCardDefaults } from './cards/use-card-defaults'
+import { remapStationCards } from './stations/rebase-cards'
+import { useSharedSheet } from './stations/use-shared-sheet'
+import { useStations } from './stations/use-stations'
+import { StationTabs } from './stations/StationTabs'
+import { PrintSelection } from './stations/PrintSelection'
+import { emptyStation } from '../../types/station'
+import { retireProjectSources } from '../../lib/storage/project-sources'
+import { releaseAll } from '../../lib/export/doc-cache'
+import { releaseProxies } from '../../lib/pdf/proxy-cache'
 import { PdfPreview } from './preview/PdfPreview'
 import type { Project } from '../../lib/project/project'
 import type { useToasts } from '../../components/ui/use-toasts'
@@ -42,10 +54,9 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const [showCutMarks, setShowCutMarks] = useCutGuides()
   const [keywords, setKeywords] = useKeywords()
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [stripCollapsed, setStripCollapsed] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false); const [stripCollapsed, setStripCollapsed] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(true)
-  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false); const [printing, setPrinting] = useState(false)
   useUpdateNotice(() => {
     notify({
       variant: 'info',
@@ -64,25 +75,20 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   })
   const sheet = useSheet()
   const cardStore = useCards(session.snapshot?.cards ?? null)
+  const stationState = useStations(session.snapshot, batch, cardStore)
+  const sharedSheet = useSharedSheet(sheet, stationState)
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
   const zoom = useSheetZoom(sheet.settings.sheetWidthMm)
   useSaveSession(session.restored && batch.hydrated, {
     documents: batch.documents,
     cards: cardStore.cards,
-    activeId: batch.activeId,
+    activeId: batch.activeId, stations: stationState.stations, activeStationId: stationState.activeId,
   })
+  const cardDefaults = useCardDefaults()
   const seeds = useCardSeeds(pageRefs, sheet.grid, batch.documents)
-  useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm)
+  useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm, cardDefaults.bands, stationState.stations.find((station) => station.id === stationState.activeId)?.name)
   const autoFormat = useAutoFormat(cardStore, seeds, keywords, notify)
   const visibleCards = useMemo(() => numberedCards(cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale ?? DEFAULT_TEXT_SCALE), [cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale])
-  const exporter = useCardExport({
-    settings: sheet.settings,
-    grid: sheet.grid,
-    pages: pageRefs,
-    drawCutMarks: showCutMarks,
-    cards: visibleCards,
-    notify,
-  })
   const toggleStrip = useCallback(() => setStripCollapsed((collapsed) => !collapsed), [])
   const toggleInspector = useCallback(() => setInspectorOpen((open) => !open), [])
   const clearSelection = useCallback(() => setSelectedCell(null), [])
@@ -90,26 +96,23 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     batch,
     store: cardStore,
     notify,
-    clearSelection,
+    clearSelection, stationId: stationState.activeId,
   })
-
   const handleAdd = useCallback(() => {
     void (async () => {
       const files = await pickFiles()
       if (files.length > 0) batch.addFiles(files)
     })()
   }, [batch])
-
   const applyProject = useCallback((project: Project) => {
-    batch.replaceProject(project.snapshot.documents, project.snapshot.activeId)
-    cardStore.restoreCards(project.snapshot.cards)
-    sheet.update(project.sheet)
+    stationState.replace(project.snapshot.stations, project.snapshot.activeStationId)
+    sharedSheet.applied(project.sheet); sheet.update(project.sheet)
     updateSettings(project.preferences)
     setShowCutMarks(project.showCutMarks)
     setKeywords(project.keywords)
     setSelectedCell(null)
-  }, [batch, cardStore, sheet, updateSettings, setShowCutMarks, setKeywords])
-  const project = useProject({ documents: batch.documents, cards: cardStore.cards, activeId: batch.activeId, sheet: sheet.settings, preferences: settings, showCutMarks, keywords, apply: applyProject, notify })
+  }, [stationState, sheet, sharedSheet, updateSettings, setShowCutMarks, setKeywords])
+  const project = useProject({ stations: stationState.stations, activeStationId: stationState.activeId, sheet: sheet.settings, preferences: settings, showCutMarks, keywords, apply: applyProject, notify })
   const hasBatch = batch.documents.length > 0
   const {
     sheets,
@@ -127,8 +130,17 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     setSelectedCell,
   })
   const sheetCount = sheets.length
+  const review = useReview(sheets, sheet.grid, visibleCards)
+  const exporter = useCardExport({
+    settings: sheet.settings,
+    grid: sheet.grid,
+    pages: pageRefs,
+    drawCutMarks: showCutMarks,
+    cards: visibleCards,
+    sheetIndex,
+    notify,
+  })
   const reveal = usePageReveal(pageRefs, sheet.grid, selectCell, goToSheet)
-
   const selectionKey = selectedCardKey(
     selectedCell,
     sheet.grid,
@@ -136,8 +148,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     selectionSheet ?? 0,
   )
   const selectedCard = selectionKey === null ? null : (visibleCards[selectionKey] ?? null)
-
-
   return (
     <div className="flex h-[100svh] max-h-[100svh] w-full flex-col overflow-hidden bg-surface-canvas">
       <TopBar
@@ -149,6 +159,8 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         onStep={zoom.step}
         onFit={zoom.fit}
         onOpenSettings={() => setSettingsOpen(true)}
+        onNewProject={() => { if (!window.confirm('Start a new project? Save your current project first if you want to keep it.')) return; void retireProjectSources(stationState.stations.flatMap((station) => station.documents.map((doc) => doc.id))).catch(() => undefined); releaseAll(); releaseProxies(); const id = crypto.randomUUID(); stationState.replace([emptyStation(id, 'Station 1')], id); setSelectedCell(null); setPreviewOpen(false) }}
+        onPrintSelection={() => setPrinting(true)} anyProjectCards={stationState.stations.some((station) => station.documents.length > 0)} hasProject={stationState.stations.length > 1 || stationState.stations.some((station) => station.documents.length > 0 || station.name !== 'Station 1')}
         onSaveProject={project.save}
         onOpenProject={project.open}
         projectBusy={project.busy || batch.busy || !session.restored}
@@ -159,41 +171,34 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         hasBatch={hasBatch}
         inspectorOpen={inspectorOpen}
         onToggleInspector={toggleInspector}
+        reviewLabel={review.status === 'checking' ? 'Checking…' : review.status === 'error' ? 'Review unavailable' : `Review ${review.issues.length}`}
+        onReview={() => { setInspectorOpen(true); window.requestAnimationFrame(() => document.getElementById('batch-review')?.focus()) }}
         previewOpen={previewOpen}
         onTogglePreview={() => setPreviewOpen((open) => !open)}
       />
-
+      <StationTabs stations={stationState.stations} activeId={stationState.activeId} busy={batch.busy || project.busy || !session.restored} onSwitch={(id) => { stationState.switchTo(id); setSelectedCell(null); setPreviewOpen(false) }} onAdd={(name) => { stationState.add(name); setSelectedCell(null); setPreviewOpen(false) }} onRename={stationState.rename} />
       <main className="relative flex min-h-0 flex-1">
         <aside
           aria-label="Files"
           className="hidden w-[220px] shrink-0 border-r border-hairline bg-surface-panel md:flex md:flex-col"
         >
           <LeftPane
-            documents={batch.documents}
-            activeId={batch.activeId}
+            documents={batch.documents} activeId={batch.activeId}
+            onPages={(id, pages) => { const updated = stationState.stations.map((station) => station.id !== stationState.activeId ? station : remapStationCards(station, station.documents.map((doc) => doc.id === id ? { ...doc, includedPages: pages } : doc), sheet.grid, sheet.grid)); stationState.replace(updated, stationState.activeId); setSelectedCell(null) }}
             onSelectDocument={batch.select}
-            onAdd={handleAdd}
-            onReRun={batch.reRun}
-            onClear={() => { setPreviewOpen(false); clearAll() }}
-            busy={batch.busy}
-            placements={reveal.placements}
-            onReveal={reveal.onReveal}
+            onAdd={handleAdd} onReRun={batch.reRun}
+            onClear={() => { setPreviewOpen(false); clearAll() }} busy={batch.busy}
+            placements={reveal.placements} onReveal={reveal.onReveal}
           />
         </aside>
-
         <CentrePane
-          documentsLoaded={hasBatch}
-          busy={batch.busy}
-          onFiles={batch.addFiles}
-          sheet={sheet.settings}
-          grid={sheet.grid}
-          pages={pageRefs}
+          documentsLoaded={hasBatch} busy={batch.busy}
+          onFiles={batch.addFiles} sheet={sheet.settings} grid={sheet.grid} pages={pageRefs}
           showCutMarks={showCutMarks}
           cards={visibleCards}
           selectedCell={selectedCell}
           selectionSheet={selectionSheet}
-          onSelectCell={selectCell}
-          onCardChange={(key, card: Card) => cardStore.setCard(key, cardForStorage(card))}
+          onSelectCell={selectCell} onCardChange={(key, card: Card) => cardStore.setCard(key, cardForStorage(card))}
           scale={zoom.scale}
           fitting={zoom.fitting}
           paneRef={zoom.paneRef}
@@ -214,7 +219,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
             />
           }
         />
-
         {previewOpen && hasBatch && sheetCount > 0 ? <PdfPreview sheetCount={sheetCount} initialSheet={sheetIndex} onClose={() => setPreviewOpen(false)} settings={sheet.settings} grid={sheet.grid} pages={pageRefs} drawCutMarks={showCutMarks} cards={visibleCards} /> : null}
         <Inspector
           card={selectedCard}
@@ -223,20 +227,18 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           sheet={sheet.settings}
           grid={sheet.grid}
           sheetErrors={sheet.errors}
-          onSheetChange={sheet.update}
-          onResetSheet={sheet.reset}
+          onSheetChange={sharedSheet.update} onResetSheet={sharedSheet.reset}
           showCutMarks={showCutMarks}
-          onShowCutMarksChange={setShowCutMarks}
-          keywords={keywords}
-          onKeywordsChange={setKeywords}
-          onAutomate={autoFormat.apply}
-          onRemoveFormatting={autoFormat.remove}
-          canAutomate={autoFormat.available}
+          onShowCutMarksChange={setShowCutMarks} keywords={keywords}
+          onKeywordsChange={setKeywords} onAutomate={autoFormat.apply}
+          onRemoveFormatting={autoFormat.remove} canAutomate={autoFormat.available}
+          review={hasBatch ? { ...review, onJump: (issue) => jumpToReviewIssue(issue, goToSheet, selectCell) } : undefined}
+          defaultBands={cardDefaults.bands} onSaveDefaults={cardDefaults.save} onResetDefaults={cardDefaults.reset}
           busy={batch.busy || project.busy}
           open={inspectorOpen}
         />
       </main>
-
+      {printing ? <PrintSelection stations={stationState.stations} grid={sheet.grid} settings={sheet.settings} drawCutMarks={showCutMarks} onClose={() => setPrinting(false)} notify={notify} /> : null}
       <SettingsDialog
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}

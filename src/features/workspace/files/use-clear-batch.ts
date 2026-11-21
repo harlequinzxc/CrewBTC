@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { retireProjectSources, cancelProjectRetirement } from '../../../lib/storage/project-sources'
 import type { useBatch } from './use-batch'
 import type { useCards } from '../cards/use-cards'
@@ -24,8 +24,11 @@ export function useClearBatch(input: {
   readonly store: ReturnType<typeof useCards>
   readonly notify: ReturnType<typeof useToasts>['show']
   readonly clearSelection: () => void
+  readonly stationId: string
 }): ClearBatch {
-  const { batch, store, notify, clearSelection } = input
+  const { batch, store, notify, clearSelection, stationId } = input
+  const latest = useRef({ stationId, batch, store })
+  useEffect(() => { latest.current = { stationId, batch, store } }, [stationId, batch, store])
 
   const clearAll = useCallback(() => {
     const documents = batch.documents
@@ -44,13 +47,17 @@ export function useClearBatch(input: {
       title: `Cleared ${documents.length} ${documents.length === 1 ? 'file' : 'files'}`,
       description: 'The batch and its card edits were removed.',
       undo: () => {
+        if (latest.current.stationId !== stationId || latest.current.batch.documents.length > 0 || Object.keys(latest.current.store.cards).length > 0) {
+          notify({ variant: 'warning', title: 'Cannot undo clear here', description: 'The cleared station is no longer active or is no longer empty; its contents were not restored.' })
+          return
+        }
         void cancelProjectRetirement(ids).catch(() => undefined)
         batch.restoreCleared(documents, activeId)
         store.restoreCards(cards)
       },
       action: 'Undo',
     })
-  }, [batch, store, notify, clearSelection])
+  }, [batch, store, notify, clearSelection, stationId])
 
   return { clearAll }
 }

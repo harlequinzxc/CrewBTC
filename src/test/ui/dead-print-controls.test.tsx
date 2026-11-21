@@ -69,6 +69,7 @@ describe('the inspector', () => {
   it('no longer offers a print page to configure', () => {
     render(
       <Inspector
+        defaultBands={{ headerMm: 7.28, footerMm: 35.45 }} onSaveDefaults={() => undefined} onResetDefaults={() => undefined}
         card={null}
         cellIndex={null}
         units="mm"

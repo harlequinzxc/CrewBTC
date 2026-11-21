@@ -56,7 +56,6 @@ test('preview navigation renders each actual sheet and does not silently show sh
   await page.getByRole('button', { name: 'Preview PDF' }).click()
   const preview = page.getByRole('complementary', { name: 'PDF preview' })
   await expect(preview.getByText('PDF preview up to date')).toBeVisible({ timeout: 30_000 })
-  await expect(preview.getByText(/This sheet export currently writes sheet 1/)).toBeVisible()
   const first = await preview.getByRole('img', { name: 'Generated PDF, sheet 1' }).getAttribute('src')
   await preview.getByRole('button', { name: 'Next preview sheet' }).click()
   await expect(preview.getByText('PDF preview up to date')).toBeVisible({ timeout: 30_000 })

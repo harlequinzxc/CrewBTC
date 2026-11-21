@@ -7,16 +7,16 @@ import { DEFAULT_SHEET } from '../../types/imposition'
 afterEach(() => localStorage.clear())
 
 describe('storage upgrades', () => {
-  it('retains a v1 session and upgrades it to v3', () => {
+  it('retains a v1 session and upgrades it to v4', () => {
     const old = { version: 1, documents: [], cards: { key: { headerText: 'edited' } }, activeId: null, savedAt: '2026-01-01' }
     const migrated = validate(old)
-    expect(migrated?.version).toBe(3)
+    expect(migrated?.version).toBe(4)
     expect(migrated?.cards.key?.headerText).toBe('edited')
   })
   it('retains a v2 session with old card labels', () => {
     const old = { version: 2, documents: [], cards: { key: { cornerLabel: 'original' } }, activeId: null }
     const migrated = validate(old)
-    expect(migrated?.version).toBe(3)
+    expect(migrated?.version).toBe(4)
     expect(migrated?.cards.key?.cornerLabel).toBe('original')
   })
   it('retains legacy sheet geometry and writes the versioned setting', async () => {
@@ -31,9 +31,9 @@ describe('storage upgrades', () => {
 })
 
 
-it('defaults to 80 percent while retaining a previously saved choice', () => {
+it('defaults to 90 percent while retaining a previously saved choice', () => {
   const first = renderHook(() => useSheet())
-  expect(first.result.current.settings.textScale).toBe(0.8)
+  expect(first.result.current.settings.textScale).toBe(0.9)
   first.unmount()
   localStorage.setItem('crewbtc.sheet.v2', JSON.stringify({ ...DEFAULT_SHEET, textScale: 1.5 }))
   const saved = renderHook(() => useSheet())

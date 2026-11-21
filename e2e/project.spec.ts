@@ -155,13 +155,15 @@ test('replacing a project releases only the previous originals', async ({ page }
   const pending = page.waitForEvent('download')
   await page.getByLabel('Save project').click()
   const project = JSON.parse((await readFile(await (await pending).path())).toString()) as {
-    snapshot: { documents: { id: string }[]; activeId: string | null }
+    snapshot: { documents: { id: string }[]; activeId: string | null; stations: { documents: { id: string }[]; activeId: string | null }[] }
     sources: Record<string, string>
   }
   const oldId = project.snapshot.documents[0]!.id
   const newId = 'replacement-document-id'
   project.snapshot.documents[0]!.id = newId
   project.snapshot.activeId = newId
+  project.snapshot.stations[0]!.documents[0]!.id = newId
+  project.snapshot.stations[0]!.activeId = newId
   project.sources[newId] = project.sources[oldId]!
   delete project.sources[oldId]
   page.once('dialog', (dialog) => { void dialog.accept() })

@@ -80,15 +80,17 @@ export function useBatch({ notify, restore, restoreActiveId }: BatchOptions): Ba
   const hydrated = restore !== undefined
 
   const runIn = useCallback(
-    async (files: readonly File[]) => {
+    async (files: readonly File[], pageFilters?: ReadonlyMap<string, readonly number[]>) => {
       if (files.length === 0) return
       cancelled.current = false
       setBusy(true)
 
       try {
-        const results = await ingestBatch(files, {
+        const ingested = await ingestBatch(files, {
           shouldContinue: () => !cancelled.current,
-          onUpdate: (document) => {
+          onUpdate: (incoming) => {
+            const pages = pageFilters?.get(incoming.fileName)
+            const document = pages === undefined ? incoming : { ...incoming, includedPages: pages.filter((page) => page <= (incoming.metrics?.pageCount ?? Number.MAX_SAFE_INTEGER)) }
             setDocuments((current) => {
               const next = current.filter((item) => item.id !== document.id)
               return [...next, document]
@@ -99,6 +101,11 @@ export function useBatch({ notify, restore, restoreActiveId }: BatchOptions): Ba
               sources.current.set(document.id, source)
             }
           },
+        })
+
+        const results = ingested.map((document) => {
+          const pages = pageFilters?.get(document.fileName)
+          return pages === undefined ? document : { ...document, includedPages: pages.filter((page) => page <= (document.metrics?.pageCount ?? Number.MAX_SAFE_INTEGER)) }
         })
 
         // Store originals before leaving the busy state. Failure does not discard cards;
@@ -190,7 +197,7 @@ export function useBatch({ notify, restore, restoreActiveId }: BatchOptions): Ba
       }
       setDocuments([])
       setActiveId(null)
-      await runIn(pending)
+      await runIn(pending, new Map(documents.flatMap((document) => document.includedPages === undefined ? [] : [[document.fileName, document.includedPages] as const])))
       void retireProjectSources(documents.map((document) => document.id)).catch(() => undefined)
     })()
   }, [documents, notify, runIn])

@@ -1,6 +1,10 @@
 import { cn } from '../../lib/cn'
 import { CardReadout } from './inspector/CardReadout'
 import { SheetSection } from './inspector/SheetSection'
+import { BatchReview } from './review/BatchReview'
+import type { ReviewIssue } from './review/review-cards'
+import { CardDefaults } from './inspector/CardDefaults'
+import type { CardBands } from '../../types/card'
 import { AutoFormatSection } from './inspector/AutoFormatSection'
 import type { Keywords } from '../../types/format-keywords'
 import type { Card } from '../../types/card'
@@ -46,6 +50,10 @@ export interface InspectorProps {
   readonly onAutomate: () => void
   readonly onRemoveFormatting: () => void
   readonly canAutomate: boolean
+  readonly review?: { status: 'checking' | 'error' | 'ready'; issues: readonly ReviewIssue[]; onJump: (issue: ReviewIssue) => void } | undefined
+  readonly defaultBands: CardBands
+  readonly onSaveDefaults: (bands: CardBands) => void
+  readonly onResetDefaults: () => void
   readonly busy: boolean
 }
 
@@ -62,7 +70,9 @@ export function Inspector(props: InspectorProps) {
         props.open ? 'lg:flex' : undefined,
       )}
     >
+      {props.review === undefined ? null : <BatchReview {...props.review} />}
       {props.card !== null && props.cellIndex !== null ? <CardReadout card={props.card} cellIndex={props.cellIndex} units={props.units} /> : null}
+      <CardDefaults card={props.card} bands={props.defaultBands} units={props.units} onSave={props.onSaveDefaults} onReset={props.onResetDefaults} />
       <AutoFormatSection keywords={props.keywords} onChange={props.onKeywordsChange} onApply={props.onAutomate} onRemove={props.onRemoveFormatting} available={props.canAutomate} busy={props.busy} />
       <SheetSection
         sheet={props.sheet}

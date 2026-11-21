@@ -58,7 +58,7 @@ describe('the three zones tile the cell', () => {
 
 describe('bands are tuned per card, within limits', () => {
   it('uses the requested defaults when they fit, and clamps small cells', () => {
-    expect(defaultBands(67)).toEqual({ headerMm: 7.28, footerMm: 35.45 })
+    expect(defaultBands(67)).toEqual({ headerMm: 8.56, footerMm: 35.45 })
     const small = defaultBands(35)
     expect(small.headerMm + small.footerMm).toBeLessThanOrEqual(35 - PICTURE_MIN_MM)
   })

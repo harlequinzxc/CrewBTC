@@ -25,11 +25,24 @@ describe('editable project validation', () => {
   })
   it('rejects a future version and malformed nested content', () => {
     const value = project()
-    expect(() => parseProject(JSON.stringify({ ...value, version: 3 }))).toThrow()
+    expect(() => parseProject(JSON.stringify({ ...value, version: 4 }))).toThrow()
     expect(() => parseProject(JSON.stringify({ ...value, version: 2, keywords: { crockeries: 42 } }))).toThrow()
     expect(() => parseProject(JSON.stringify({ ...value, sheet: { ...value.sheet, sheetWidthMm: -1 } }))).toThrow()
     expect(() => parseProject(JSON.stringify({ ...value, sources: { one: btoa('not a pdf') } }))).toThrow()
     expect(() => parseProject(JSON.stringify({ ...value, snapshot: { ...value.snapshot, cards: { card: { photo: null } } } }))).toThrow()
     expect(() => parseProject(JSON.stringify({ ...value, snapshot: { ...value.snapshot, documents: [{ ...value.snapshot.documents[0], copies: [] }] } }))).toThrow()
   })
+  it('migrates an old project and validates every station in the new format', () => {
+    const legacy = parseProject(JSON.stringify(project()))
+    expect(legacy.version).toBe(3)
+    expect(legacy.snapshot.stations).toHaveLength(1)
+    expect(legacy.snapshot.stations[0]?.cards.card?.headerText).toBe('')
+    const second = { id: 'second-station', name: 'HND', documents: [], cards: { edited: { ...blankCard(67), bodyText: 'KEEP ME' } }, activeId: null }
+    const snapshot = { ...legacy.snapshot, stations: [...legacy.snapshot.stations, second] }
+    const roundTrip = parseProject(JSON.stringify({ ...legacy, snapshot }))
+    expect(roundTrip.snapshot.stations[1]?.cards.edited?.bodyText).toBe('KEEP ME')
+    expect(() => parseProject(JSON.stringify({ ...legacy, snapshot: { ...snapshot, stations: [...snapshot.stations, second] } }))).toThrow()
+    expect(() => parseProject(JSON.stringify({ ...legacy, snapshot: { ...snapshot, stations: [snapshot.stations[0], { ...second, cards: { bad: {} } }] } }))).toThrow()
+  })
+
 })
