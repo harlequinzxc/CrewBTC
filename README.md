@@ -77,6 +77,8 @@ file in CrewBTC, including on another computer; it replaces the current workspac
 confirmation. Export PDF remains the separate print-only action. Save a project again
 when you make changes: the downloaded file does not update automatically.
 
+Right-click a PDF in the Files rail and choose **Download original**, or use its options button. This downloads the original upload, not the edited cards.
+
 Original uploads are also kept in browser storage for later project saves and re-runs,
 subject to browser storage limits. Older sessions and storage failures may be missing
 original PDFs; a warning tells you if a saved project is incomplete. The cards and photos
