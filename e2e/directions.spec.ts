@@ -1,3 +1,4 @@
+import { exportCurrent } from './fixtures'
 import type { PDFArray } from '@cantoo/pdf-lib'
 import { expect, test } from '@playwright/test'
 import { textZones, uploadPdf } from './fixtures'
@@ -22,7 +23,7 @@ test('DIRECTIONS colours only the selected words, survives reload and prints red
   await expect(textZones(page).nth(1).locator('span span', { hasText: 'Plate' })).toHaveCSS('color', 'rgb(185, 28, 28)')
 
   const pending = page.waitForEvent('download')
-  await page.getByLabel('Export PDF').click()
+  await exportCurrent(page)
   const download = await pending
   const { readFile } = await import('node:fs/promises')
   const { PDFDocument } = await import('@cantoo/pdf-lib')

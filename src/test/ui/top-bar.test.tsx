@@ -91,10 +91,12 @@ describe('the top bar', () => {
     expect(props.onOpenSettings).toHaveBeenCalled()
   })
 
-  it('exports the current sheet from the primary button', () => {
+  it('opens export choices without exporting until a choice is made', () => {
     const props = render_()
     fireEvent.click(screen.getByRole('button', { name: 'Export PDF' }))
-    expect(props.onExportCurrent).toHaveBeenCalled()
+    expect(props.onExportCurrent).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'This sheet' }))
+    expect(props.onExportCurrent).toHaveBeenCalledOnce()
   })
 
   it('keeps the second export route in a menu rather than a second button', () => {
@@ -103,7 +105,7 @@ describe('the top bar', () => {
     expect(screen.getAllByText('Export')).toHaveLength(1)
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Export options' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Export PDF' }))
     const menu = screen.getByRole('menu')
     expect(within(menu).getByText('This sheet')).toBeInTheDocument()
     expect(within(menu).getByText('All sheets')).toBeInTheDocument()
@@ -116,8 +118,8 @@ describe('the top bar', () => {
 
   it('offers custom selection even when only another station has cards', () => {
     const props = render_({ hasBatch: false, anyProjectCards: true, onPrintSelection: vi.fn() })
-    expect(screen.getByRole('button', { name: 'Export PDF' })).toBeDisabled()
-    fireEvent.click(screen.getByRole('button', { name: 'Export options' }))
+    expect(screen.getByRole('button', { name: 'Export PDF' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Export PDF' }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'Custom selection' }))
     expect(props.onPrintSelection).toHaveBeenCalledOnce()
     expect(screen.queryByRole('button', { name: 'Print selection' })).not.toBeInTheDocument()
@@ -126,12 +128,11 @@ describe('the top bar', () => {
   it('disables export with nothing loaded', () => {
     render_({ hasBatch: false })
     expect(screen.getByRole('button', { name: 'Export PDF' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Export options' })).toBeDisabled()
   })
 
   it('hides the all-sheets option when there is only one sheet', () => {
     render_({ sheetCount: 1, hasMoreThanOneSheet: false })
-    fireEvent.click(screen.getByRole('button', { name: 'Export options' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Export PDF' }))
     const menu = screen.getByRole('menu')
     // "This sheet" and "All sheets" would be the same file; offering both is noise.
     expect(within(menu).getByText('This sheet')).toBeInTheDocument()

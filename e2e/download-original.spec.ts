@@ -1,3 +1,4 @@
+import { projectAction } from './fixtures'
 import { readFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
 import { pdfFile, uploadPdf } from './fixtures'
@@ -25,12 +26,12 @@ test('right-click downloads the exact original after reload; keyboard options wo
 test('missing original explains why it cannot be downloaded', async ({ page }) => {
   await uploadPdf(page)
   const saved = page.waitForEvent('download')
-  await page.getByRole('button', { name: 'Save project' }).click()
+  await projectAction(page, 'Save project')
   const project = JSON.parse((await readFile(await (await saved).path())).toString()) as { sources: Record<string, number> }
   project.sources = {}
   page.once('dialog', (dialog) => dialog.accept())
   const chooser = page.waitForEvent('filechooser')
-  await page.getByRole('button', { name: 'Open project' }).click()
+  await projectAction(page, 'Open project')
   await (await chooser).setFiles({ name: 'no-source.crewbtc', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(project)) })
   await expect(page.getByRole('button', { name: 'Options for cards.pdf' })).toBeVisible()
   // Clear this browser's original bytes as well as the imported project's references.

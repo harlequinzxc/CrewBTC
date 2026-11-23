@@ -1,3 +1,4 @@
+import { expectSaveEnabled, exportCurrent } from './fixtures'
 import type { PDFArray } from '@cantoo/pdf-lib'
 import { expect, test } from '@playwright/test'
 import { textZones, uploadPdf } from './fixtures'
@@ -49,7 +50,7 @@ test('clear all offers an undo that restores the batch', async ({ page }) => {
   await page.getByRole('button', { name: /undo/i }).click()
   await expect(page.locator('[data-cell]')).toHaveCount(drawn)
   const download = page.waitForEvent('download')
-  await page.getByLabel('Export PDF').click()
+  await exportCurrent(page)
   await download
   await expect(page.getByText(`${drawn} cards`, { exact: false })).toBeVisible()
 })
@@ -65,7 +66,7 @@ test('export after reload contains the edited text, label, and photo', async ({ 
   await expect(page.locator('[data-cell]').first()).toBeVisible()
   await expect(page.locator('[data-cell]').first()).toContainText('KEPT')
   const pending = page.waitForEvent('download')
-  await page.getByLabel('Export PDF').click()
+  await exportCurrent(page)
   const download = await pending
   const { readFile } = await import('node:fs/promises')
   const { PDFDocument } = await import('@cantoo/pdf-lib')
@@ -89,7 +90,7 @@ test('export after reload contains the edited text, label, and photo', async ({ 
 
 test('clear undo keeps original PDF; a later clear releases it after the undo window', async ({ page }) => {
   await uploadPdf(page)
-  await expect(page.getByLabel('Save project')).toBeEnabled()
+  await expectSaveEnabled(page)
   const sourceIds = () => page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open('crewbtc-project-sources')

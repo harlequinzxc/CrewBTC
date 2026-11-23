@@ -141,3 +141,20 @@ export async function inkShift(page: Page, index: number): Promise<{ drawn: numb
   await page.waitForTimeout(300)
   return { drawn, editing }
 }
+
+/** Project actions live behind the compact header menu. */
+export async function projectAction(page: Page, action: 'New project' | 'Open project' | 'Save project'): Promise<void> {
+  await page.getByRole('button', { name: 'Project options' }).click()
+  await page.getByRole('menuitem', { name: action }).click()
+}
+
+export async function expectSaveEnabled(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Project options' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Save project' })).toBeEnabled()
+  await page.keyboard.press('Escape')
+}
+
+export async function exportCurrent(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Export PDF' }).click()
+  await page.getByRole('menuitem', { name: 'This sheet' }).click()
+}

@@ -1,3 +1,4 @@
+import { expectSaveEnabled } from './fixtures'
 import { expect, test } from '@playwright/test'
 import { uploadPdf } from './fixtures'
 
@@ -6,7 +7,7 @@ test('re-run explains itself on a restored batch instead of denying the files ex
   page,
 }) => {
   await uploadPdf(page)
-  await expect(page.getByLabel('Save project')).toBeEnabled()
+  await expectSaveEnabled(page)
   await page.waitForTimeout(1000)
   // Simulate an older session created before original uploads were retained.
   await page.evaluate(async () => { await new Promise<void>((resolve, reject) => {
