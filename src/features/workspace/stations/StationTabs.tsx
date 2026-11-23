@@ -12,16 +12,26 @@ interface Props {
 }
 
 export function StationTabs({ stations, activeId, busy, onSwitch, onAdd, onRename }: Props) {
-  const [editing, setEditing] = useState<string | null>(null)
+  const [editing, setEditing] = useState<{ id: string; width: number } | null>(null)
   const [name, setName] = useState('')
   const cancelled = useRef(false)
   const tabs = useRef(new Map<string, HTMLButtonElement>())
   const focusInput = useCallback((node: HTMLInputElement | null) => { if (node !== null) { node.focus(); node.select() } }, [])
   const tabRef = (id: string) => (node: HTMLButtonElement | null) => { if (node === null) tabs.current.delete(id); else tabs.current.set(id, node) }
-  const start = (station: StationWorkspace) => { cancelled.current = false; setName(station.name); setEditing(station.id) }
-  return <div className="flex h-9 shrink-0 items-stretch gap-0.5 overflow-x-auto border-b border-hairline bg-surface-canvas px-3" aria-label="Station workspaces">
-    {stations.map((station) => editing === station.id ? <input key={station.id} ref={focusInput} aria-label={`Rename ${station.name}`} value={name} onChange={(event) => setName(event.target.value)} onFocus={(event) => event.currentTarget.select()} onBlur={() => { if (!cancelled.current && !busy) onRename(station.id, name); setEditing(null) }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === 'Escape') { if (event.key === 'Escape') cancelled.current = true; event.currentTarget.blur(); requestAnimationFrame(() => tabs.current.get(station.id)?.focus()) } }} className="my-1 w-32 shrink-0 rounded border border-hairline-strong bg-surface-panel px-2 text-base text-ink-primary focus:outline focus:outline-1 focus:outline-accent" /> :
-      <button key={station.id} ref={tabRef(station.id)} type="button" data-target="dense" disabled={busy} aria-current={station.id === activeId ? 'page' : undefined} title={`${station.name} — double-click or press F2 to rename`} onClick={() => onSwitch(station.id)} onDoubleClick={() => start(station)} onKeyDown={(event) => { if (event.key === 'F2') { event.preventDefault(); start(station) } }} className={`relative min-h-8 max-w-40 shrink-0 truncate border-b-2 px-3 text-xs tabular-nums hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50 ${station.id === activeId ? 'border-accent bg-surface-panel font-semibold text-ink-primary' : 'border-transparent text-ink-secondary'}`}>{station.name}</button>)}
-    <button type="button" data-target="dense" aria-label="New station" title="New station" disabled={busy} onClick={() => { const value = window.prompt('Name the new station'); if (value !== null) onAdd(value) }} className="my-0.5 grid size-8 shrink-0 place-items-center rounded text-ink-secondary hover:bg-surface-active hover:text-ink-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"><Plus aria-hidden className="size-4" /></button>
+  const start = (station: StationWorkspace) => {
+    cancelled.current = false
+    setName(station.name)
+    setEditing({ id: station.id, width: tabs.current.get(station.id)?.getBoundingClientRect().width ?? 128 })
+  }
+  return <div className="flex h-8 shrink-0 items-center gap-0.5 overflow-x-auto border-b border-hairline bg-surface-canvas px-3" aria-label="Station workspaces">
+    {stations.map((station) => {
+      const active = station.id === activeId
+      const isEditing = editing?.id === station.id
+      return <div key={station.id} style={isEditing ? { width: editing.width } : undefined} className={`flex h-8 max-w-40 shrink-0 items-center justify-center border-b-2 ${active ? 'border-accent bg-surface-panel font-semibold text-ink-primary' : 'border-transparent text-ink-secondary'}`}>
+        {isEditing ? <input ref={focusInput} data-density="compact" aria-label={`Rename ${station.name}`} value={name} onChange={(event) => setName(event.target.value)} onBlur={() => { if (!cancelled.current && !busy) onRename(station.id, name); setEditing(null) }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === 'Escape') { if (event.key === 'Escape') cancelled.current = true; event.currentTarget.blur(); requestAnimationFrame(() => tabs.current.get(station.id)?.focus()) } }} className="w-full appearance-none rounded border border-white/20 bg-surface-raised px-[11px] text-base font-[inherit] leading-none text-ink-primary outline-none" /> :
+          <button ref={tabRef(station.id)} type="button" data-target="dense" disabled={busy} aria-current={active ? 'page' : undefined} title={`${station.name} — double-click to rename`} onClick={() => onSwitch(station.id)} onDoubleClick={() => start(station)} className="inline-flex h-8 max-w-40 items-center justify-center truncate px-3 text-base leading-none tabular-nums hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"><span className="truncate">{station.name}</span></button>}
+      </div>
+    })}
+    <button type="button" data-target="dense" aria-label="New station" title="New station" disabled={busy} onClick={() => { const value = window.prompt('Name the new station'); if (value !== null) onAdd(value) }} className="inline-flex size-8 shrink-0 items-center justify-center rounded leading-none text-ink-secondary hover:bg-surface-active hover:text-ink-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"><Plus aria-hidden className="size-4" /></button>
   </div>
 }
