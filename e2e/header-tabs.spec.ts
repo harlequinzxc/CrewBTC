@@ -78,6 +78,15 @@ test('station renaming keeps neighboring tabs and plus aligned without extra acc
   expect(styles).toMatchObject({ fontSize: '16px', fontWeight: '600', outline: 'none', bottomWidth: '2px' })
   expect(styles.left).toBe(styles.right)
   expect(styles.left).toContain('/ 0.2')
+  await input.fill('I')
+  const short = (await input.boundingBox())!
+  await input.fill('WWWWWWWWWWWWWWWWWWWW')
+  const long = (await input.boundingBox())!
+  expect(short.width).toBeLessThan(editing!.width)
+  expect(long.width).toBeGreaterThan(160)
+  expect(long.y).toBe(short.y)
+  await input.fill('ABCMP')
+  expect((await input.boundingBox())!.width).toBeCloseTo(editing!.width, 0)
   await input.blur()
   expect(await middle.boundingBox()).toEqual(before)
 })

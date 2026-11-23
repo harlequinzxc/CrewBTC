@@ -61,7 +61,8 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - Each file row offers a right-click and keyboard-accessible action to download its stored
   original PDF, with an explanation when the original is unavailable.
 - The header keeps zoom centered; project actions and export choices use compact menus.
-  Station tabs are horizontally scrollable and support inline rename by double-click.
+  Station tabs are horizontally scrollable and support inline rename by double-click;
+  the rename field sizes itself to the text.
 - Station tabs isolate batches and cards, while settings are shared. Page filters can place
   different pages of an uploaded PDF in different station workspaces. Custom selection packs
   chosen stations/cards into temporary sheets and preserves the originals and their labels.
@@ -131,6 +132,10 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.19.2 — 2026-11-24 — Fit station names while editing
+
+- Size the inline station rename field to its text as it changes.
 
 ### 1.19.1 — 2026-11-24 — Align station tab editing
 
