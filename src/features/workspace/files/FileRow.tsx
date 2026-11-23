@@ -1,4 +1,8 @@
-import { FileText, RotateCw } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
+import { Ellipsis, FileText, RotateCw } from 'lucide-react'
+import { downloadBytes } from '../../../lib/export/download'
+import { getProjectSource } from '../../../lib/storage/project-sources'
+import { FileDownloadMenu } from './FileDownloadMenu'
 import { cn } from '../../../lib/cn'
 import type { IngestedDocument } from '../../../types/document'
 import { STATUS_TEXT } from './file-status'
@@ -10,8 +14,7 @@ import type { PagePlacement } from '../sheet/sheet-navigation'
  *
  * Split from `BatchQueue` for the same reason the queue was split from the rail: the row
  * is a small state machine of its own — active, retryable, placed or unplaced — and it was
- * pushing the list past its line budget. Nothing here decides anything the queue does; it
- * draws four facts and raises two events.
+ * pushing the list past its line budget. It also provides access to the stored original PDF.
  */
 /** One dot per state. Colour only, because the word is already the row's `title`. */
 const DOT: Record<FileStatus, string> = {
@@ -33,9 +36,21 @@ export interface FileRowProps {
 
 export function FileRow(props: FileRowProps) {
   const { document, status, active, placed } = props
-  // Only a failed or skipped file gets a per-row action. A healthy row has nothing to do
-  // to it, and a re-run icon on all twelve would put twelve controls on screen to serve
-  // the two that need one.
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+  const [error, setError] = useState(false)
+  const options = useRef<HTMLButtonElement>(null)
+  const close = useCallback((restoreFocus: boolean) => {
+    setMenu(null)
+    if (restoreFocus) options.current?.focus()
+  }, [])
+  const download = async () => {
+    close(true)
+    setError(false)
+    const bytes = await getProjectSource(document.id)
+    if (bytes === null) { setError(true); return }
+    try { downloadBytes(new Uint8Array(bytes), document.fileName) } catch { setError(true) }
+  }
+  // Retry is only useful on failed or empty files.
   const canRetry = status === 'failed' || status === 'empty'
 
   return (
@@ -49,9 +64,10 @@ export function FileRow(props: FileRowProps) {
             ? `${document.fileName} — not placed on a sheet`
             : `${document.fileName} — sheet ${placed.sheetIndex + 1}, card ${placed.cellIndex + 1}`
         }
+        onContextMenu={(event) => { event.preventDefault(); setMenu({ x: event.clientX, y: event.clientY }) }}
         onClick={props.onSelect}
         className={cn(
-          'flex h-8 w-full items-center gap-2 rounded px-1.5 text-left',
+          'flex h-8 w-full items-center gap-2 rounded pl-1.5 pr-14 text-left',
           'transition-colors duration-150 ease-out',
           'focus-visible:bg-surface-active',
           active ? 'bg-accent/12' : 'hover:bg-surface-active focus-visible:bg-surface-active',
@@ -90,6 +106,11 @@ export function FileRow(props: FileRowProps) {
         />
       </button>
 
+      <button ref={options} type="button" data-target="dense" aria-label={`Options for ${document.fileName}`} aria-haspopup="menu" aria-expanded={menu !== null} onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); setMenu(menu === null ? { x: rect.left, y: rect.bottom } : null) }} className="absolute right-1 top-1 grid size-6 place-items-center rounded text-ink-secondary hover:bg-surface-active focus-visible:bg-surface-active">
+        <Ellipsis aria-hidden className="size-4" />
+      </button>
+      {menu === null ? null : <FileDownloadMenu position={menu} onClose={close} onDownload={() => { void download() }} />}
+      {error ? <p role="alert" className="px-2 py-1 text-[11px] text-ink-primary">Original PDF unavailable or could not be downloaded. Re-add the original file if you have it.</p> : null}
       {canRetry ? (
         <button
           type="button"
@@ -97,7 +118,7 @@ export function FileRow(props: FileRowProps) {
           aria-label={`Re-run ${document.fileName}`}
           onClick={props.onReRun}
           disabled={props.busy}
-          className="absolute right-1 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded bg-surface-panel text-ink-secondary transition-colors duration-150 ease-out hover:text-ink-primary focus-visible:text-ink-primary disabled:opacity-30"
+          className="absolute right-8 top-1.5 grid size-5 place-items-center rounded bg-surface-panel text-ink-secondary transition-colors duration-150 ease-out hover:text-ink-primary focus-visible:text-ink-primary disabled:opacity-30"
         >
           <RotateCw aria-hidden className="size-2.5" />
         </button>

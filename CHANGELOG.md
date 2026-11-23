@@ -58,6 +58,8 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - The optional live PDF preview uses the export writer and PDF.js, updates after a short
   debounce, and supports sheet navigation and zoom. It splits the workspace at 1280 px and
   wider and overlays it on narrower supported windows. Failed or partial renders are reported.
+- Each file row offers a right-click and keyboard-accessible action to download its stored
+  original PDF, with an explanation when the original is unavailable.
 - Station tabs isolate batches and cards, while settings are shared. Page filters can place
   different pages of an uploaded PDF in different station workspaces. Custom selection packs
   chosen stations/cards into temporary sheets and preserves the originals and their labels.
@@ -127,6 +129,10 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.18.0 — 2026-11-24 — Download original PDFs
+
+- Download the original PDF from its file row via right-click or the options button.
 
 ### 1.17.0 — 2026-11-24 — Smaller projects and custom export
 
