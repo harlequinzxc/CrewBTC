@@ -1,3 +1,4 @@
+import { projectAction, exportCurrent } from './fixtures'
 import { expect, test } from '@playwright/test'
 import type { PDFArray } from '@cantoo/pdf-lib'
 import { textZones, uploadPdf } from './fixtures'
@@ -26,7 +27,7 @@ test('format keywords and physical lines, undo, reload, and export', async ({ pa
   await expect(page.getByLabel('directions keywords')).toHaveValue('drizzle')
   await expect(textZones(page).nth(1)).toHaveAttribute('aria-label', /• Put on PLATE\n• Drizzle soy sauce/)
   const pending = page.waitForEvent('download')
-  await page.getByLabel('Export PDF').click()
+  await exportCurrent(page)
   const download = await pending
   const { readFile } = await import('node:fs/promises')
   const { PDFDocument } = await import('@cantoo/pdf-lib')
@@ -53,7 +54,7 @@ test('keyword settings transfer with the project to a fresh browser', async ({ p
   await page.getByLabel('directions keywords').fill('toss')
   await page.getByLabel('condiments keywords').fill('salt')
   const pending = page.waitForEvent('download')
-  await page.getByLabel('Save project').click()
+  await projectAction(page, 'Save project')
   const download = await pending
   const { readFile } = await import('node:fs/promises')
   const data = await readFile(await download.path())
@@ -64,7 +65,7 @@ test('keyword settings transfer with the project to a fresh browser', async ({ p
   const fresh = await context.newPage()
   await fresh.goto('/')
   const chooser = fresh.waitForEvent('filechooser')
-  await fresh.getByLabel('Open project').click()
+  await projectAction(fresh, 'Open project')
   await (await chooser).setFiles({ name: 'project.crewbtc', mimeType: 'application/json', buffer: data })
   await expect(fresh.getByLabel('crockeries keywords')).toHaveValue('bowl\nplate')
   await expect(fresh.getByLabel('directions keywords')).toHaveValue('toss')
@@ -103,7 +104,7 @@ test('dash markers become bullets and removing callouts preserves text and suppo
   await expect(body.locator('span span', { hasText: 'drizzle' })).toHaveCSS('color', 'rgb(17, 24, 39)')
   await expect(body.locator('span span', { hasText: 'soy' })).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
   const pending = page.waitForEvent('download')
-  await page.getByLabel('Export PDF').click()
+  await exportCurrent(page)
   const { readFile } = await import('node:fs/promises')
   const { PDFDocument } = await import('@cantoo/pdf-lib')
   const pdf = await PDFDocument.load(await readFile(await (await pending).path()))

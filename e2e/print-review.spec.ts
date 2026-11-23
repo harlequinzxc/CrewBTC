@@ -1,3 +1,4 @@
+import { exportCurrent } from './fixtures'
 import type { PDFArray } from '@cantoo/pdf-lib'
 import { expect, test } from '@playwright/test'
 import { uploadPdf } from './fixtures'
@@ -19,7 +20,7 @@ test('review jumps to an affected card and current export writes its sheet', asy
   await page.getByLabel('Edit card text').fill('SECOND SHEET UNIQUE')
   await page.keyboard.press('Escape')
   const pending = page.waitForEvent('download')
-  await page.getByLabel('Export PDF').click()
+  await exportCurrent(page)
   const download = await pending
   expect(download.suggestedFilename()).toBe('crewbtc-sheet-2.pdf')
   const { readFile } = await import('node:fs/promises')

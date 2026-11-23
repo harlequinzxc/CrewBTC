@@ -42,10 +42,10 @@ export function useStations(snapshot: WorkspaceSnapshot | null, batch: ReturnTyp
     setStored(next); setActiveId(selected)
     batch.replaceProject(station.documents, station.activeId); store.restoreCards(station.cards)
   }
-  const rename = (name: string) => {
+  const rename = (id: string, name: string) => {
     const trimmed = name.trim()
     if (!trimmed) return
-    setStored(stations.map((station) => station.id === activeId ? { ...station, name: trimmed } : station))
+    setStored(stations.map((station) => station.id === id ? { ...station, name: trimmed } : station))
   }
   return { stations, activeId, switchTo, add, replace, rename }
 }

@@ -1,3 +1,4 @@
+import { projectAction, expectSaveEnabled, exportCurrent } from './fixtures'
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { PDFDocument } from '@cantoo/pdf-lib'
@@ -6,7 +7,7 @@ import { textZones, uploadPdf } from './fixtures'
 
 test('project transfers edited cards, photo, settings and original PDF to a fresh browser', async ({ page, browser }) => {
   await uploadPdf(page)
-  await expect(page.getByLabel('Save project')).toBeEnabled()
+  await expectSaveEnabled(page)
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await page.getByLabel('Units').selectOption('cm')
   await page.getByRole('button', { name: 'Close settings' }).click()
@@ -31,7 +32,7 @@ test('project transfers edited cards, photo, settings and original PDF to a fres
   await expect(page.getByLabel('Card corner label').first()).toHaveValue('ABC')
   await page.getByRole('switch', { name: 'Show cut guides' }).click()
   const pending = page.waitForEvent('download')
-  await page.getByLabel('Save project').click()
+  await projectAction(page, 'Save project')
   const download = await pending
   const bytes = await readFile(await download.path())
   const saved = JSON.parse(bytes.toString()) as { sources: Record<string, number>; pdfs: string[] }
@@ -41,7 +42,7 @@ test('project transfers edited cards, photo, settings and original PDF to a fres
   const fresh = await context.newPage()
   await fresh.goto('/')
   const chooser = fresh.waitForEvent('filechooser')
-  await fresh.getByLabel('Open project').click()
+  await projectAction(fresh, 'Open project')
   await (await chooser).setFiles({ name: 'saved.crewbtc', mimeType: 'application/json', buffer: bytes })
   await expect(fresh.getByText('Project opened', { exact: true })).toBeVisible()
   await expect(fresh.locator('[data-cell]').first()).toContainText('PORTABLE EDIT')
@@ -64,7 +65,7 @@ test('project transfers edited cards, photo, settings and original PDF to a fres
   await expect(fresh.getByLabel('Units')).toHaveValue('cm')
   await fresh.getByRole('button', { name: 'Close settings' }).click()
   const exported = fresh.waitForEvent('download')
-  await fresh.getByLabel('Export PDF').click()
+  await exportCurrent(fresh)
   const pdf = await PDFDocument.load(await readFile(await (await exported).path()))
   const contents = pdf.getPages()[0]!.node.Contents() as unknown as PDFArray
   let content = ''
@@ -80,7 +81,7 @@ test('project transfers edited cards, photo, settings and original PDF to a fres
   expect(content).toContain('<414243> Tj')
   expect(content).toMatch(/\/[^\s]+ Do\b/)
   const again = fresh.waitForEvent('download')
-  await fresh.getByLabel('Save project').click()
+  await projectAction(fresh, 'Save project')
   const restored = JSON.parse((await readFile(await (await again).path())).toString()) as { sources: Record<string, string> }
   expect(Object.keys(restored.sources)).toHaveLength(1)
   await fresh.getByRole('button', { name: /re-run all files/i }).click()
@@ -92,7 +93,7 @@ test('invalid project does not replace the workspace', async ({ page }) => {
   await uploadPdf(page)
   const original = await page.locator('[data-cell]').first().textContent()
   const chooser = page.waitForEvent('filechooser')
-  await page.getByLabel('Open project').click()
+  await projectAction(page, 'Open project')
   await (await chooser).setFiles({ name: 'bad.crewbtc', mimeType: 'application/json', buffer: Buffer.from('{"format":"crewbtc-project","version":999}') })
   await expect(page.getByText('Could not open project')).toBeVisible()
   await expect(page.locator('[data-cell]').first()).toHaveText(original!)
@@ -100,16 +101,16 @@ test('invalid project does not replace the workspace', async ({ page }) => {
 
 test('cancelling project replacement leaves the current cards untouched', async ({ page }) => {
   await uploadPdf(page)
-  await expect(page.getByLabel('Save project')).toBeEnabled()
+  await expectSaveEnabled(page)
   const pending = page.waitForEvent('download')
-  await page.getByLabel('Save project').click()
+  await projectAction(page, 'Save project')
   const bytes = await readFile(await (await pending).path())
   await textZones(page).first().click()
   await page.getByLabel('Edit card text').fill('CURRENT WORK')
   await page.keyboard.press('Escape')
   page.once('dialog', (dialog) => { void dialog.dismiss() })
   const chooser = page.waitForEvent('filechooser')
-  await page.getByLabel('Open project').click()
+  await projectAction(page, 'Open project')
   await (await chooser).setFiles({ name: 'saved.crewbtc', mimeType: 'application/json', buffer: bytes })
   await expect(page.locator('[data-cell]').first()).toContainText('CURRENT WORK')
   await expect(page.getByText('Project opened', { exact: true })).toHaveCount(0)
@@ -117,7 +118,7 @@ test('cancelling project replacement leaves the current cards untouched', async 
 
 test('saving an older session warns when its original PDF is unavailable', async ({ page }) => {
   await uploadPdf(page)
-  await expect(page.getByLabel('Save project')).toBeEnabled()
+  await expectSaveEnabled(page)
   await page.waitForTimeout(1000)
   await page.evaluate(async () => { await new Promise<void>((resolve, reject) => {
     const request = indexedDB.deleteDatabase('crewbtc-project-sources')
@@ -125,9 +126,9 @@ test('saving an older session warns when its original PDF is unavailable', async
     request.onerror = () => reject(request.error)
   }) })
   await page.reload()
-  await expect(page.getByLabel('Save project')).toBeEnabled()
+  await expectSaveEnabled(page)
   const pending = page.waitForEvent('download')
-  await page.getByLabel('Save project').click()
+  await projectAction(page, 'Save project')
   const data = JSON.parse((await readFile(await (await pending).path())).toString()) as { sources: Record<string, string> }
   expect(Object.keys(data.sources)).toHaveLength(0)
   await expect(page.getByText('Project saved without some original PDFs')).toBeVisible()
@@ -137,8 +138,9 @@ test('project controls stay reachable by keyboard at supported desktop widths', 
   for (const width of [1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: 900 })
     await page.goto('/')
-    const open = page.getByLabel('Open project')
-    const save = page.getByLabel('Save project')
+    await page.getByRole('button', { name: 'Project options' }).click()
+    const open = page.getByRole('menuitem', { name: 'Open project' })
+    const save = page.getByRole('menuitem', { name: 'Save project' })
     await expect(open).toBeVisible()
     await open.focus()
     await expect(open).toBeFocused()
@@ -151,9 +153,9 @@ test('project controls stay reachable by keyboard at supported desktop widths', 
 
 test('replacing a project releases only the previous originals', async ({ page }) => {
   await uploadPdf(page)
-  await expect(page.getByLabel('Save project')).toBeEnabled()
+  await expectSaveEnabled(page)
   const pending = page.waitForEvent('download')
-  await page.getByLabel('Save project').click()
+  await projectAction(page, 'Save project')
   const project = JSON.parse((await readFile(await (await pending).path())).toString()) as {
     snapshot: { stations: { documents: { id: string }[]; activeId: string | null }[] }
     sources: Record<string, number>
@@ -166,7 +168,7 @@ test('replacing a project releases only the previous originals', async ({ page }
   delete project.sources[oldId]
   page.once('dialog', (dialog) => { void dialog.accept() })
   const chooser = page.waitForEvent('filechooser')
-  await page.getByLabel('Open project').click()
+  await projectAction(page, 'Open project')
   await (await chooser).setFiles({ name: 'replacement.crewbtc', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(project)) })
   await expect(page.getByText('Project opened', { exact: true })).toBeVisible()
   const ids = () => page.evaluate(async () => {

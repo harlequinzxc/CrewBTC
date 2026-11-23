@@ -1,6 +1,7 @@
-import { FolderOpen, Save, Eye, Maximize2, Minus, PanelRightClose, PanelRightOpen, Plus, Settings2 } from 'lucide-react'
+import { Eye, Maximize2, Minus, PanelRightClose, PanelRightOpen, Plus, Settings2 } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { ExportControl } from './ExportControl'
+import { ProjectMenu } from './ProjectMenu'
 import { CHANGELOG } from '../../data/changelog'
 
 /** The shipped build, read from the changelog so the two cannot drift apart. */
@@ -65,7 +66,7 @@ export function TopBar(props: TopBarProps) {
   }`
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-hairline bg-surface-panel px-3">
+    <header className="relative flex h-12 shrink-0 items-center gap-3 border-b border-hairline bg-surface-panel px-3">
       {/* The real app mark, not a stand-in letter: it is the same artwork as the favicon
           and the installed icon, so the tab, the dock and the window agree. */}
       <div className="flex shrink-0 items-center gap-2">
@@ -111,9 +112,9 @@ export function TopBar(props: TopBarProps) {
         <span className="tabular text-[11px] text-ink-muted">{summary}</span>
       </div>
 
-      {props.hasBatch && props.reviewLabel !== undefined ? <button type="button" data-target="dense" onClick={props.onReview} className="min-h-8 shrink-0 rounded border border-hairline px-2 text-xs text-ink-primary hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{props.reviewLabel}</button> : null}
+      <ProjectMenu busy={props.projectBusy ?? false} hasProject={props.hasProject ?? props.hasBatch} onNew={props.onNewProject} onOpen={props.onOpenProject} onSave={props.onSaveProject} />
       {/* Zoom sits dead centre: it is the control you reach for most while laying out. */}
-      <div className="mx-auto flex items-center gap-0.5" aria-label="Sheet zoom">
+      <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-0.5" aria-label="Sheet zoom">
         <button
           type="button"
           data-target="dense"
@@ -167,14 +168,8 @@ export function TopBar(props: TopBarProps) {
         </button>
       </div>
 
-      <button type="button" data-target="dense" aria-label="New project" onClick={props.onNewProject} disabled={props.projectBusy} className={cn(iconButton, 'w-auto px-1.5')}>New</button>
-      <button type="button" data-target="dense" aria-label="Open project" title="Open editable project" onClick={props.onOpenProject} disabled={props.projectBusy} className={cn(iconButton, 'w-auto gap-1 px-1.5 flex')}>
-        <FolderOpen aria-hidden className="size-4" /><span className="text-[11px]">Open</span>
-      </button>
-      <button type="button" data-target="dense" aria-label="Save project" title="Save editable project" onClick={props.onSaveProject} disabled={props.projectBusy || !(props.hasProject ?? props.hasBatch)} className={cn(iconButton, 'w-auto gap-1 px-1.5 flex')}>
-        <Save aria-hidden className="size-4" /><span className="text-[11px]">Save</span>
-      </button>
-
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+      {props.hasBatch && props.reviewLabel !== undefined ? <button type="button" data-target="dense" onClick={props.onReview} className="min-h-8 shrink-0 rounded border border-hairline px-2 text-xs text-ink-primary hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{props.reviewLabel}</button> : null}
       <button
         type="button"
         data-target="dense"
@@ -213,6 +208,7 @@ export function TopBar(props: TopBarProps) {
         onExportCurrent={props.onExportCurrent}
         onExportAll={props.onExportAll}
       />
+      </div>
     </header>
   )
 }

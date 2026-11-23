@@ -71,8 +71,8 @@ way, so 21 cm and 210 mm are the same sheet.
 
 ## Save and open editable projects
 
-Use **Save** in the top bar to download a `.crewbtc` project. It contains all station workspaces, editable cards, photos, labels, sheet settings,
-formatting keywords and available original PDFs. **Open** loads that
+Use **Project → Save project** in the top bar to download a `.crewbtc` project. It contains all station workspaces, editable cards, photos, labels, sheet settings,
+formatting keywords and available original PDFs. **Project → Open project** loads that
 file in CrewBTC, including on another computer; it replaces the current workspace after
 confirmation. Export PDF remains the separate print-only action. Save a project again
 when you make changes: the downloaded file does not update automatically.
@@ -90,13 +90,13 @@ private and clear browser site data if you need to remove the local copies.
 
 ## Station workspaces and printing
 
-Use **+ New station** to create a named tab, and switch tabs to edit each station's PDFs and cards. Sheet and inspector settings are shared. New cards start with the station name in the corner label; you can still edit labels and their existing forward propagation applies. Renaming a tab does not change labels already on cards.
+Use **+** beside the station tabs to create a named tab, and switch tabs to edit each station's PDFs and cards. Double-click a tab, or focus it and press F2, to rename it inline (Enter saves; Escape cancels). Sheet and inspector settings are shared. New cards start with the station name in the corner label; you can still edit labels and their existing forward propagation applies. Renaming a tab does not change labels already on cards.
 
 If a PDF has pages for different stations, add it to each relevant station, select the PDF in the Files rail, and choose **Choose pages for this station**. Enter `all`, `none`, or page numbers and ranges such as `1,3-5`. Excluded card edits remain stored if you include those pages again.
 
-Choose **Export → Custom selection** to select whole stations and/or individual cards. Use Shift-click for a range, or drag a card’s handle to select or deselect several. The generated-PDF preview packs the selected cards together across stations to minimise wasted cells. Exporting this selection does not move or change the original cards. The usual Export button still exports the active station's current sheet or all its sheets.
+Choose **Export → Custom selection** to select whole stations and/or individual cards. Use Shift-click for a range, or drag a card’s handle to select or deselect several. The generated-PDF preview packs the selected cards together across stations to minimise wasted cells. Exporting this selection does not move or change the original cards. Choose **Export → This sheet** or **All sheets** to print the active station.
 
-**New project** clears all stations after confirmation, leaving shared inspector settings and saved defaults in place. Save first if you need the current work. Existing single-workspace projects and sessions open as one station. New project files deduplicate identical images and original PDFs without changing their quality. They cannot be opened by older versions of CrewBTC.
+**Project → New project** clears all stations after confirmation, leaving shared inspector settings and saved defaults in place. Save first if you need the current work. Existing single-workspace projects and sessions open as one station. New project files deduplicate identical images and original PDFs without changing their quality. They cannot be opened by older versions of CrewBTC.
 
 ## Zooming the sheet
 
@@ -127,7 +127,7 @@ is on. The active sheet is the one with the accent border.
 5. Open **Preview PDF** beside Export to inspect the generated PDF as you edit. Navigate sheets, zoom, fit or expand the preview; it updates shortly after changes. On narrower windows it overlays part of the editor.
 6. Use **Review** to find possible print issues and missing card content, and jump to each affected card. Warnings are advisory: missing content can be intentional, and the check does not replace inspecting the PDF.
 7. To reuse band heights, select a card and choose **Use selected card** under New card defaults. The saved heights apply only to newly seeded cards; text size remains sheet-wide.
-8. **Save** an editable project if needed. **Export** prints the active station; **Export → Custom selection** combines chosen cards from any station.
+8. **Project → Save project** saves an editable project if needed. **Export → This sheet** prints the active sheet; **Export → Custom selection** combines chosen cards from any station.
 
 Your sheet settings are remembered between visits.
 

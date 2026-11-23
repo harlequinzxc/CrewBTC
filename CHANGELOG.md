@@ -60,6 +60,8 @@ above it is not shown as release notes. `package.json` and the newest entry must
   wider and overlays it on narrower supported windows. Failed or partial renders are reported.
 - Each file row offers a right-click and keyboard-accessible action to download its stored
   original PDF, with an explanation when the original is unavailable.
+- The header keeps zoom centered; project actions and export choices use compact menus.
+  Station tabs are horizontally scrollable and support inline rename by double-click or F2.
 - Station tabs isolate batches and cards, while settings are shared. Page filters can place
   different pages of an uploaded PDF in different station workspaces. Custom selection packs
   chosen stations/cards into temporary sheets and preserves the originals and their labels.
@@ -129,6 +131,11 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.19.0 — 2026-11-24 — Compact header and station tabs
+
+- Center zoom, group project actions, and choose a print option from the Export menu.
+- Use compact scrolling station tabs; double-click or press F2 to rename inline.
 
 ### 1.18.0 — 2026-11-24 — Download original PDFs
 
