@@ -60,7 +60,8 @@ above it is not shown as release notes. `package.json` and the newest entry must
   wider and overlays it on narrower supported windows. Failed or partial renders are reported.
 - Each file row offers a right-click and keyboard-accessible action to download its stored
   original PDF, with an explanation when the original is unavailable.
-- The header keeps zoom centered; project actions and export choices use compact menus.
+- The header keeps zoom centered and icon labels on one line; project actions and export
+  choices use compact menus.
   Station tabs are horizontally scrollable and support inline rename by double-click;
   the rename field sizes itself to the text and reveals the beginning when opened.
 - Station tabs isolate batches and cards, while settings are shared. Page filters can place
@@ -132,6 +133,10 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.19.4 — 2026-11-24 — Align header controls
+
+- Keep top-bar icons and labels on one centered line with tooltips for utility controls.
 
 ### 1.19.3 — 2026-11-24 — Show the start of station names
 
