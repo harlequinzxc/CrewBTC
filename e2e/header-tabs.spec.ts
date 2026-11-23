@@ -65,6 +65,16 @@ test('station renaming keeps neighboring tabs and plus aligned without extra acc
   expect(Math.abs((before!.y + before!.height / 2) - (plus!.y + plus!.height / 2))).toBeLessThanOrEqual(1)
   await middle.dblclick()
   const input = page.getByRole('textbox', { name: 'Rename ABCMP' })
+  const metrics = await input.evaluate((el: HTMLInputElement) => {
+    const style = getComputedStyle(el)
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')!
+    ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+    return { left: el.scrollLeft, available: el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight), text: ctx.measureText(el.value).width, selection: [el.selectionStart, el.selectionEnd] }
+  })
+  expect(metrics.left).toBe(0)
+  expect(metrics.selection).toEqual([0, 5])
+  expect(metrics.available).toBeGreaterThanOrEqual(metrics.text + 6)
   const editing = await input.boundingBox()
   expect(editing!.width).toBeCloseTo(before!.width, 0)
   expect(await page.getByRole('button', { name: 'SIN', exact: true }).boundingBox()).toEqual(sin)
@@ -89,4 +99,19 @@ test('station renaming keeps neighboring tabs and plus aligned without extra acc
   expect((await input.boundingBox())!.width).toBeCloseTo(editing!.width, 0)
   await input.blur()
   expect(await middle.boundingBox()).toEqual(before)
+})
+
+test('opening a long station name shows its first character', async ({ page }) => {
+  await uploadPdf(page)
+  const name = 'ABCMP wide station 2026'
+  page.once('dialog', (dialog) => dialog.accept(name))
+  await page.getByRole('button', { name: 'New station' }).click()
+  await page.getByRole('button', { name, exact: true }).dblclick()
+  const input = page.getByRole('textbox', { name: `Rename ${name}` })
+  await expect(input).toHaveValue(name)
+  await expect.poll(() => input.evaluate((el: HTMLInputElement) => el.scrollLeft)).toBe(0)
+  const field = await input.evaluate((el: HTMLInputElement) => ({ available: el.clientWidth, content: el.scrollWidth, start: el.selectionStart, end: el.selectionEnd }))
+  expect(field.content).toBeLessThanOrEqual(field.available)
+  expect(field.start).toBe(0)
+  expect(field.end).toBe(name.length)
 })
