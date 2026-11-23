@@ -8,6 +8,7 @@ import { pickFiles } from '../../../lib/files/open-picker'
 import { getProjectSource, putProjectSource, retireProjectSources, cancelProjectRetirement } from '../../../lib/storage/project-sources'
 import { keepSource, releaseAll } from '../../../lib/export/doc-cache'
 import { releaseProxies } from '../../../lib/pdf/proxy-cache'
+import { serializeProject } from '../../../lib/project/project-assets'
 import { decodeSource, encodeSource, parseProject } from '../../../lib/project/project'
 import type { Project } from '../../../lib/project/project'
 import type { Keywords } from '../../../types/format-keywords'
@@ -37,7 +38,7 @@ export function useProject({ stations, activeStationId, sheet, preferences, show
           if (bytes !== null && new TextDecoder('latin1').decode(bytes.slice(0, 1024)).includes('%PDF-')) sources[doc.id] = encodeSource(bytes)
         }
         const project: Project = { format: 'crewbtc-project', version: 3, snapshot: { version: SNAPSHOT_VERSION, documents: active.documents, cards: active.cards, activeId: active.activeId, stations, activeStationId, savedAt: new Date().toISOString() }, sheet, preferences, showCutMarks, keywords, sources }
-        const json = JSON.stringify(project)
+        const json = serializeProject(project)
         parseProject(json) // Never download a project this version cannot reopen.
         const blob = new Blob([json], { type: 'application/json' })
         const url = URL.createObjectURL(blob)

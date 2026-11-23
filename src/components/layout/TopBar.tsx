@@ -204,11 +204,12 @@ export function TopBar(props: TopBarProps) {
       <button id="pdf-preview-toggle" type="button" data-target="dense" aria-label="Preview PDF" title="Preview the generated PDF" aria-pressed={props.previewOpen ?? false} disabled={!props.hasBatch} onClick={props.onTogglePreview} className={cn(iconButton, 'flex w-auto gap-1 px-1.5', props.previewOpen && 'bg-surface-active text-ink-primary')}>
         <Eye aria-hidden className="size-4" /><span className="text-[11px]">Preview</span>
       </button>
-      <button type="button" data-target="dense" aria-label="Print selection" onClick={props.onPrintSelection} disabled={!props.anyProjectCards || props.projectBusy} className={cn(iconButton, 'w-auto px-1.5')}>Select</button>
       <ExportControl
         hasBatch={props.hasBatch}
         hasMoreThanOneSheet={props.hasMoreThanOneSheet}
-        exporting={props.exporting}
+        exporting={props.exporting || (props.projectBusy ?? false)}
+        hasProjectCards={props.anyProjectCards ?? props.hasBatch}
+        onCustomSelection={props.onPrintSelection}
         onExportCurrent={props.onExportCurrent}
         onExportAll={props.onExportAll}
       />

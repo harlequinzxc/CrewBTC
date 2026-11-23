@@ -25,7 +25,7 @@ describe('editable project validation', () => {
   })
   it('rejects a future version and malformed nested content', () => {
     const value = project()
-    expect(() => parseProject(JSON.stringify({ ...value, version: 4 }))).toThrow()
+    expect(() => parseProject(JSON.stringify({ ...value, version: 5 }))).toThrow()
     expect(() => parseProject(JSON.stringify({ ...value, version: 2, keywords: { crockeries: 42 } }))).toThrow()
     expect(() => parseProject(JSON.stringify({ ...value, sheet: { ...value.sheet, sheetWidthMm: -1 } }))).toThrow()
     expect(() => parseProject(JSON.stringify({ ...value, sources: { one: btoa('not a pdf') } }))).toThrow()

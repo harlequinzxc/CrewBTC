@@ -34,9 +34,9 @@ test('project transfers edited cards, photo, settings and original PDF to a fres
   await page.getByLabel('Save project').click()
   const download = await pending
   const bytes = await readFile(await download.path())
-  const saved = JSON.parse(bytes.toString()) as { sources: Record<string, string> }
+  const saved = JSON.parse(bytes.toString()) as { sources: Record<string, number>; pdfs: string[] }
   expect(Object.keys(saved.sources)).toHaveLength(1)
-  expect(Buffer.from(Object.values(saved.sources)[0]!, 'base64').toString('latin1').startsWith('%PDF-')).toBe(true)
+  expect(Buffer.from(saved.pdfs[Object.values(saved.sources)[0]!]!, 'base64').toString('latin1').startsWith('%PDF-')).toBe(true)
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
   const fresh = await context.newPage()
   await fresh.goto('/')
@@ -155,13 +155,11 @@ test('replacing a project releases only the previous originals', async ({ page }
   const pending = page.waitForEvent('download')
   await page.getByLabel('Save project').click()
   const project = JSON.parse((await readFile(await (await pending).path())).toString()) as {
-    snapshot: { documents: { id: string }[]; activeId: string | null; stations: { documents: { id: string }[]; activeId: string | null }[] }
-    sources: Record<string, string>
+    snapshot: { stations: { documents: { id: string }[]; activeId: string | null }[] }
+    sources: Record<string, number>
   }
-  const oldId = project.snapshot.documents[0]!.id
+  const oldId = project.snapshot.stations[0]!.documents[0]!.id
   const newId = 'replacement-document-id'
-  project.snapshot.documents[0]!.id = newId
-  project.snapshot.activeId = newId
   project.snapshot.stations[0]!.documents[0]!.id = newId
   project.snapshot.stations[0]!.activeId = newId
   project.sources[newId] = project.sources[oldId]!

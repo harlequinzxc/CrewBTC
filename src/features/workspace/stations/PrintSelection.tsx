@@ -7,6 +7,7 @@ import { toPageRefs } from '../../../lib/pdf/page-refs'
 import { writeCards } from '../../../lib/export/write-cards'
 import { downloadBytes } from '../../../lib/export/download'
 import { usePdfPreview } from '../preview/use-pdf-preview'
+import { useSelection } from './use-selection'
 import { packPrintSelection, printCandidates } from './print-selection'
 
 interface Props {
@@ -21,21 +22,17 @@ const button = 'min-h-8 rounded border border-hairline px-3 text-xs text-ink-pri
 
 export function PrintSelection({ stations, grid, settings, drawCutMarks, onClose, notify }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
-  const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set())
   const [sheet, setSheet] = useState(0)
   const [busy, setBusy] = useState(false)
   const candidates = useMemo(() => printCandidates(stations, grid, settings.textScale ?? 0.9), [stations, grid, settings.textScale])
+  const selection = useSelection(useMemo(() => candidates.map((item) => item.id), [candidates]))
+  const { chosen, toggle } = selection
   const selected = useMemo(() => candidates.filter((item) => chosen.has(item.id)), [candidates, chosen])
   const packed = useMemo(() => packPrintSelection(selected, grid), [selected, grid])
   const count = grid.cellCount > 0 ? Math.ceil(packed.pages.length / grid.cellCount) : 0
   const index = Math.min(sheet, Math.max(0, count - 1))
   const preview = usePdfPreview({ settings, grid, pages: packed.pages, cards: packed.cards, drawCutMarks }, index)
   useEffect(() => { const element = dialog.current; element?.showModal(); return () => { element?.close() } }, [])
-  const toggle = (ids: readonly string[], checked: boolean) => setChosen((previous) => {
-    const next = new Set(previous)
-    for (const id of ids) { if (checked) next.add(id); else next.delete(id) }
-    return next
-  })
   const exportSelection = async () => {
     setBusy(true)
     try {
@@ -51,15 +48,19 @@ export function PrintSelection({ stations, grid, settings, drawCutMarks, onClose
     <div className="flex items-center gap-3 border-b border-hairline p-3"><h2 className="flex-1 text-sm font-semibold">Print selection</h2><button type="button" data-target="dense" onClick={onClose} className={button}>Close</button></div>
     <div className="flex min-h-0 flex-1 gap-3 overflow-hidden p-3">
       <div className="w-1/2 overflow-auto">
-        <p className="mb-2 text-xs text-ink-secondary">Choose stations or individual cards. Selected cards are packed together; workspaces stay unchanged.</p>
+        <p className="mb-2 text-xs text-ink-secondary">Choose stations or cards. Shift-click selects a range; drag a card’s handle to select or deselect several. The original workspaces stay unchanged.</p>
         {stations.map((station) => {
           const group = candidates.filter((candidate) => candidate.stationId === station.id)
           const expected = planSheets(toPageRefs(station.documents), grid).reduce((sum, plan) => sum + plan.placements.length, 0)
           return <fieldset key={station.id} className="mb-3 border-b border-hairline pb-2"><legend className="text-xs font-semibold">{station.name}</legend>
             <label className="flex min-h-8 items-center gap-2 text-xs">
               <input className="text-base" type="checkbox" checked={group.length > 0 && group.every((item) => chosen.has(item.id))} disabled={!group.length} onChange={(event) => toggle(group.map((item) => item.id), event.target.checked)} /> Select all {station.name}</label>
-            {group.map((item) => <label key={item.id} className="flex min-h-8 items-center gap-2 text-xs">
-              <input className="text-base" type="checkbox" checked={chosen.has(item.id)} onChange={(event) => toggle([item.id], event.target.checked)} />{item.card.headerText || item.page.fileName} · page {item.page.pageNumber}</label>)}
+            {group.map((item) => <div key={item.id} onPointerEnter={(event) => selection.enterDrag(item.id, event.buttons)} className="flex min-h-8 select-none items-center gap-1">
+              <button type="button" data-target="dense" aria-label={`Drag to select ${item.card.headerText || item.page.fileName}, page ${item.page.pageNumber}`} aria-pressed={chosen.has(item.id)} onClick={(event) => { if (event.detail === 0) selection.select(item.id, !chosen.has(item.id), event.shiftKey) }} onPointerDown={(event) => { if (event.pointerType === 'mouse' && event.button === 0) { event.preventDefault(); selection.startDrag(item.id) } }} className="min-h-8 min-w-8 cursor-grab rounded text-ink-secondary hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">⋮⋮</button>
+              <label className="flex min-h-8 flex-1 items-center gap-2 text-xs">
+                <input data-print-card className="text-base" type="checkbox" checked={chosen.has(item.id)} onChange={(event) => selection.select(item.id, event.target.checked, 'shiftKey' in event.nativeEvent && event.nativeEvent.shiftKey === true)} />{item.card.headerText || item.page.fileName} · page {item.page.pageNumber}
+              </label>
+            </div>)}
             {expected > group.length ? <p className="text-xs text-ink-secondary">{expected - group.length} cards are not ready. Open this station to review them before printing.</p> : null}
             {group.length === 0 ? <p className="text-xs text-ink-secondary">No cards ready.</p> : null}
           </fieldset>

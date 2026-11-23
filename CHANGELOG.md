@@ -59,7 +59,7 @@ above it is not shown as release notes. `package.json` and the newest entry must
   debounce, and supports sheet navigation and zoom. It splits the workspace at 1280 px and
   wider and overlays it on narrower supported windows. Failed or partial renders are reported.
 - Station tabs isolate batches and cards, while settings are shared. Page filters can place
-  different pages of an uploaded PDF in different station workspaces. Print selection packs
+  different pages of an uploaded PDF in different station workspaces. Custom selection packs
   chosen stations/cards into temporary sheets and preserves the originals and their labels.
 - This sheet exports the sheet visible in the editor. Batch review flags missing card
   content, likely text overflow, unsupported characters, and corner label truncation;
@@ -91,8 +91,9 @@ above it is not shown as release notes. `package.json` and the newest entry must
   old unmarked orphan records are not automatically purged. Do not equate a missing source
   with missing editable cards; report missing originals instead of discarding work.
 - A `.crewbtc` project is versioned JSON with the snapshot, sheet, units, cut-guide setting,
-  formatting keywords and available base64 source PDFs. Version 3 contains stations; version 2
-  adds keywords and version 1 opens with empty lists. Older app versions cannot open version 3 projects. Opening
+  formatting keywords and available base64 source PDFs. Version 4 deduplicates identical
+  image and PDF assets. Version 3 contains stations; version 2 adds keywords and version 1
+  opens with empty lists. Older app versions cannot open version 4 projects. Opening
   validates before replacement and confirms before overwriting a populated workspace. Project files are explicit downloads, not live saves.
   Source files may contain private data; clearing site data also removes local workspace data.
 
@@ -126,6 +127,11 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.17.0 — 2026-11-24 — Smaller projects and custom export
+
+- Store identical images and original PDFs once per project, without reducing image quality.
+- Open custom selection from Export; use Shift-click or drag handles for faster selection.
 
 ### 1.16.0 — 2026-11-21 — Station workspaces and flexible printing
 

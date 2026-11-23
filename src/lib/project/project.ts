@@ -1,3 +1,4 @@
+import { expandCompactProject } from './project-assets'
 import { EMPTY_KEYWORDS, validKeywords } from '../../types/format-keywords'
 import type { Keywords } from '../../types/format-keywords'
 import { validate } from '../storage/snapshot'
@@ -43,8 +44,10 @@ function card(v: unknown): boolean {
 
 /** Never replace the workspace until the entire file has been checked. */
 export function parseProject(text: string): Project {
-  const raw: unknown = JSON.parse(text)
-  if (!record(raw) || raw.format !== 'crewbtc-project' || raw.version !== 1 && raw.version !== 2 && raw.version !== 3) throw new Error('Unsupported or invalid project file.')
+  const parsed: unknown = JSON.parse(text)
+  if (!record(parsed)) throw new Error('Unsupported or invalid project file.')
+  const raw = parsed.version === 4 ? expandCompactProject(parsed) : parsed
+  if (raw.format !== 'crewbtc-project' || raw.version !== 1 && raw.version !== 2 && raw.version !== 3) throw new Error('Unsupported or invalid project file.')
   const snapshot = validate(raw.snapshot)
   if (snapshot === null || raw.version === 3 && (!record(raw.snapshot) || raw.snapshot.version !== 4) || !snapshot.stations.every((station) => Object.values(station.cards).every(card))) throw new Error('Invalid project cards or documents.')
   const documents = snapshot.stations.flatMap((station) => station.documents)
