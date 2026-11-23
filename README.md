@@ -90,7 +90,7 @@ private and clear browser site data if you need to remove the local copies.
 
 ## Station workspaces and printing
 
-Use **+** beside the station tabs to create a named tab, and switch tabs to edit each station's PDFs and cards. Double-click a tab, or focus it and press F2, to rename it inline (Enter saves; Escape cancels). Sheet and inspector settings are shared. New cards start with the station name in the corner label; you can still edit labels and their existing forward propagation applies. Renaming a tab does not change labels already on cards.
+Use **+** beside the station tabs to create a named tab, and switch tabs to edit each station's PDFs and cards. Double-click a tab to rename it inline (Enter saves; Escape cancels). Sheet and inspector settings are shared. New cards start with the station name in the corner label; you can still edit labels and their existing forward propagation applies. Renaming a tab does not change labels already on cards.
 
 If a PDF has pages for different stations, add it to each relevant station, select the PDF in the Files rail, and choose **Choose pages for this station**. Enter `all`, `none`, or page numbers and ranges such as `1,3-5`. Excluded card edits remain stored if you include those pages again.
 

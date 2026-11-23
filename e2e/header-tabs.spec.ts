@@ -23,16 +23,15 @@ test('header zoom is centered and controls do not overlap at supported widths', 
   }
 })
 
-test('station tabs rename inline with F2 and scroll without wrapping', async ({ page }) => {
+test('station tabs rename inline by double-click and scroll without wrapping', async ({ page }) => {
   await uploadPdf(page)
   const first = page.getByRole('button', { name: 'Station 1', exact: true })
-  await first.focus()
-  await page.keyboard.press('F2')
+  await first.dblclick()
   const rename = page.getByRole('textbox', { name: 'Rename Station 1' })
   await rename.fill('SIN')
   await page.keyboard.press('Enter')
   await expect(page.getByRole('button', { name: 'SIN', exact: true })).toBeFocused()
-  await page.keyboard.press('F2')
+  await page.getByRole('button', { name: 'SIN', exact: true }).dblclick()
   await page.getByRole('textbox', { name: 'Rename SIN' }).fill('cancelled')
   await page.keyboard.press('Escape')
   await expect(page.getByRole('button', { name: 'SIN', exact: true })).toBeVisible()
@@ -45,4 +44,40 @@ test('station tabs rename inline with F2 and scroll without wrapping', async ({ 
   expect(dimensions.height).toBeLessThanOrEqual(36)
   expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.width)
   await expect(page.getByRole('button', { name: 'Station 13 long', exact: true })).toHaveAttribute('aria-current', 'page')
+})
+
+test('station renaming keeps neighboring tabs and plus aligned without extra accent borders', async ({ page }) => {
+  await uploadPdf(page)
+  await page.getByRole('button', { name: 'Station 1', exact: true }).dblclick()
+  await page.getByRole('textbox', { name: 'Rename Station 1' }).fill('SIN')
+  await page.keyboard.press('Enter')
+  for (const name of ['ABCMP', 'AC']) {
+    page.once('dialog', (dialog) => dialog.accept(name))
+    await page.getByRole('button', { name: 'New station' }).click()
+  }
+  const middle = page.getByRole('button', { name: 'ABCMP', exact: true })
+  await middle.click()
+  await expect(page.getByRole('textbox', { name: 'Rename ABCMP' })).toHaveCount(0)
+  const before = await middle.boundingBox()
+  const sin = await page.getByRole('button', { name: 'SIN', exact: true }).boundingBox()
+  const ac = await page.getByRole('button', { name: 'AC', exact: true }).boundingBox()
+  const plus = await page.getByRole('button', { name: 'New station' }).boundingBox()
+  expect(Math.abs((before!.y + before!.height / 2) - (plus!.y + plus!.height / 2))).toBeLessThanOrEqual(1)
+  await middle.dblclick()
+  const input = page.getByRole('textbox', { name: 'Rename ABCMP' })
+  const editing = await input.boundingBox()
+  expect(editing!.width).toBeCloseTo(before!.width, 0)
+  expect(await page.getByRole('button', { name: 'SIN', exact: true }).boundingBox()).toEqual(sin)
+  expect(await page.getByRole('button', { name: 'AC', exact: true }).boundingBox()).toEqual(ac)
+  expect(await page.getByRole('button', { name: 'New station' }).boundingBox()).toEqual(plus)
+  const styles = await input.evaluate((node) => {
+    const field = getComputedStyle(node)
+    const wrapper = getComputedStyle(node.parentElement!)
+    return { fontSize: field.fontSize, fontWeight: field.fontWeight, outline: field.outlineStyle, left: field.borderLeftColor, right: field.borderRightColor, bottomWidth: wrapper.borderBottomWidth }
+  })
+  expect(styles).toMatchObject({ fontSize: '16px', fontWeight: '600', outline: 'none', bottomWidth: '2px' })
+  expect(styles.left).toBe(styles.right)
+  expect(styles.left).toContain('/ 0.2')
+  await input.blur()
+  expect(await middle.boundingBox()).toEqual(before)
 })
