@@ -114,6 +114,15 @@ describe('the top bar', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('offers custom selection even when only another station has cards', () => {
+    const props = render_({ hasBatch: false, anyProjectCards: true, onPrintSelection: vi.fn() })
+    expect(screen.getByRole('button', { name: 'Export PDF' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Export options' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Custom selection' }))
+    expect(props.onPrintSelection).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('button', { name: 'Print selection' })).not.toBeInTheDocument()
+  })
+
   it('disables export with nothing loaded', () => {
     render_({ hasBatch: false })
     expect(screen.getByRole('button', { name: 'Export PDF' })).toBeDisabled()

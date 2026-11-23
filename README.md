@@ -92,9 +92,9 @@ Use **+ New station** to create a named tab, and switch tabs to edit each statio
 
 If a PDF has pages for different stations, add it to each relevant station, select the PDF in the Files rail, and choose **Choose pages for this station**. Enter `all`, `none`, or page numbers and ranges such as `1,3-5`. Excluded card edits remain stored if you include those pages again.
 
-Choose **Print selection** in the top bar to select whole stations and/or individual cards. The generated-PDF preview packs the selected cards together across stations to minimise wasted cells. Exporting this selection does not move or change the original cards. The usual Export button still exports the active station's current sheet or all its sheets.
+Choose **Export → Custom selection** to select whole stations and/or individual cards. Use Shift-click for a range, or drag a card’s handle to select or deselect several. The generated-PDF preview packs the selected cards together across stations to minimise wasted cells. Exporting this selection does not move or change the original cards. The usual Export button still exports the active station's current sheet or all its sheets.
 
-**New project** clears all stations after confirmation, leaving shared inspector settings and saved defaults in place. Save first if you need the current work. Existing single-workspace projects and sessions open as one station. New project files cannot be opened by older versions of CrewBTC.
+**New project** clears all stations after confirmation, leaving shared inspector settings and saved defaults in place. Save first if you need the current work. Existing single-workspace projects and sessions open as one station. New project files deduplicate identical images and original PDFs without changing their quality. They cannot be opened by older versions of CrewBTC.
 
 ## Zooming the sheet
 
@@ -125,7 +125,7 @@ is on. The active sheet is the one with the accent border.
 5. Open **Preview PDF** beside Export to inspect the generated PDF as you edit. Navigate sheets, zoom, fit or expand the preview; it updates shortly after changes. On narrower windows it overlays part of the editor.
 6. Use **Review** to find possible print issues and missing card content, and jump to each affected card. Warnings are advisory: missing content can be intentional, and the check does not replace inspecting the PDF.
 7. To reuse band heights, select a card and choose **Use selected card** under New card defaults. The saved heights apply only to newly seeded cards; text size remains sheet-wide.
-8. **Save** an editable project if needed. **Export** prints the active station; **Print selection** combines chosen cards from any station.
+8. **Save** an editable project if needed. **Export** prints the active station; **Export → Custom selection** combines chosen cards from any station.
 
 Your sheet settings are remembered between visits.
 

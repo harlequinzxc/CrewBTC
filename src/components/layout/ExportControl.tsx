@@ -3,7 +3,7 @@ import { ChevronDown, Download } from 'lucide-react'
 import { cn } from '../../lib/cn'
 
 /**
- * Export, as one control with two options.
+ * Export, as one control with sheet and custom-selection options.
  *
  * A split button rather than two identical buttons side by side: "Export" does the thing
  * you meant 95% of the time, and "all sheets" is the qualifier behind the chevron. The
@@ -19,6 +19,8 @@ export interface ExportControlProps {
   readonly exporting: boolean
   readonly onExportCurrent: () => void
   readonly onExportAll: () => void
+  readonly hasProjectCards?: boolean
+  readonly onCustomSelection?: (() => void) | undefined
 }
 
 const item = cn(
@@ -48,6 +50,7 @@ export function ExportControl(props: ExportControlProps) {
   }, [open])
 
   const disabled = !props.hasBatch || props.exporting
+  const menuDisabled = (!props.hasBatch && !props.hasProjectCards) || props.exporting
 
   return (
     <div ref={root} className="relative flex shrink-0">
@@ -73,7 +76,7 @@ export function ExportControl(props: ExportControlProps) {
         aria-label="Export options"
         aria-expanded={open}
         aria-haspopup="menu"
-        disabled={disabled}
+        disabled={menuDisabled}
         onClick={() => setOpen((was) => !was)}
         className={cn(
           'grid h-7 w-6 place-items-center rounded-r-md border-l border-black/25 bg-accent-solid text-white',
@@ -94,6 +97,7 @@ export function ExportControl(props: ExportControlProps) {
             type="button"
             role="menuitem"
             data-target="dense"
+            disabled={disabled}
             onClick={() => {
               setOpen(false)
               props.onExportCurrent()
@@ -117,6 +121,11 @@ export function ExportControl(props: ExportControlProps) {
               All sheets
             </button>
           ) : null}
+          {props.onCustomSelection === undefined ? null : (
+            <button type="button" role="menuitem" data-target="dense" disabled={!props.hasProjectCards} onClick={() => { setOpen(false); props.onCustomSelection?.() }} className={item}>
+              Custom selection
+            </button>
+          )}
         </div>
       ) : null}
     </div>

@@ -58,7 +58,7 @@ test('keyword settings transfer with the project to a fresh browser', async ({ p
   const { readFile } = await import('node:fs/promises')
   const data = await readFile(await download.path())
   const parsed = JSON.parse(data.toString()) as { version: number; keywords: { crockeries: string } }
-  expect(parsed.version).toBe(3)
+  expect(parsed.version).toBe(4)
   expect(parsed.keywords.crockeries).toBe('bowl\nplate')
   const context = await browser.newContext({ serviceWorkers: 'block' })
   const fresh = await context.newPage()
