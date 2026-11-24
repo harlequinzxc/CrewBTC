@@ -1,3 +1,4 @@
+import { openFormatting } from './fixtures'
 import { projectAction } from './fixtures'
 import type { PDFArray } from '@cantoo/pdf-lib'
 import { expect, test } from '@playwright/test'
@@ -107,6 +108,7 @@ test('stations survive switching, reload and project transfer; selected cards pa
 test('new project clears all stations but preserves shared inspector settings', async ({ page }) => {
   await uploadPdf(page)
   await page.getByLabel('Cell width').fill('60')
+  await openFormatting(page)
   await page.getByLabel('crockeries keywords').fill('tray')
   page.once('dialog', (dialog) => dialog.accept('HND'))
   await page.getByRole('button', { name: 'New station' }).click()
@@ -125,6 +127,7 @@ test('new project clears all stations but preserves shared inspector settings', 
   await expect(page.getByLabel('crockeries keywords')).toHaveValue('tray')
   await page.waitForTimeout(900)
   await page.reload()
+  await openFormatting(page)
   await expect(textZones(page)).toHaveCount(0)
   await expect(page.getByLabel('Cell width')).toHaveValue('60')
 })

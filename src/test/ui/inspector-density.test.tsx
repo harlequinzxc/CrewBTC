@@ -32,13 +32,14 @@ const shell = (label: string): HTMLElement =>
   screen.getByLabelText(label).parentElement as HTMLElement
 
 describe('the sheet panel’s numeric rows', () => {
-  it('sizes Spacing and Margin like one half of a size pair', () => {
+  it('places all numbers in a consistent two-column grid', () => {
     renderSection()
     for (const label of ['Spacing', 'Margin']) {
-      expect(shell(label).className).toContain('w-[118px]')
+      expect(shell(label).className).toContain('w-full')
     }
-    // And the pairs are still full-width halves, so the column reads consistently.
-    expect(shell('Sheet width').className).toContain('w-full')
+    const grid = screen.getByLabelText('Sheet width').closest('.grid')
+    expect(grid?.className).toContain('grid-cols-2')
+    for (const label of ['Sheet width', 'Sheet height', 'Cell width', 'Cell height', 'All text size']) expect(shell(label).className).toContain('w-full')
   })
 
   it('keeps the number hard against its unit', () => {
