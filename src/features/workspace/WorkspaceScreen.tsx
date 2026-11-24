@@ -184,7 +184,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
             placements={reveal.placements} onReveal={reveal.onReveal}
           />
         </aside>
-        <EdgeHandle label={filesOpen ? 'Collapse Files' : 'Expand Files'} expanded={filesOpen} direction={filesOpen ? 'left' : 'right'} onClick={() => setFilesOpen((open) => !open)} className={filesOpen ? 'absolute left-full top-1/2 z-40 -translate-x-1/2 -translate-y-1/2' : 'absolute left-0 top-1/2 z-40 -translate-y-1/2'} />
+        <EdgeHandle label={filesOpen ? 'Collapse Files' : 'Expand Files'} expanded={filesOpen} direction={filesOpen ? 'left' : 'right'} onClick={() => setFilesOpen((open) => !open)} className={filesOpen ? 'absolute right-0 top-1/2 z-40 -translate-y-1/2' : 'absolute left-0 top-1/2 z-40 -translate-y-1/2'} />
         </div>
         <CentrePane
           documentsLoaded={hasBatch} busy={batch.busy}
@@ -216,7 +216,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         />
         {previewOpen && hasBatch && sheetCount > 0 ? <PdfPreview sheetCount={sheetCount} initialSheet={sheetIndex} onClose={() => setPreviewOpen(false)} settings={sheet.settings} grid={sheet.grid} pages={pageRefs} drawCutMarks={showCutMarks} cards={visibleCards} /> : null}
         <div className="relative flex shrink-0">
-        <EdgeHandle label={inspectorOpen ? 'Collapse inspector' : 'Expand inspector'} expanded={inspectorOpen} direction={inspectorOpen ? 'right' : 'left'} onClick={toggleInspector} className={inspectorOpen ? 'absolute right-full top-1/2 z-40 translate-x-1/2 -translate-y-1/2' : 'absolute right-0 top-1/2 z-40 -translate-y-1/2'} />
+        <EdgeHandle label={inspectorOpen ? 'Collapse inspector' : 'Expand inspector'} expanded={inspectorOpen} direction={inspectorOpen ? 'right' : 'left'} onClick={toggleInspector} className={inspectorOpen ? 'absolute left-0 top-1/2 z-40 -translate-y-1/2' : 'absolute right-0 top-1/2 z-40 -translate-y-1/2'} />
         <Inspector
           card={selectedCard}
           cellIndex={selectionKey === null ? null : selectedCell}

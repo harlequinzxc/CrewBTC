@@ -63,7 +63,8 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - The header has inline project actions, a print-review status and export choices; a bottom
   bar carries paper size, sheet count and centered zoom controls. The status counts cards
   with any review warnings and is informational; details remain in the inspector.
-  Border-docked handles collapse Files, the sheet strip and the inspector.
+  Inset 24 px edge handles collapse Files, the sheet strip and the inspector without clipping.
+  Station tabs and sheet thumbnails do not scroll vertically.
   The click diagnostic remains in Settings.
   Station tabs are horizontally scrollable and support inline rename by double-click;
   the rename field sizes itself to the text and reveals the beginning when opened.
@@ -136,6 +137,11 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.21.1 — 2026-11-24 — Keep tabs and edge handles visible
+
+- Prevent vertical scrolling in the station tab row while preserving horizontal navigation.
+- Keep all 24 px panel handles fully visible and clickable in expanded and collapsed states.
 
 ### 1.21.0 — 2026-11-24 — Unified panel edge handles
 
