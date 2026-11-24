@@ -21,7 +21,7 @@ export interface TopBarProps {
   readonly hasBatch: boolean
   readonly hasPrintableCards?: boolean
   readonly reviewStatus?: 'checking' | 'error' | 'ready'
-  readonly clippingCount?: number
+  readonly issueCount?: number
   readonly onReview?: () => void
   readonly previewOpen?: boolean
   readonly onTogglePreview?: () => void
@@ -35,7 +35,7 @@ export function TopBar(props: TopBarProps) {
   const canCheck = props.hasBatch && (props.hasPrintableCards ?? true)
   const checking = props.reviewStatus === 'checking'
   const error = props.reviewStatus === 'error'
-  const count = props.clippingCount ?? 0
+  const count = props.issueCount ?? 0
   const label = !canCheck ? 'No cards' : checking ? 'Checking…' : error ? 'Check unavailable' : count === 0 ? 'Ready for export' : `${count} ${count === 1 ? 'issue' : 'issues'}`
   return <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-surface-panel px-3 text-xs">
     <div className="flex shrink-0 items-center gap-2 text-ink-primary">
@@ -49,7 +49,7 @@ export function TopBar(props: TopBarProps) {
       <button type="button" data-target="dense" aria-label="Save project" title="Save editable project" disabled={props.projectBusy || !(props.hasProject ?? props.hasBatch)} onClick={props.onSaveProject} className={button}><Save aria-hidden className="size-4" /><span>Save</span></button>
     </div>
     <div className="ml-auto flex shrink-0 items-center gap-1">
-      <button type="button" data-target="dense" disabled={!canCheck} title="Text clipping check; open review for all print warnings" onClick={props.onReview} className={cn(baseButton, !canCheck || checking || error ? 'text-ink-secondary' : count === 0 ? 'text-emerald-400' : 'text-amber-400')}>
+      <button type="button" data-target="dense" disabled={!canCheck} title="Print review; open all issues" onClick={props.onReview} className={cn(baseButton, !canCheck || checking || error ? 'text-ink-secondary' : count === 0 ? 'text-emerald-400' : 'text-amber-400')}>
         {canCheck && !checking && !error ? count === 0 ? <CircleCheck aria-hidden className="size-4" /> : <TriangleAlert aria-hidden className="size-4" /> : null}<span>{label}</span>
       </button>
       <button type="button" data-target="dense" aria-label={props.inspectorOpen ? 'Hide inspector' : 'Show inspector'} aria-pressed={props.inspectorOpen} title={props.inspectorOpen ? 'Hide inspector' : 'Show inspector'} onClick={props.onToggleInspector} className={cn(button, 'w-8 px-0')}>

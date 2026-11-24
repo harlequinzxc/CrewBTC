@@ -141,20 +141,20 @@ describe('the top bar', () => {
   })
 })
 
-describe('clipping status', () => {
+describe('print review status', () => {
   it('does not claim readiness when a batch has no printable cards', () => {
     render_({ hasBatch: true, hasPrintableCards: false, reviewStatus: 'ready' })
     expect(screen.getByRole('button', { name: 'No cards' })).toBeDisabled()
   })
   it('shows a green ready status and opens the wider review', () => {
-    const props = render_({ reviewStatus: 'ready', clippingCount: 0, onReview: vi.fn() })
+    const props = render_({ reviewStatus: 'ready', issueCount: 0, onReview: vi.fn() })
     const status = screen.getByRole('button', { name: 'Ready for export' })
     expect(status).toHaveClass('text-emerald-400')
     fireEvent.click(status)
     expect(props.onReview).toHaveBeenCalledOnce()
   })
-  it('shows an orange count when text may clip', () => {
-    render_({ reviewStatus: 'ready', clippingCount: 2 })
+  it('shows an orange count when cards need review', () => {
+    render_({ reviewStatus: 'ready', issueCount: 2 })
     expect(screen.getByRole('button', { name: '2 issues' })).toHaveClass('text-amber-400')
   })
   it('does not claim readiness when the check fails', () => {
