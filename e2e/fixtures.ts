@@ -155,3 +155,10 @@ export async function exportCurrent(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Export PDF' }).click()
   await page.getByRole('menuitem', { name: 'This sheet' }).click()
 }
+
+/** Open keyword settings only when the accordion is closed. */
+export async function openFormatting(page: Page): Promise<void> {
+  const toggle = page.getByRole('button', { name: 'Toggle Automate formatting section' })
+  await expect(toggle).toBeVisible()
+  if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click()
+}

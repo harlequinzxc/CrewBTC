@@ -61,7 +61,7 @@ Three columns between a top bar and a bottom status bar:
 - **The inspector** on the right, 260px. It shows the document's own settings — sheet
   size, cell size, spacing, margin, rotation, cut guides — and when you select a card it
   puts that card's **Top**, **Bottom** and **Text** numbers above them. Use the edge
-  handles to collapse or expand Files, the inspector, or the Sheets strip.
+  rails to collapse or expand Files, the inspector, or the Sheets strip. The inspector sections can also be expanded or collapsed; Automate formatting starts closed.
 - **The gear** opens settings over the sheet rather than on a page of its own: units,
   reduced motion, and the changelog folded into one row that names the version you are on.
 
@@ -115,7 +115,7 @@ momentary action — it never stays lit, because width-fit is already where the 
 
 Twelve cards fit one A4 sheet, so a document longer than twelve pages has more than one.
 When that happens a strip of sheet miniatures appears along the bottom of the canvas:
-click one to move the canvas to that sheet, or use its top-edge handle to collapse
+click one to move the canvas to that sheet, or use its top-edge rail to collapse
 the strip and get the height back. The thumbnails scroll horizontally when needed. Clicking a file in the **Files** rail jumps to the sheet its first card
 is on. The active sheet is the one with the accent border.
 

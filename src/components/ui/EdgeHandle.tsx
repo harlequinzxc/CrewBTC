@@ -6,11 +6,11 @@ interface Props {
   readonly expanded: boolean
   readonly direction: 'left' | 'right' | 'up' | 'down'
   readonly onClick: () => void
-  readonly className?: string
 }
 
-/** Identical border-docked controls for the three workspace edges. */
-export function EdgeHandle({ label, expanded, direction, onClick, className }: Props) {
+/** Full-span structural rail; the requested 14 px cross-axis replaces floating handles. */
+export function EdgeHandle({ label, expanded, direction, onClick }: Props) {
   const Icon = { left: ChevronLeft, right: ChevronRight, up: ChevronUp, down: ChevronDown }[direction]
-  return <button type="button" data-target="dense" aria-label={label} title={label} aria-expanded={expanded} onClick={onClick} className={cn('inline-flex size-6 min-h-6 items-center justify-center rounded-md border border-hairline-strong bg-surface-panel text-ink-secondary shadow-sm transition-colors duration-150 ease-out hover:bg-surface-active hover:text-ink-primary focus-visible:bg-surface-active focus-visible:text-ink-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent', className)}><Icon aria-hidden className="size-3.5" /></button>
+  const vertical = direction === 'left' || direction === 'right'
+  return <button type="button" data-target="dense" aria-label={label} title={label} aria-expanded={expanded} onClick={onClick} className={cn('flex shrink-0 items-center justify-center bg-surface-canvas text-ink-secondary transition-colors duration-150 ease-out hover:bg-[#181A20] hover:text-ink-primary focus-visible:bg-[#181A20] focus-visible:text-ink-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent', vertical ? 'h-full w-3.5 min-h-0 cursor-col-resize border-x border-hairline' : 'h-3.5 min-h-0 w-full cursor-pointer border-y border-hairline')}><Icon aria-hidden className="size-3 shrink-0" /></button>
 }

@@ -1,28 +1,26 @@
+import { useId, useState } from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-/**
- * One titled block of the inspector.
- *
- * A hairline above, 12px uppercase label, optional single action on the right. No
- * description under the title: the section is named after the thing it edits, which is
- * the whole explanation.
- */
+/** Inspector section, optionally collapsible without unmounting its controls. */
 export interface SectionProps {
   readonly title: string
   readonly action?: ReactNode | undefined
   readonly children: ReactNode
+  readonly collapsible?: boolean
+  readonly initiallyOpen?: boolean
 }
 
-export function Section({ title, action, children }: SectionProps) {
-  return (
-    <section className="border-b border-hairline px-3 py-2.5 last:border-b-0">
-      <div className="mb-1.5 flex h-4 items-center justify-between">
-        <h2 className="text-[11px] font-medium uppercase tracking-[0.06em] text-ink-secondary">
-          {title}
-        </h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  )
+export function Section({ title, action, children, collapsible = false, initiallyOpen = true }: SectionProps) {
+  const [open, setOpen] = useState(initiallyOpen)
+  const id = useId()
+  return <section className="border-b border-hairline px-3 py-2 last:border-b-0">
+    <div className="flex min-h-8 items-center justify-between gap-1">
+      <h2 className="min-w-0 flex-1 text-[11px] font-medium uppercase tracking-[0.06em] text-ink-secondary">
+        {collapsible ? <button type="button" data-target="dense" aria-label={`Toggle ${title} section`} aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)} className="flex min-h-8 w-full items-center gap-1 text-left hover:text-ink-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{open ? <ChevronDown aria-hidden className="size-3 shrink-0" /> : <ChevronRight aria-hidden className="size-3 shrink-0" />}<span>{title}</span></button> : title}
+      </h2>
+      {action}
+    </div>
+    <div id={id} hidden={collapsible && !open} className="pt-1">{children}</div>
+  </section>
 }

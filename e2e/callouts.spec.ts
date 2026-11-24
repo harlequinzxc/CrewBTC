@@ -79,6 +79,7 @@ test('clicking an empty bottom box keeps its hint, in the same place', async ({ 
     const style = getComputedStyle(element)
     const placeholder = getComputedStyle(element, '::placeholder')
     return {
+      paddingLeft: style.paddingLeft,
       align: style.textAlign,
       placeholderAlign: placeholder.textAlign,
       placeholderWeight: placeholder.fontWeight,
@@ -90,8 +91,8 @@ test('clicking an empty bottom box keeps its hint, in the same place', async ({ 
   // Bold and fully opaque: the hint is drawn, not a 50%-alpha browser default.
   expect(state.placeholderWeight).toBe('700')
   expect(state.placeholderOpacity).toBe('1')
-  // The hint starts at the field's own padding, not a Tailwind step: 0.8 mm at 396%.
-  expect(Number.parseFloat(hint.left)).toBeCloseTo(3.17, 1)
+  // The hint starts at the field’s own scaled padding, whatever the canvas zoom.
+  expect(Number.parseFloat(hint.left)).toBeCloseTo(Number.parseFloat(state.paddingLeft), 2)
 })
 
 test('the top box is centred and bold before anything is typed', async ({ page }) => {

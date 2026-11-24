@@ -11,11 +11,16 @@ test('edge handles share geometry, collapse and restore without losing cards', a
   const bottom = page.getByRole('button', { name: 'Collapse sheet strip' })
   await expect(bottom).toBeVisible()
   const boxes = await Promise.all([left.boundingBox(), right.boundingBox(), bottom.boundingBox()])
-  for (const box of boxes) { expect(box!.width).toBe(24); expect(box!.height).toBe(24) }
+  expect(boxes[0]!.width).toBe(14)
+  expect(boxes[1]!.width).toBe(14)
+  expect(boxes[2]!.height).toBe(14)
+  expect(boxes[2]!.width).toBeGreaterThan(100)
   const files = (await page.getByRole('complementary', { name: 'Files' }).boundingBox())!
   const inspector = (await page.getByRole('complementary', { name: 'Inspector' }).boundingBox())!
-  expect(Math.abs(boxes[0]!.x + boxes[0]!.width - (files.x + files.width))).toBeLessThan(1)
-  expect(Math.abs(boxes[1]!.x - inspector.x)).toBeLessThan(1)
+  expect(Math.abs(boxes[0]!.x - (files.x + files.width))).toBeLessThan(1)
+  expect(boxes[0]!.height).toBe(files.height)
+  expect(Math.abs(boxes[1]!.x + boxes[1]!.width - inspector.x)).toBeLessThan(1)
+  expect(boxes[1]!.height).toBe(inspector.height)
   const cards = await page.locator('[data-cell]').count()
   await left.click()
   await expect(page.getByRole('complementary', { name: 'Files' })).toBeHidden()
@@ -62,6 +67,7 @@ test('all edge buttons are fully visible and hit-testable in both states', async
   await uploadPdf(page)
   await page.getByLabel('Cell width').fill('190')
   await page.getByLabel('Cell height').fill('200')
+  await expect(page.locator('[role=status].pointer-events-auto')).toHaveCount(0, { timeout: 10000 })
   async function assertHandle(name: RegExp) {
     const button = page.getByRole('button', { name })
     await expect(button).toBeVisible()
@@ -70,8 +76,8 @@ test('all edge buttons are fully visible and hit-testable in both states', async
       const points = [[r.left + 3, r.top + 3], [r.right - 3, r.top + 3], [r.left + 3, r.bottom - 3], [r.right - 3, r.bottom - 3], [r.left + r.width / 2, r.top + r.height / 2]]
       return { width: r.width, height: r.height, inViewport: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, points: points.map(([x, y]) => el.contains(document.elementFromPoint(x!, y!))) }
     })
-    expect(result.width).toBe(24)
-    expect(result.height).toBe(24)
+    if (name.source.includes('sheet strip')) { expect(result.height).toBe(14); expect(result.width).toBeGreaterThan(100) }
+    else { expect(result.width).toBe(14); expect(result.height).toBeGreaterThan(100) }
     expect(result.inViewport).toBe(true)
     expect(result.points).toEqual([true, true, true, true, true])
   }
@@ -101,4 +107,26 @@ test('station row does not vertically scroll, including when horizontally overfl
   expect(await row.evaluate((node) => node.scrollLeft)).toBe(0)
   await row.evaluate((node) => { node.scrollLeft = node.scrollWidth })
   expect(await row.evaluate((node) => node.scrollLeft)).toBeGreaterThan(0)
+})
+
+test('inspector sections toggle independently and preserve their inputs', async ({ page }) => {
+  await uploadPdf(page)
+  const defaults = page.getByRole('button', { name: 'Toggle New Card Defaults section' })
+  const formatting = page.getByRole('button', { name: 'Toggle Automate Formatting section' })
+  const sheet = page.getByRole('button', { name: 'Toggle Sheet & Print section' })
+  await expect(defaults).toHaveAttribute('aria-expanded', 'true')
+  await expect(formatting).toHaveAttribute('aria-expanded', 'false')
+  await expect(sheet).toHaveAttribute('aria-expanded', 'true')
+  await formatting.click()
+  const keywords = page.getByLabel('Crockeries keywords')
+  await keywords.fill('plate')
+  await formatting.click()
+  await expect(keywords).toBeHidden()
+  await formatting.click()
+  await expect(keywords).toHaveValue('plate')
+  await defaults.click()
+  await sheet.click()
+  await expect(defaults).toHaveAttribute('aria-expanded', 'false')
+  await expect(sheet).toHaveAttribute('aria-expanded', 'false')
+  await expect(formatting).toHaveAttribute('aria-expanded', 'true')
 })

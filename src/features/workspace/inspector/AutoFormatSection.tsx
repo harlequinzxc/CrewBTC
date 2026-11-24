@@ -12,7 +12,7 @@ interface Props {
 
 export function AutoFormatSection({ keywords, onChange, onApply, onRemove, available, busy }: Props) {
   return (
-    <Section title="Automate formatting">
+    <Section title="Automate formatting" collapsible initiallyOpen={false}>
       <p className="mb-2 text-[11px] text-ink-secondary">One keyword or phrase per line. Matching ignores case and applies to whole words.</p>
       <div className="flex flex-col gap-2">
         {(['crockeries', 'directions', 'condiments'] as const).map((category) => (
@@ -24,14 +24,14 @@ export function AutoFormatSection({ keywords, onChange, onApply, onRemove, avail
               onChange={(event) => onChange({ ...keywords, [category]: event.target.value })}
               maxLength={10000}
               rows={2}
-              className="w-full resize-y rounded border border-hairline bg-white px-2 py-1 text-xs normal-case text-[#111827] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+              className="w-full resize-y rounded border border-hairline bg-[#16181D] px-2 py-1 text-xs normal-case text-[#E4E4E7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
               placeholder="One per line"
             />
           </label>
         ))}
         {available ? (
           <div className="flex flex-col gap-1">
-            <button type="button" data-target="dense" disabled={busy} onClick={onApply} className="flex min-h-8 items-center justify-center rounded bg-accent-solid px-2 py-1 text-xs font-semibold text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50">
+            <button type="button" data-target="dense" disabled={busy} onClick={onApply} className="flex min-h-8 items-center justify-center rounded border border-hairline-strong bg-[#1E2028] px-2 py-1 text-xs font-semibold text-ink-primary hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50">
               Automate formatting
             </button>
             <button type="button" data-target="dense" disabled={busy} onClick={onRemove} className="flex min-h-8 items-center justify-center rounded border border-hairline px-2 py-1 text-xs font-semibold text-ink-primary hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50">

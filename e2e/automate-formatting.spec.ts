@@ -1,10 +1,11 @@
-import { projectAction, exportCurrent } from './fixtures'
+import { projectAction, exportCurrent, openFormatting } from './fixtures'
 import { expect, test } from '@playwright/test'
 import type { PDFArray } from '@cantoo/pdf-lib'
 import { textZones, uploadPdf } from './fixtures'
 
 test('format keywords and physical lines, undo, reload, and export', async ({ page }) => {
   await uploadPdf(page)
+  await openFormatting(page)
   await page.getByLabel('crockeries keywords').fill('plate')
   await page.getByLabel('directions keywords').fill('drizzle')
   await page.getByLabel('condiments keywords').fill('soy sauce')
@@ -15,14 +16,15 @@ test('format keywords and physical lines, undo, reload, and export', async ({ pa
   await page.getByLabel('Edit card text').fill('Put on plate\nDrizzle soy sauce onto a very long line that wraps visually\n• ready')
   await page.keyboard.press('Escape')
   page.on('dialog', (dialog) => void dialog.accept())
-  await page.getByRole('button', { name: 'Automate formatting' }).click()
+  await page.getByRole('button', { name: 'Automate formatting', exact: true }).click()
   await expect(textZones(page).first()).toHaveAttribute('aria-label', 'Card text: plate drizzle soy sauce')
   await expect(textZones(page).nth(1)).toHaveAttribute('aria-label', /• Put on PLATE\n• Drizzle soy sauce/)
   await page.getByRole('button', { name: 'Undo', exact: true }).click()
   await expect(textZones(page).nth(1)).toHaveAttribute('aria-label', /Put on plate\nDrizzle soy sauce/)
-  await page.getByRole('button', { name: 'Automate formatting' }).click()
+  await page.getByRole('button', { name: 'Automate formatting', exact: true }).click()
   await page.waitForTimeout(900)
   await page.reload()
+  await openFormatting(page)
   await expect(page.getByLabel('crockeries keywords')).toHaveValue('plate')
   await expect(page.getByLabel('directions keywords')).toHaveValue('drizzle')
   await expect(textZones(page).nth(1)).toHaveAttribute('aria-label', /• Put on PLATE\n• Drizzle soy sauce/)
@@ -50,6 +52,7 @@ test('format keywords and physical lines, undo, reload, and export', async ({ pa
 
 test('keyword settings transfer with the project to a fresh browser', async ({ page, browser }) => {
   await uploadPdf(page)
+  await openFormatting(page)
   await page.getByLabel('crockeries keywords').fill('bowl\nplate')
   await page.getByLabel('directions keywords').fill('toss')
   await page.getByLabel('condiments keywords').fill('salt')
@@ -67,11 +70,13 @@ test('keyword settings transfer with the project to a fresh browser', async ({ p
   const chooser = fresh.waitForEvent('filechooser')
   await projectAction(fresh, 'Open project')
   await (await chooser).setFiles({ name: 'project.crewbtc', mimeType: 'application/json', buffer: data })
+  await openFormatting(fresh)
   await expect(fresh.getByLabel('crockeries keywords')).toHaveValue('bowl\nplate')
   await expect(fresh.getByLabel('directions keywords')).toHaveValue('toss')
   await expect(fresh.getByLabel('condiments keywords')).toHaveValue('salt')
   await fresh.waitForTimeout(600)
   await fresh.reload()
+  await openFormatting(fresh)
   await expect(fresh.getByLabel('crockeries keywords')).toHaveValue('bowl\nplate')
   await context.close()
 })
@@ -79,6 +84,7 @@ test('keyword settings transfer with the project to a fresh browser', async ({ p
 test('dash markers become bullets and removing callouts preserves text and supports undo', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 768 })
   await uploadPdf(page)
+  await openFormatting(page)
   await page.getByLabel('crockeries keywords').fill('plate')
   await page.getByLabel('directions keywords').fill('drizzle')
   await page.getByLabel('condiments keywords').fill('soy')

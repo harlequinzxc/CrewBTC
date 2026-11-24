@@ -37,8 +37,8 @@ export function SheetStrip(props: SheetStripProps) {
   const count = props.sheets.length
 
   return (
-    <div className={`relative shrink-0 border-t border-hairline bg-surface-panel ${props.collapsed ? 'h-7' : ''}`}>
-      <EdgeHandle label={props.collapsed ? `Expand sheet strip, ${count} sheets` : 'Collapse sheet strip'} expanded={!props.collapsed} direction={props.collapsed ? 'up' : 'down'} onClick={props.onToggleCollapsed} className="absolute left-1/2 top-0 z-20 -translate-x-1/2" />
+    <div className="shrink-0 bg-surface-panel">
+      <EdgeHandle label={props.collapsed ? `Expand sheet strip, ${count} sheets` : 'Collapse sheet strip'} expanded={!props.collapsed} direction={props.collapsed ? 'up' : 'down'} onClick={props.onToggleCollapsed} />
       {props.collapsed ? null : <>
       <div className="flex h-7 shrink-0 items-center px-2">
         <span className="tabular shrink-0 truncate text-[10px] uppercase tracking-[0.06em] text-ink-muted">Sheets ({count})</span>

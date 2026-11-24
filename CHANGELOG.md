@@ -63,7 +63,8 @@ above it is not shown as release notes. `package.json` and the newest entry must
 - The header has inline project actions, a print-review status and export choices; a bottom
   bar carries paper size, sheet count and centered zoom controls. The status counts cards
   with any review warnings and is informational; details remain in the inspector.
-  Inset 24 px edge handles collapse Files, the sheet strip and the inspector without clipping.
+  Full-span 14 px structural rails collapse Files, the sheet strip and the inspector without clipping.
+  New card defaults and Sheet & print open as accordions; Automate formatting starts closed.
   Station tabs and sheet thumbnails do not scroll vertically.
   The click diagnostic remains in Settings.
   Station tabs are horizontally scrollable and support inline rename by double-click;
@@ -137,6 +138,11 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.22.0 — 2026-11-24 — Structural rails and inspector refresh
+
+- Replace floating edge handles with full-span 14 px rails that remain available when panels collapse.
+- Organize inspector settings into accordions, refresh automation controls, and align sheet fields in two columns.
 
 ### 1.21.1 — 2026-11-24 — Keep tabs and edge handles visible
 
