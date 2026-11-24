@@ -69,6 +69,7 @@ export function BatchQueue(props: BatchQueueProps) {
             type="button"
             data-target="dense"
             aria-label="Re-run all files"
+            aria-busy={busy}
             title="Re-run"
             disabled={busy || empty}
             onClick={props.onReRun}
@@ -95,6 +96,7 @@ export function BatchQueue(props: BatchQueueProps) {
           type="button"
           data-target="dense"
           onClick={props.onAdd}
+          aria-busy={busy}
           disabled={busy}
           className={cn(
             'flex h-7 w-full items-center justify-center gap-1.5 rounded-md',

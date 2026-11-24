@@ -41,9 +41,9 @@ export function TopBar(props: TopBarProps) {
       <span className="tabular text-ink-muted" aria-label={`Version ${APP_VERSION}`}>v{APP_VERSION}</span>
     </div>
     <div className="flex shrink-0 items-center gap-0.5 border-l border-hairline pl-2">
-      <button type="button" data-target="dense" aria-label="New project" title="New project" disabled={props.projectBusy} onClick={props.onNewProject} className={button}><FilePlus2 aria-hidden className="size-4" /><span>New</span></button>
-      <button type="button" data-target="dense" aria-label="Open project" title="Open editable project" disabled={props.projectBusy} onClick={props.onOpenProject} className={button}><FolderOpen aria-hidden className="size-4" /><span>Open</span></button>
-      <button type="button" data-target="dense" aria-label="Save project" title="Save editable project" disabled={props.projectBusy || !(props.hasProject ?? props.hasBatch)} onClick={props.onSaveProject} className={button}><Save aria-hidden className="size-4" /><span>Save</span></button>
+      <button type="button" data-target="dense" aria-label="New project" title="New project" aria-busy={props.projectBusy} disabled={props.projectBusy} onClick={props.onNewProject} className={button}><FilePlus2 aria-hidden className="size-4" /><span>New</span></button>
+      <button type="button" data-target="dense" aria-label="Open project" title="Open editable project" aria-busy={props.projectBusy} disabled={props.projectBusy} onClick={props.onOpenProject} className={button}><FolderOpen aria-hidden className="size-4" /><span>Open</span></button>
+      <button type="button" data-target="dense" aria-label="Save project" title="Save editable project" aria-busy={props.projectBusy} disabled={props.projectBusy || !(props.hasProject ?? props.hasBatch)} onClick={props.onSaveProject} className={button}><Save aria-hidden className="size-4" /><span>Save</span></button>
     </div>
     <div className="ml-auto flex shrink-0 items-center gap-1">
       <output title="Print review status; details are in the inspector" className={cn('inline-flex h-8 items-center gap-1 px-1.5 text-xs', !canCheck || checking || error ? 'text-ink-secondary' : count === 0 ? 'text-emerald-400' : 'text-amber-400')}>

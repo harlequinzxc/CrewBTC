@@ -46,6 +46,7 @@ import { releaseProxies } from '../../lib/pdf/proxy-cache'
 import { PdfPreview } from './preview/PdfPreview'
 import { useWorkspaceHistory } from './history/use-workspace-history'
 import { DEFAULT_SHEET } from '../../types/imposition'
+import { useRetainedPresence } from '../../components/ui/use-retained-presence'
 import type { Project } from '../../lib/project/project'
 import type { useToasts } from '../../components/ui/use-toasts'
 /** One screen: files, the sheet, the inspector. No view state, no navigation rail. */
@@ -60,6 +61,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const [settingsOpen, setSettingsOpen] = useState(false); const [stripCollapsed, setStripCollapsed] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(true); const [filesOpen, setFilesOpen] = useState(true)
   const [previewOpen, setPreviewOpen] = useState(false); const [printing, setPrinting] = useState(false)
+  const printPresent = useRetainedPresence(printing); const [printSession, setPrintSession] = useState(0)
   useUpdateNotice(() => {
     notify({
       variant: 'info',
@@ -159,12 +161,10 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
       <TopBar
         onOpenSettings={() => setSettingsOpen(true)}
         onNewProject={() => { if (!window.confirm('Start a new project? Save your current project first if you want to keep it.')) return; void retireProjectSources(stationState.stations.flatMap((station) => station.documents.map((doc) => doc.id))).catch(() => undefined); releaseAll(); releaseProxies(); history.clear(); const id = crypto.randomUUID(); stationState.replace([emptyStation(id, 'Station 1')], id); setSelectedCell(null); setPreviewOpen(false) }}
-        onPrintSelection={() => setPrinting(true)} anyProjectCards={stationState.stations.some((station) => station.documents.length > 0)} hasProject={stationState.stations.length > 1 || stationState.stations.some((station) => station.documents.length > 0 || station.name !== 'Station 1')}
+        onPrintSelection={() => { setPrintSession((session) => session + 1); setPrinting(true) }} anyProjectCards={stationState.stations.some((station) => station.documents.length > 0)} hasProject={stationState.stations.length > 1 || stationState.stations.some((station) => station.documents.length > 0 || station.name !== 'Station 1')}
         onSaveProject={project.save} onOpenProject={project.open} projectBusy={project.busy || batch.busy || !session.restored}
-        onExportCurrent={exporter.exportCurrent} onExportAll={exporter.exportAll}
-        hasMoreThanOneSheet={exporter.hasMoreThanOneSheet} exporting={exporter.busy}
-        hasBatch={hasBatch}
-        reviewStatus={review.status} issueCount={review.issues.length} hasPrintableCards={sheetCount > 0}
+        onExportCurrent={exporter.exportCurrent} onExportAll={exporter.exportAll} hasMoreThanOneSheet={exporter.hasMoreThanOneSheet} exporting={exporter.busy}
+        hasBatch={hasBatch} reviewStatus={review.status} issueCount={review.issues.length} hasPrintableCards={sheetCount > 0}
         previewOpen={previewOpen}
         onTogglePreview={() => setPreviewOpen((open) => !open)}
       />
@@ -237,7 +237,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         </div>
       </main>
       <BottomBar paper={{ widthMm: sheet.settings.sheetWidthMm, heightMm: sheet.settings.sheetHeightMm }} sheetCount={sheetCount} scale={zoom.scale} fitting={zoom.fitting} onStep={zoom.step} onFit={zoom.fit} onUndo={history.undo} onRedo={history.redo} canUndo={history.canUndo} canRedo={history.canRedo} />
-      {printing ? <PrintSelection stations={stationState.stations} grid={sheet.grid} settings={sheet.settings} drawCutMarks={showCutMarks} onClose={() => setPrinting(false)} notify={notify} /> : null}
+      {printPresent ? <PrintSelection key={printSession} open={printing} stations={stationState.stations} grid={sheet.grid} settings={sheet.settings} drawCutMarks={showCutMarks} onClose={() => setPrinting(false)} notify={notify} /> : null}
       <SettingsDialog
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}

@@ -81,6 +81,7 @@ export function PhotoCutoutControls({ photo, onReplace }: PhotoCutoutControlsPro
         type="button"
         data-target="dense"
         aria-label="Remove the background"
+        aria-busy={cutting}
         title="Remove the background behind the dish"
         disabled={cutting}
         onPointerDown={(event) => event.stopPropagation()}

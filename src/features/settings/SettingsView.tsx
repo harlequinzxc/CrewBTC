@@ -95,8 +95,8 @@ export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) 
           )}
         </button>
 
-        {notesOpen ? (
-          <ol className="flex flex-col gap-3 px-4 pb-4 pt-1">
+        <div className="inspector-accordion" data-expanded={notesOpen} aria-hidden={!notesOpen} inert={!notesOpen}>
+          <div><ol className="flex flex-col gap-3 px-4 pb-4 pt-1">
             {CHANGELOG.map((release) => (
               <li key={release.version}>
                 <div className="flex items-baseline gap-2">
@@ -113,8 +113,8 @@ export function SettingsView({ settings, onSettingsChange }: SettingsViewProps) 
                 </ul>
               </li>
             ))}
-          </ol>
-        ) : null}
+          </ol></div>
+        </div>
       </section>
     </div>
   )

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { GridLayout, SheetSettings } from '../../../types/imposition'
 import type { StationWorkspace } from '../../../types/station'
 import type { ToastInput } from '../../../components/ui/use-toasts'
@@ -7,10 +7,12 @@ import { toPageRefs } from '../../../lib/pdf/page-refs'
 import { writeCards } from '../../../lib/export/write-cards'
 import { downloadBytes } from '../../../lib/export/download'
 import { usePdfPreview } from '../preview/use-pdf-preview'
+import { useModalMotion } from '../../../components/ui/use-modal-motion'
 import { useSelection } from './use-selection'
 import { packPrintSelection, printCandidates } from './print-selection'
 
 interface Props {
+  readonly open: boolean
   readonly stations: readonly StationWorkspace[]
   readonly grid: GridLayout
   readonly settings: SheetSettings
@@ -20,8 +22,8 @@ interface Props {
 }
 const button = 'min-h-8 rounded border border-hairline px-3 text-xs text-ink-primary hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50'
 
-export function PrintSelection({ stations, grid, settings, drawCutMarks, onClose, notify }: Props) {
-  const dialog = useRef<HTMLDialogElement>(null)
+export function PrintSelection({ open, stations, grid, settings, drawCutMarks, onClose, notify }: Props) {
+  const { ref, onAnimationEnd } = useModalMotion(open)
   const [sheet, setSheet] = useState(0)
   const [busy, setBusy] = useState(false)
   const candidates = useMemo(() => printCandidates(stations, grid, settings.textScale ?? 0.9), [stations, grid, settings.textScale])
@@ -32,7 +34,6 @@ export function PrintSelection({ stations, grid, settings, drawCutMarks, onClose
   const count = grid.cellCount > 0 ? Math.ceil(packed.pages.length / grid.cellCount) : 0
   const index = Math.min(sheet, Math.max(0, count - 1))
   const preview = usePdfPreview({ settings, grid, pages: packed.pages, cards: packed.cards, drawCutMarks }, index)
-  useEffect(() => { const element = dialog.current; element?.showModal(); return () => { element?.close() } }, [])
   const exportSelection = async () => {
     setBusy(true)
     try {
@@ -44,8 +45,8 @@ export function PrintSelection({ stations, grid, settings, drawCutMarks, onClose
     } catch { notify({ variant: 'error', title: 'Could not export selection', description: 'Check the cards and try again.' }) }
     finally { setBusy(false) }
   }
-  return <dialog ref={dialog} aria-label="Print selection" onClose={onClose} className="m-auto max-h-[90svh] w-[min(1000px,95vw)] overflow-hidden rounded-xl border border-hairline bg-surface-panel p-0 text-ink-primary backdrop:bg-black/60 open:flex open:flex-col">
-    <div className="flex items-center gap-3 border-b border-hairline p-3"><h2 className="flex-1 text-sm font-semibold">Print selection</h2><button type="button" data-target="dense" onClick={onClose} className={button}>Close</button></div>
+  return <dialog ref={ref} aria-label="Print selection" onAnimationEnd={onAnimationEnd} onCancel={(event) => { event.preventDefault(); onClose() }} className="m-auto max-h-[90svh] w-[min(1000px,95vw)] overflow-hidden rounded-xl border border-hairline bg-surface-panel p-0 text-ink-primary backdrop:bg-black/60 open:flex open:flex-col">
+    <div data-dialog-focus tabIndex={-1} className="flex items-center gap-3 border-b border-hairline p-3"><h2 className="flex-1 text-sm font-semibold">Print selection</h2><button type="button" data-target="dense" onClick={onClose} className={button}>Close</button></div>
     <div className="flex min-h-0 flex-1 gap-3 overflow-hidden p-3">
       <div className="w-1/2 overflow-auto">
         <p className="mb-2 text-xs text-ink-secondary">Choose stations or cards. Shift-click selects a range; drag a card’s handle to select or deselect several. The original workspaces stay unchanged.</p>
@@ -72,6 +73,6 @@ export function PrintSelection({ stations, grid, settings, drawCutMarks, onClose
         <div className="min-h-0 flex-1 overflow-auto bg-surface-canvas p-2">{count && preview.image ? <img src={preview.image} alt={`Selected print PDF, sheet ${index + 1}`} className="mx-auto w-full bg-white" /> : null}</div>
       </div>
     </div>
-    <div className="flex justify-end border-t border-hairline p-3"><button type="button" data-target="dense" className={button} disabled={!count || busy} onClick={() => void exportSelection()}>Export selected PDF</button></div>
+    <div className="flex justify-end border-t border-hairline p-3"><button type="button" data-target="dense" className={button} disabled={!count || busy} aria-busy={busy} onClick={() => void exportSelection()}>Export selected PDF</button></div>
   </dialog>
 }

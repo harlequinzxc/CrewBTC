@@ -72,7 +72,8 @@ above it is not shown as release notes. `package.json` and the newest entry must
   Station tabs and sheet thumbnails do not scroll vertically.
   Reduced motion follows the saved choice or system preference, preserves static layout
   transforms and uses instant sheet navigation; inspector accordions, Settings and toasts
-  have bounded enter/exit motion. The click diagnostic remains in Settings.
+  have bounded enter/exit motion. Export, print selection and release notes also animate;
+  other state transitions remain under review. The click diagnostic remains in Settings.
   Station tabs are horizontally scrollable and support inline rename by double-click;
   the rename field sizes itself to the text and reveals the beginning when opened.
 - Station tabs isolate batches and cards, while settings are shared. Page filters can place
@@ -144,6 +145,12 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.24.2 — 2026-11-24 — Continue motion and accessibility audit
+
+- Animate the Export menu, print selection dialog and Settings release notes with non-interactive exit states.
+- Improve muted-text and button-hover contrast, and expose busy states on several async controls.
+- Document remaining motion and accessibility gaps; the app is not yet fully audited for all-state motion.
 
 ### 1.24.1 — 2026-11-24 — Respect motion preferences
 

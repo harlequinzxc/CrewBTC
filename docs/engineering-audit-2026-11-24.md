@@ -4,6 +4,28 @@ Scope: repository inspection, the automated release gate and targeted Chromium m
 This is not a certification of WCAG, performance, installed-mode behavior, or all engineering
 rules. `[REVIEW]` and `[CRAFT]` items need the manual checks called for in the rules.
 
+## Follow-up — v1.24.2
+
+This follow-up supersedes the relevant v1.24.1 findings below, which are retained as
+historical audit evidence. **All-state motion compliance is not yet confirmed.**
+
+- Export menu, print-selection dialog and Settings release notes now have enter/exit or
+  expansion motion. Closed surfaces are inert and hidden from assistive technology;
+  modal interaction is released immediately on close. Targeted Chromium tests exercise
+  menu/dialog close, selection reset and release-note expansion.
+- Muted text is now #89909c: measured contrast is 5.73:1 on panel, 5.30:1 on raised and
+  4.77:1 on hover surfaces. Export and error-boundary white-on-red hover use #b91c1c
+  (6.47:1). The contrast gate now covers these combinations, not every app combination.
+- Several export, project, batch and photo-cutout controls expose aria-busy; the full
+  async inventory and announcements are not verified.
+- PDF preview, panel/strip collapse, station active indicator and other state/list
+  changes still need motion work and review. The color-transition property concern,
+  ongoing loading pulse, theme and design-system gaps remain. A full interaction and
+  reduced-motion walkthrough, manual accessibility and device/performance checks below
+  have not been completed. Automated tests cannot establish universal compliance.
+- Full gate before release metadata: 523 unit and 97 Chromium tests passed. Two additional
+  targeted Chromium motion tests also passed; final release gate results follow below.
+
 ## Motion (§3)
 
 - **Addressed:** the saved reduced-motion choice takes precedence over the system default;
@@ -90,3 +112,10 @@ No dependencies or persisted data formats were added.
   the complete gate above was rerun successfully.
 - Regression tests were not separately run against every pre-fix version; that portion of
   §8B's mutation-proofing review is **not run**.
+
+## Automated verification for v1.24.2
+
+- `npm run gate` with the configured Chromium binary: **exit 0**, 523 unit tests and
+  99 Chromium tests passed, including the new menu, print-dialog and release-notes tests.
+- This verifies the automated regression gate only; it does not resolve or prove the
+  outstanding manual and all-state motion findings described above.

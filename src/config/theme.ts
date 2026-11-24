@@ -25,7 +25,7 @@ export const TEXT = {
   primary: '#F4F4F6',
   secondary: '#A0A5B0',
   /** Deliberately quiet: metadata, never instructions. */
-  muted: '#6E7480',
+  muted: '#89909C',
 } as const
 
 /**

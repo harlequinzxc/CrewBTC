@@ -20,7 +20,7 @@
 
   --color-ink-primary: #f4f4f6;
   --color-ink-secondary: #a0a5b0;
-  --color-ink-muted: #6e7480;
+  --color-ink-muted: #89909c;
 
   --color-accent: #e5484d;
   --color-accent-solid: #d33a3f;
@@ -196,3 +196,21 @@ dialog[data-motion-phase='enter']::backdrop { animation: fade-in var(--duration-
 [data-reduced-motion='true'] dialog[data-motion-phase='exit'] { animation-name: fade-out !important; animation-duration: 80ms !important; }
 [data-reduced-motion='true'] dialog[data-motion-phase]::backdrop { animation-duration: 80ms !important; }
 [data-reduced-motion='true'] .motion-backdrop-exit { animation-duration: 80ms !important; }
+
+/* Menus remain non-interactive as their exit fades, without delaying actions. */
+[data-motion-popup] {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-4px) scale(.98);
+  transform-origin: top right;
+  pointer-events: none;
+  transition: opacity var(--duration-sheet-exit) var(--ease-sheet), transform var(--duration-sheet-exit) var(--ease-sheet), visibility 0s linear var(--duration-sheet-exit);
+}
+[data-motion-popup][data-open='true'] {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  transition: opacity var(--duration-sheet-enter) var(--ease-sheet), transform var(--duration-sheet-enter) var(--ease-sheet), visibility 0s;
+}
+[data-reduced-motion='true'] [data-motion-popup] { transform: none !important; }
