@@ -8,6 +8,8 @@ test('bottom zoom is centered and header controls do not overlap at supported wi
     const footer = (await page.getByLabel('Sheet status and zoom').boundingBox())!
     expect(footer.y + footer.height).toBe(768)
     const zoom = (await page.getByLabel('Sheet zoom').boundingBox())!
+    const history = (await page.getByLabel('Edit history').boundingBox())!
+    expect(history.x + history.width).toBeLessThanOrEqual(zoom.x)
     expect(zoom.y).toBeGreaterThanOrEqual(footer.y)
     expect(Math.abs(zoom.x + zoom.width / 2 - width / 2)).toBeLessThan(1)
     const controls = page.locator('header button:visible')

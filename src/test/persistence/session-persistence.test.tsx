@@ -186,7 +186,7 @@ describe('clearing the batch', () => {
     fireEvent.click(screen.getByRole('button', { name: /clear all files/i }))
     await waitFor(() => expect(cards().length).toBe(0))
 
-    fireEvent.click(screen.getByRole('button', { name: /undo/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^Undo$/i }))
 
     await waitFor(() => expect(cards().length).toBe(before))
     expect(cards()[0]?.textContent).toContain('PAGE-1')

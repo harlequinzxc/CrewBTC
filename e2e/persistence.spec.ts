@@ -47,7 +47,7 @@ test('clear all offers an undo that restores the batch', async ({ page }) => {
   await page.getByRole('button', { name: /clear all files/i }).click()
   await expect(page.locator('[data-cell]')).toHaveCount(0)
 
-  await page.getByRole('button', { name: /undo/i }).click()
+  await page.getByRole('button', { name: 'Undo', exact: true }).click()
   await expect(page.locator('[data-cell]')).toHaveCount(drawn)
   const download = page.waitForEvent('download')
   await exportCurrent(page)
@@ -109,7 +109,7 @@ test('clear undo keeps original PDF; a later clear releases it after the undo wi
   expect(before.length).toBeGreaterThan(0)
   const id = before.at(-1)!
   await page.getByRole('button', { name: /clear all files/i }).click()
-  await page.getByRole('button', { name: /undo/i }).click()
+  await page.getByRole('button', { name: 'Undo', exact: true }).click()
   await expect(page.locator('[data-cell]').first()).toBeVisible()
   await page.waitForTimeout(10_500)
   expect(await sourceIds()).toContain(id)

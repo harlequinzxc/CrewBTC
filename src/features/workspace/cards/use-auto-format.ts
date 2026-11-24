@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { Keywords } from '../../../types/format-keywords'
 import type { ToastInput } from '../../../components/ui/use-toasts'
 import type { Card } from '../../../types/card'
@@ -6,7 +6,9 @@ import type { CardSeed, CardStore } from './use-cards'
 import { automateCard } from './auto-format'
 import { removeCalloutFormatting } from './remove-auto-format'
 
-export function useAutoFormat(store: CardStore, seeds: readonly CardSeed[], keywords: Keywords, notify: (input: ToastInput) => void) {
+export function useAutoFormat(store: CardStore, seeds: readonly CardSeed[], keywords: Keywords, notify: (input: ToastInput) => void, onHistory?: (before: Readonly<Record<string, Card>>, after: Readonly<Record<string, Card>>) => void) {
+  const latest = useRef(store)
+  useEffect(() => { latest.current = store }, [store])
   const available = seeds.length > 0 && seeds.every((seed) => store.cards[seed.key] !== undefined)
   const changeCards = useCallback((transform: (card: Card) => Card, title: string) => {
     const before: Record<string, Card> = {}
@@ -23,9 +25,17 @@ export function useAutoFormat(store: CardStore, seeds: readonly CardSeed[], keyw
       notify({ variant: 'info', title: 'No formatting changes needed' })
       return
     }
+    onHistory?.(before, after)
     store.restoreCards({ ...store.cards, ...after })
-    notify({ variant: 'success', title, description: `${Object.keys(after).length} cards updated. Review the results.`, undo: () => store.undoFormattedCards(before, after), action: 'Undo' })
-  }, [store, seeds, notify])
+    notify({ variant: 'success', title, description: `${Object.keys(after).length} cards updated. Review the results.`, undo: () => {
+      const current: Record<string, Card> = {}, restored: Record<string, Card> = {}
+      for (const [key, card] of Object.entries(before)) {
+        if (latest.current.cards[key] === after[key]) { current[key] = after[key]!; restored[key] = card }
+      }
+      onHistory?.(current, restored)
+      store.undoFormattedCards(before, after)
+    }, action: 'Undo' })
+  }, [store, seeds, notify, onHistory])
 
   const apply = useCallback(() => {
     if (!window.confirm('Format all occupied cards? Non-empty lines in bottom text will gain bullets, and matching CROCKERIES text will be permanently uppercased.')) return

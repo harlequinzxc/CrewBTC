@@ -1,4 +1,4 @@
-import { cardForStorage, numberedCards } from './cards/numbered-cards'
+import { numberedCards } from './cards/numbered-cards'
 import { useCallback, useMemo, useState } from 'react'
 import { DEFAULT_TEXT_SCALE } from '../../types/card-typography'
 import { TopBar } from '../../components/layout/TopBar'
@@ -18,7 +18,6 @@ import { useSheetNavigation } from './sheet/use-sheet-navigation'
 import { SheetStripSlot } from './sheet/SheetStripSlot'
 import { toPageRefs } from '../../lib/pdf/page-refs'
 import { pickFiles } from '../../lib/files/open-picker'
-import type { Card } from '../../types/card'
 import { useUpdateNotice } from './use-update-notice'
 import { useClickProbe } from './use-click-probe'
 import { CHANGELOG } from '../../data/changelog'
@@ -45,6 +44,8 @@ import { retireProjectSources } from '../../lib/storage/project-sources'
 import { releaseAll } from '../../lib/export/doc-cache'
 import { releaseProxies } from '../../lib/pdf/proxy-cache'
 import { PdfPreview } from './preview/PdfPreview'
+import { useWorkspaceHistory } from './history/use-workspace-history'
+import { DEFAULT_SHEET } from '../../types/imposition'
 import type { Project } from '../../lib/project/project'
 import type { useToasts } from '../../components/ui/use-toasts'
 /** One screen: files, the sheet, the inspector. No view state, no navigation rail. */
@@ -79,6 +80,8 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const cardStore = useCards(session.snapshot?.cards ?? null)
   const stationState = useStations(session.snapshot, batch, cardStore)
   const sharedSheet = useSharedSheet(sheet, stationState)
+  const history = useWorkspaceHistory(cardStore, sheet, sharedSheet, stationState.activeId, batch.documents)
+  const clearHistory = history.clear
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
   const zoom = useSheetZoom(sheet.settings.sheetWidthMm)
   useSaveSession(session.restored && batch.hydrated, {
@@ -89,7 +92,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const cardDefaults = useCardDefaults()
   const seeds = useCardSeeds(pageRefs, sheet.grid, batch.documents)
   useSeedCards(cardStore, seeds, sheet.grid.cellHeightMm, cardDefaults.bands, stationState.stations.find((station) => station.id === stationState.activeId)?.name)
-  const autoFormat = useAutoFormat(cardStore, seeds, keywords, notify)
+  const autoFormat = useAutoFormat(cardStore, seeds, keywords, notify, history.batchChange)
   const visibleCards = useMemo(() => numberedCards(cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale ?? DEFAULT_TEXT_SCALE), [cardStore.cards, pageRefs, sheet.grid, sheet.settings.textScale])
   const toggleStrip = useCallback(() => setStripCollapsed((collapsed) => !collapsed), [])
   const toggleInspector = useCallback(() => setInspectorOpen((open) => !open), [])
@@ -107,13 +110,14 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     })()
   }, [batch])
   const applyProject = useCallback((project: Project) => {
+    clearHistory()
     stationState.replace(project.snapshot.stations, project.snapshot.activeStationId)
     sharedSheet.applied(project.sheet); sheet.update(project.sheet)
     updateSettings(project.preferences)
     setShowCutMarks(project.showCutMarks)
     setKeywords(project.keywords)
     setSelectedCell(null)
-  }, [stationState, sheet, sharedSheet, updateSettings, setShowCutMarks, setKeywords])
+  }, [stationState, sheet, sharedSheet, updateSettings, setShowCutMarks, setKeywords, clearHistory])
   const project = useProject({ stations: stationState.stations, activeStationId: stationState.activeId, sheet: sheet.settings, preferences: settings, showCutMarks, keywords, apply: applyProject, notify })
   const hasBatch = batch.documents.length > 0
   const {
@@ -154,15 +158,11 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
     <div className="flex h-[100svh] max-h-[100svh] w-full flex-col overflow-hidden bg-surface-canvas">
       <TopBar
         onOpenSettings={() => setSettingsOpen(true)}
-        onNewProject={() => { if (!window.confirm('Start a new project? Save your current project first if you want to keep it.')) return; void retireProjectSources(stationState.stations.flatMap((station) => station.documents.map((doc) => doc.id))).catch(() => undefined); releaseAll(); releaseProxies(); const id = crypto.randomUUID(); stationState.replace([emptyStation(id, 'Station 1')], id); setSelectedCell(null); setPreviewOpen(false) }}
+        onNewProject={() => { if (!window.confirm('Start a new project? Save your current project first if you want to keep it.')) return; void retireProjectSources(stationState.stations.flatMap((station) => station.documents.map((doc) => doc.id))).catch(() => undefined); releaseAll(); releaseProxies(); history.clear(); const id = crypto.randomUUID(); stationState.replace([emptyStation(id, 'Station 1')], id); setSelectedCell(null); setPreviewOpen(false) }}
         onPrintSelection={() => setPrinting(true)} anyProjectCards={stationState.stations.some((station) => station.documents.length > 0)} hasProject={stationState.stations.length > 1 || stationState.stations.some((station) => station.documents.length > 0 || station.name !== 'Station 1')}
-        onSaveProject={project.save}
-        onOpenProject={project.open}
-        projectBusy={project.busy || batch.busy || !session.restored}
-        onExportCurrent={exporter.exportCurrent}
-        onExportAll={exporter.exportAll}
-        hasMoreThanOneSheet={exporter.hasMoreThanOneSheet}
-        exporting={exporter.busy}
+        onSaveProject={project.save} onOpenProject={project.open} projectBusy={project.busy || batch.busy || !session.restored}
+        onExportCurrent={exporter.exportCurrent} onExportAll={exporter.exportAll}
+        hasMoreThanOneSheet={exporter.hasMoreThanOneSheet} exporting={exporter.busy}
         hasBatch={hasBatch}
         reviewStatus={review.status} issueCount={review.issues.length} hasPrintableCards={sheetCount > 0}
         previewOpen={previewOpen}
@@ -193,7 +193,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           cards={visibleCards}
           selectedCell={selectedCell}
           selectionSheet={selectionSheet}
-          onSelectCell={selectCell} onCardChange={(key, card: Card) => cardStore.setCard(key, cardForStorage(card))}
+          onSelectCell={selectCell} onCardChange={history.cardChange}
           scale={zoom.scale}
           fitting={zoom.fitting}
           paneRef={zoom.paneRef}
@@ -224,7 +224,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           sheet={sheet.settings}
           grid={sheet.grid}
           sheetErrors={sheet.errors}
-          onSheetChange={sharedSheet.update} onResetSheet={sharedSheet.reset}
+          onSheetChange={history.sheetChange} onResetSheet={() => history.sheetChange(DEFAULT_SHEET)}
           showCutMarks={showCutMarks}
           onShowCutMarksChange={setShowCutMarks} keywords={keywords}
           onKeywordsChange={setKeywords} onAutomate={autoFormat.apply}
@@ -236,7 +236,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         />
         </div>
       </main>
-      <BottomBar paper={{ widthMm: sheet.settings.sheetWidthMm, heightMm: sheet.settings.sheetHeightMm }} sheetCount={sheetCount} scale={zoom.scale} fitting={zoom.fitting} onStep={zoom.step} onFit={zoom.fit} />
+      <BottomBar paper={{ widthMm: sheet.settings.sheetWidthMm, heightMm: sheet.settings.sheetHeightMm }} sheetCount={sheetCount} scale={zoom.scale} fitting={zoom.fitting} onStep={zoom.step} onFit={zoom.fit} onUndo={history.undo} onRedo={history.redo} canUndo={history.canUndo} canRedo={history.canRedo} />
       {printing ? <PrintSelection stations={stationState.stations} grid={sheet.grid} settings={sheet.settings} drawCutMarks={showCutMarks} onClose={() => setPrinting(false)} notify={notify} /> : null}
       <SettingsDialog
         open={settingsOpen}
