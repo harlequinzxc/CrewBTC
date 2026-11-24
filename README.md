@@ -125,7 +125,7 @@ is on. The active sheet is the one with the accent border.
 3. Pick a card, then edit its text, colour and photo.
 4. Drag the selected card’s dividers; check the heights in the inspector.
 5. Open **Preview PDF** beside Export to inspect the generated PDF as you edit. Navigate sheets, zoom, fit or expand the preview; it updates shortly after changes. On narrower windows it overlays part of the editor.
-6. Select the top-bar clipping status to open the full print review and jump to affected cards. Green **Ready for export** means no clipping was detected, not that other warnings are absent. Warnings are advisory: missing content can be intentional, and the check does not replace inspecting the PDF.
+6. Select the top-bar print-review status to open the full review and jump to affected cards. Green **Ready for export** means the review found no issues; an orange count shows how many cards need review. Warnings are advisory: missing content can be intentional, and the check does not replace inspecting the PDF.
 7. To reuse band heights, select a card and choose **Use selected card** under New card defaults. The saved heights apply only to newly seeded cards; text size remains sheet-wide.
 8. **Save** saves an editable project if needed. **Export → This sheet** prints the active sheet; **Export → Custom selection** combines chosen cards from any station.
 

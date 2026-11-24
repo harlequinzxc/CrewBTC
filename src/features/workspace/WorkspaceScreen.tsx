@@ -3,7 +3,6 @@ import { useCallback, useMemo, useState } from 'react'
 import { DEFAULT_TEXT_SCALE } from '../../types/card-typography'
 import { TopBar } from '../../components/layout/TopBar'
 import { BottomBar } from '../../components/layout/BottomBar'
-import { clippingStatus } from './review/clipping-status'
 import { Inspector } from './Inspector'
 import { useBatch } from './files/use-batch'
 import { useCards, useSeedCards } from './cards/use-cards'
@@ -133,7 +132,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   })
   const sheetCount = sheets.length
   const review = useReview(sheets, sheet.grid, visibleCards)
-  const clipping = clippingStatus(review.status, review.issues)
   const exporter = useCardExport({
     settings: sheet.settings,
     grid: sheet.grid,
@@ -167,7 +165,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         hasBatch={hasBatch}
         inspectorOpen={inspectorOpen}
         onToggleInspector={toggleInspector}
-        reviewStatus={clipping.status} clippingCount={clipping.count} hasPrintableCards={sheetCount > 0}
+        reviewStatus={review.status} issueCount={review.issues.length} hasPrintableCards={sheetCount > 0}
         onReview={() => { setInspectorOpen(true); window.requestAnimationFrame(() => document.getElementById('batch-review')?.focus()) }}
         previewOpen={previewOpen}
         onTogglePreview={() => setPreviewOpen((open) => !open)}
