@@ -14,12 +14,6 @@ import { APP_NAME } from '../../config/brand'
 const renderBar = () =>
   render(
     <TopBar
-      scale={1}
-      fitting
-      paper={{ widthMm: 210, heightMm: 297 }}
-      sheetCount={1}
-      onStep={() => undefined}
-      onFit={() => undefined}
       onOpenSettings={() => undefined}
       onExportCurrent={() => undefined}
       onExportAll={() => undefined}

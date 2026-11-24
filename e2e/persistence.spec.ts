@@ -52,7 +52,7 @@ test('clear all offers an undo that restores the batch', async ({ page }) => {
   const download = page.waitForEvent('download')
   await exportCurrent(page)
   await download
-  await expect(page.getByText(`${drawn} cards`, { exact: false })).toBeVisible()
+  await expect(page.getByText(`1 sheet, ${drawn} cards`, { exact: true })).toBeVisible()
 })
 
 test('export after reload contains the edited text, label, and photo', async ({ page }) => {

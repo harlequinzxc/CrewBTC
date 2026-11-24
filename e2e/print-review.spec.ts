@@ -9,8 +9,8 @@ test('review jumps to an affected card and current export writes its sheet', asy
   await page.getByLabel('Cell width').fill('190')
   await page.getByLabel('Cell height').fill('200')
   await expect(page.getByText('210 × 297 mm · 2 sheets')).toBeVisible()
-  await expect(page.getByRole('button', { name: /Review \d+/ })).toBeVisible({ timeout: 30000 })
-  await page.getByRole('button', { name: /Review \d+/ }).click()
+  await expect(page.getByTitle('Text clipping check; open review for all print warnings')).toBeVisible({ timeout: 30000 })
+  await page.getByTitle('Text clipping check; open review for all print warnings').click()
   const review = page.locator('#batch-review')
   const second = review.getByRole('button', { name: /Sheet 2, card 1/ })
   await second.click()
@@ -53,7 +53,7 @@ test('preview expands and returns with Escape', async ({ page }) => {
 test('review and export remain reachable at 1024 pixels', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 768 })
   await uploadPdf(page)
-  const review = page.getByRole('button', { name: /Review \d+/ })
+  const review = page.getByTitle('Text clipping check; open review for all print warnings')
   await expect(review).toBeVisible({ timeout: 30000 })
   await review.click()
   await expect(page.locator('#batch-review')).toBeFocused()
@@ -61,4 +61,25 @@ test('review and export remain reachable at 1024 pixels', async ({ page }) => {
   const box = await exportButton.boundingBox()
   expect(box).not.toBeNull()
   expect(box!.x + box!.width).toBeLessThanOrEqual(1024)
+})
+
+test('clipping status flags overflow and opens the full review', async ({ page }) => {
+  await uploadPdf(page)
+  const status = page.getByTitle('Text clipping check; open review for all print warnings')
+  await page.getByRole('button', { name: /card text:/i }).first().click()
+  await page.getByLabel('Edit card text').fill('This is a deliberately long title '.repeat(150))
+  await page.keyboard.press('Escape')
+  await expect(status).toContainText(/\d+ issues?/, { timeout: 30000 })
+  const colors = await status.evaluate((element) => {
+    const probe = document.createElement('span')
+    probe.className = 'text-amber-400'
+    document.body.appendChild(probe)
+    const result = { actual: getComputedStyle(element).color, expected: getComputedStyle(probe).color }
+    probe.remove()
+    return result
+  })
+  expect(colors.actual).toBe(colors.expected)
+  await status.click()
+  await expect(page.locator('#batch-review')).toBeFocused()
+  await expect(page.locator('#batch-review')).toContainText('text may clip')
 })

@@ -2,6 +2,8 @@ import { cardForStorage, numberedCards } from './cards/numbered-cards'
 import { useCallback, useMemo, useState } from 'react'
 import { DEFAULT_TEXT_SCALE } from '../../types/card-typography'
 import { TopBar } from '../../components/layout/TopBar'
+import { BottomBar } from '../../components/layout/BottomBar'
+import { clippingStatus } from './review/clipping-status'
 import { Inspector } from './Inspector'
 import { useBatch } from './files/use-batch'
 import { useCards, useSeedCards } from './cards/use-cards'
@@ -131,6 +133,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   })
   const sheetCount = sheets.length
   const review = useReview(sheets, sheet.grid, visibleCards)
+  const clipping = clippingStatus(review.status, review.issues)
   const exporter = useCardExport({
     settings: sheet.settings,
     grid: sheet.grid,
@@ -151,13 +154,6 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   return (
     <div className="flex h-[100svh] max-h-[100svh] w-full flex-col overflow-hidden bg-surface-canvas">
       <TopBar
-        onProbe={probe.arm}
-        paper={{ widthMm: sheet.settings.sheetWidthMm, heightMm: sheet.settings.sheetHeightMm }}
-        sheetCount={sheetCount}
-        scale={zoom.scale}
-        fitting={zoom.fitting}
-        onStep={zoom.step}
-        onFit={zoom.fit}
         onOpenSettings={() => setSettingsOpen(true)}
         onNewProject={() => { if (!window.confirm('Start a new project? Save your current project first if you want to keep it.')) return; void retireProjectSources(stationState.stations.flatMap((station) => station.documents.map((doc) => doc.id))).catch(() => undefined); releaseAll(); releaseProxies(); const id = crypto.randomUUID(); stationState.replace([emptyStation(id, 'Station 1')], id); setSelectedCell(null); setPreviewOpen(false) }}
         onPrintSelection={() => setPrinting(true)} anyProjectCards={stationState.stations.some((station) => station.documents.length > 0)} hasProject={stationState.stations.length > 1 || stationState.stations.some((station) => station.documents.length > 0 || station.name !== 'Station 1')}
@@ -171,7 +167,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         hasBatch={hasBatch}
         inspectorOpen={inspectorOpen}
         onToggleInspector={toggleInspector}
-        reviewLabel={review.status === 'checking' ? 'Checking…' : review.status === 'error' ? 'Review unavailable' : `Review ${review.issues.length}`}
+        reviewStatus={clipping.status} clippingCount={clipping.count} hasPrintableCards={sheetCount > 0}
         onReview={() => { setInspectorOpen(true); window.requestAnimationFrame(() => document.getElementById('batch-review')?.focus()) }}
         previewOpen={previewOpen}
         onTogglePreview={() => setPreviewOpen((open) => !open)}
@@ -238,10 +234,12 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           open={inspectorOpen}
         />
       </main>
+      <BottomBar paper={{ widthMm: sheet.settings.sheetWidthMm, heightMm: sheet.settings.sheetHeightMm }} sheetCount={sheetCount} scale={zoom.scale} fitting={zoom.fitting} onStep={zoom.step} onFit={zoom.fit} />
       {printing ? <PrintSelection stations={stationState.stations} grid={sheet.grid} settings={sheet.settings} drawCutMarks={showCutMarks} onClose={() => setPrinting(false)} notify={notify} /> : null}
       <SettingsDialog
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        onProbe={() => { setSettingsOpen(false); probe.arm() }}
         settings={settings}
         onSettingsChange={updateSettings}
       />

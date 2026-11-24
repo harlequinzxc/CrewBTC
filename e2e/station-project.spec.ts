@@ -168,7 +168,7 @@ test('different pages of one PDF can be assigned to different stations', async (
 test('project, station and print controls remain reachable at 1024 pixels', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 768 })
   await uploadPdf(page)
-  for (const name of ['Project options', 'Export PDF', 'Preview PDF', 'Settings']) {
+  for (const name of ['New project', 'Open project', 'Save project', 'Export PDF', 'Preview PDF', 'Settings']) {
     const control = page.getByRole('button', { name, exact: true })
     await expect(control).toBeVisible()
     const box = await control.boundingBox()

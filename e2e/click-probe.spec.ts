@@ -13,6 +13,7 @@ import { uploadPdf } from './fixtures'
  */
 
 const run = async (page: Page): Promise<string> => {
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await page.getByRole('button', { name: 'Check what a click lands on' }).click()
   const box = (await page.getByRole('button', { name: /card text:/i }).first().boundingBox())!
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)

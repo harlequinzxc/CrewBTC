@@ -71,8 +71,8 @@ way, so 21 cm and 210 mm are the same sheet.
 
 ## Save and open editable projects
 
-Use **Project → Save project** in the top bar to download a `.crewbtc` project. It contains all station workspaces, editable cards, photos, labels, sheet settings,
-formatting keywords and available original PDFs. **Project → Open project** loads that
+Use **Save** in the top bar to download a `.crewbtc` project. It contains all station workspaces, editable cards, photos, labels, sheet settings,
+formatting keywords and available original PDFs. **Open** loads that
 file in CrewBTC, including on another computer; it replaces the current workspace after
 confirmation. Export PDF remains the separate print-only action. Save a project again
 when you make changes: the downloaded file does not update automatically.
@@ -96,11 +96,11 @@ If a PDF has pages for different stations, add it to each relevant station, sele
 
 Choose **Export → Custom selection** to select whole stations and/or individual cards. Use Shift-click for a range, or drag a card’s handle to select or deselect several. The generated-PDF preview packs the selected cards together across stations to minimise wasted cells. Exporting this selection does not move or change the original cards. Choose **Export → This sheet** or **All sheets** to print the active station.
 
-**Project → New project** clears all stations after confirmation, leaving shared inspector settings and saved defaults in place. Save first if you need the current work. Existing single-workspace projects and sessions open as one station. New project files deduplicate identical images and original PDFs without changing their quality. They cannot be opened by older versions of CrewBTC.
+**New** clears all stations after confirmation, leaving shared inspector settings and saved defaults in place. Save first if you need the current work. Existing single-workspace projects and sessions open as one station. New project files deduplicate identical images and original PDFs without changing their quality. They cannot be opened by older versions of CrewBTC.
 
 ## Zooming the sheet
 
-`−`, the current percentage, `+` and **Fit** sit in the middle of the top bar. The sheet
+`−`, the current percentage, `+` and **Fit** sit in the middle of the bottom bar. The sheet
 opens **fitted to the width of the window**, not to the whole page: filling the width is
 what makes a card's type readable without zooming, and the sheet simply scrolls down past
 the bottom of the screen. The percentage shows the real scale, and is labelled as fitted
@@ -125,9 +125,9 @@ is on. The active sheet is the one with the accent border.
 3. Pick a card, then edit its text, colour and photo.
 4. Drag the selected card’s dividers; check the heights in the inspector.
 5. Open **Preview PDF** beside Export to inspect the generated PDF as you edit. Navigate sheets, zoom, fit or expand the preview; it updates shortly after changes. On narrower windows it overlays part of the editor.
-6. Use **Review** to find possible print issues and missing card content, and jump to each affected card. Warnings are advisory: missing content can be intentional, and the check does not replace inspecting the PDF.
+6. Select the top-bar clipping status to open the full print review and jump to affected cards. Green **Ready for export** means no clipping was detected, not that other warnings are absent. Warnings are advisory: missing content can be intentional, and the check does not replace inspecting the PDF.
 7. To reuse band heights, select a card and choose **Use selected card** under New card defaults. The saved heights apply only to newly seeded cards; text size remains sheet-wide.
-8. **Project → Save project** saves an editable project if needed. **Export → This sheet** prints the active sheet; **Export → Custom selection** combines chosen cards from any station.
+8. **Save** saves an editable project if needed. **Export → This sheet** prints the active sheet; **Export → Custom selection** combines chosen cards from any station.
 
 Your sheet settings are remembered between visits.
 
