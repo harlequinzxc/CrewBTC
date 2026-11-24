@@ -138,9 +138,8 @@ test('project controls stay reachable by keyboard at supported desktop widths', 
   for (const width of [1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: 900 })
     await page.goto('/')
-    await page.getByRole('button', { name: 'Project options' }).click()
-    const open = page.getByRole('menuitem', { name: 'Open project' })
-    const save = page.getByRole('menuitem', { name: 'Save project' })
+    const open = page.getByRole('button', { name: 'Open project' })
+    const save = page.getByRole('button', { name: 'Save project' })
     await expect(open).toBeVisible()
     await open.focus()
     await expect(open).toBeFocused()

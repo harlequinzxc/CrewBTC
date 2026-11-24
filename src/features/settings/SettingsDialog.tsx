@@ -18,11 +18,12 @@ import type { PageSettings } from '../../types/settings'
 export interface SettingsDialogProps {
   readonly open: boolean
   readonly onClose: () => void
+  readonly onProbe?: () => void
   readonly settings: PageSettings
   readonly onSettingsChange: (settings: PageSettings) => void
 }
 
-export function SettingsDialog({ open, onClose, settings, onSettingsChange }: SettingsDialogProps) {
+export function SettingsDialog({ open, onClose, onProbe, settings, onSettingsChange }: SettingsDialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -100,6 +101,7 @@ export function SettingsDialog({ open, onClose, settings, onSettingsChange }: Se
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
             <SettingsView settings={settings} onSettingsChange={onSettingsChange} />
+            {onProbe === undefined ? null : <button type="button" data-target="dense" onClick={onProbe} className="mx-4 mb-4 min-h-8 rounded px-2 text-xs text-ink-secondary hover:bg-surface-active focus-visible:bg-surface-active">Check what a click lands on</button>}
           </div>
         </div>
     </dialog>

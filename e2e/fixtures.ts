@@ -142,16 +142,13 @@ export async function inkShift(page: Page, index: number): Promise<{ drawn: numb
   return { drawn, editing }
 }
 
-/** Project actions live behind the compact header menu. */
+/** Project actions are available directly in the header. */
 export async function projectAction(page: Page, action: 'New project' | 'Open project' | 'Save project'): Promise<void> {
-  await page.getByRole('button', { name: 'Project options' }).click()
-  await page.getByRole('menuitem', { name: action }).click()
+  await page.getByRole('button', { name: action, exact: true }).click()
 }
 
 export async function expectSaveEnabled(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Project options' }).click()
-  await expect(page.getByRole('menuitem', { name: 'Save project' })).toBeEnabled()
-  await page.keyboard.press('Escape')
+  await expect(page.getByRole('button', { name: 'Save project' })).toBeEnabled()
 }
 
 export async function exportCurrent(page: Page): Promise<void> {

@@ -1,11 +1,14 @@
 import { expect, test } from '@playwright/test'
 import { uploadPdf } from './fixtures'
 
-test('header zoom is centered and controls do not overlap at supported widths', async ({ page }) => {
+test('bottom zoom is centered and header controls do not overlap at supported widths', async ({ page }) => {
   await uploadPdf(page)
   for (const width of [1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: 768 })
+    const footer = (await page.getByLabel('Sheet status and zoom').boundingBox())!
+    expect(footer.y + footer.height).toBe(768)
     const zoom = (await page.getByLabel('Sheet zoom').boundingBox())!
+    expect(zoom.y).toBeGreaterThanOrEqual(footer.y)
     expect(Math.abs(zoom.x + zoom.width / 2 - width / 2)).toBeLessThan(1)
     const controls = page.locator('header button:visible')
     const boxes = await controls.evaluateAll((elements) => elements.map((element) => {
@@ -121,8 +124,7 @@ test('header icons and labels share a single centered row without clipping', asy
   await uploadPdf(page)
   for (const width of [1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: 768 })
-    for (const name of ['Fit sheet to width', 'Project options', 'Preview PDF', 'Export PDF']) {
-      if (name === 'Project options' && width < 1280) continue
+    for (const name of ['Fit sheet to width', 'New project', 'Open project', 'Save project', 'Settings', 'Preview PDF', 'Export PDF']) {
       const button = page.getByRole('button', { name, exact: true })
       const bounds = await button.evaluate((el) => {
         const outer = el.getBoundingClientRect()

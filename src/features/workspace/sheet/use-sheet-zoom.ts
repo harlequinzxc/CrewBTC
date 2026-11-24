@@ -4,9 +4,9 @@ import { useNonPassiveWheel } from '../../../lib/use-wheel'
 import { fitWidthScale, nextZoom, previousZoom, wheelZoom } from '../../../lib/zoom'
 
 /**
- * One zoom value, owned above the sheet.
+ * One zoom value, owned outside the sheet.
  *
- * The zoom controls moved into the top bar, which is outside the pane that the sheet is
+ * The zoom controls are in the bottom bar, outside the pane that the sheet is
  * fitted into — so the fit cannot be computed where the sheet is drawn any more. This hook
  * measures the *canvas region* instead (the box between the two rails and under the bar),
  * which is exactly the space the sheet has, and hands back both the number and the
@@ -14,7 +14,7 @@ import { fitWidthScale, nextZoom, previousZoom, wheelZoom } from '../../../lib/z
  *
  * `manualScale === null` means "follow the window's width". That is the resting state the
  * app opens in, and it is what `Fit` restores. It is *not* a pressed state: Fit is a
- * momentary action, so the button never stays lit — see `TopBar`. The first `-` or `+`
+ * momentary action, so the button never stays lit — see `BottomBar`. The first `-` or `+`
  * pins a scale and the sheet scrolls instead of resizing under the pointer.
  */
 export interface SheetZoom {

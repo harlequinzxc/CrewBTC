@@ -61,7 +61,7 @@ describe('chrome geometry', () => {
     desktop()
     render(<App />)
 
-    const bar = screen.getByRole('banner')
+    const bar = screen.getByLabelText('Sheet status and zoom')
     const percent = within(bar).getByLabelText(/^Zoom level/)
     // Width-fit is the default, and a fitted sheet is drawn at some positive percentage.
     expect(percent.textContent).toMatch(/^\d+%$/)

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { TopBar } from '../../components/layout/TopBar'
+import { BottomBar } from '../../components/layout/BottomBar'
 import { MAX_ZOOM, MIN_ZOOM } from '../../lib/zoom'
 
 const base = {
@@ -13,7 +14,7 @@ const base = {
   hasMoreThanOneSheet: true,
 } as const
 
-const render_ = (overrides: Partial<React.ComponentProps<typeof TopBar>> = {}) => {
+const render_ = (overrides: Partial<React.ComponentProps<typeof TopBar> & React.ComponentProps<typeof BottomBar>> = {}) => {
   const props = {
     ...base,
     onStep: vi.fn(),
@@ -25,7 +26,7 @@ const render_ = (overrides: Partial<React.ComponentProps<typeof TopBar>> = {}) =
     onToggleInspector: vi.fn(),
     ...overrides,
   }
-  render(<TopBar {...props} />)
+  render(<><TopBar {...props} /><BottomBar {...props} /></>)
   return props
 }
 
@@ -137,5 +138,27 @@ describe('the top bar', () => {
     // "This sheet" and "All sheets" would be the same file; offering both is noise.
     expect(within(menu).getByText('This sheet')).toBeInTheDocument()
     expect(within(menu).queryByText('All sheets')).not.toBeInTheDocument()
+  })
+})
+
+describe('clipping status', () => {
+  it('does not claim readiness when a batch has no printable cards', () => {
+    render_({ hasBatch: true, hasPrintableCards: false, reviewStatus: 'ready' })
+    expect(screen.getByRole('button', { name: 'No cards' })).toBeDisabled()
+  })
+  it('shows a green ready status and opens the wider review', () => {
+    const props = render_({ reviewStatus: 'ready', clippingCount: 0, onReview: vi.fn() })
+    const status = screen.getByRole('button', { name: 'Ready for export' })
+    expect(status).toHaveClass('text-emerald-400')
+    fireEvent.click(status)
+    expect(props.onReview).toHaveBeenCalledOnce()
+  })
+  it('shows an orange count when text may clip', () => {
+    render_({ reviewStatus: 'ready', clippingCount: 2 })
+    expect(screen.getByRole('button', { name: '2 issues' })).toHaveClass('text-amber-400')
+  })
+  it('does not claim readiness when the check fails', () => {
+    render_({ reviewStatus: 'error' })
+    expect(screen.getByRole('button', { name: 'Check unavailable' })).toBeInTheDocument()
   })
 })
