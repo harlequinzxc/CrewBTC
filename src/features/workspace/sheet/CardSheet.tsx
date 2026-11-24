@@ -139,12 +139,13 @@ export function CardSheet(props: CardSheetProps) {
     editing === null ? blankCard(grid.cellHeightMm) : (cards[editing.key] ?? blankCard(grid.cellHeightMm))
   const activeZone = editing === null ? null : editing.zone
   return (
-    // `relative` is load-bearing: without it the absolutely-positioned formatting bar
-    // resolved against the app root and sat at y=0, over the top bar and Export.
-    <div className="relative flex min-h-0 flex-1 flex-col">
+    // The floating pill is positioned against this preview viewport, outside the scroll content.
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Floating overlay; `TextBarLayer` explains why it is not in flow. */}
       {editing !== null && editZone !== null ? (
         <TextBarLayer
+          sheet={editing.sheet}
+          cell={editing.cellIndex}
           zone={editZone}
           style={barCard[editZone === 'header' ? 'headerStyle' : 'bodyStyle']}
           selection={selection}
@@ -160,7 +161,6 @@ export function CardSheet(props: CardSheetProps) {
           }}
         />
       ) : null}
-
       <div
         ref={(element) => {
           paneRef(element)

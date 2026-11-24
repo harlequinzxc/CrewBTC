@@ -1,4 +1,5 @@
 import { CardTextBar } from './CardTextBar'
+import { useFloatingTextBar } from './use-floating-text-bar'
 import type { TextStyle } from '../../../types/card'
 
 /**
@@ -9,6 +10,8 @@ import type { TextStyle } from '../../../types/card'
  * a chosen style into an edit on the current selection.
  */
 export interface TextBarLayerProps {
+  readonly sheet: number
+  readonly cell: number
   readonly zone: 'header' | 'body'
   readonly style: TextStyle
   readonly active: TextStyle
@@ -18,16 +21,9 @@ export interface TextBarLayerProps {
 }
 
 export function TextBarLayer(props: TextBarLayerProps) {
+  const ref = useFloatingTextBar(props.sheet, props.cell)
   return (
-    /*
-      Floating, never in flow.
-
-      In flow it cost 32px of the pane's height the moment you clicked into a text box —
-      the canvas shrank, so everything below the fold moved up under the pointer. Editing
-      text must not move the page. Floating leaves the canvas geometry untouched, and it
-      sits over the top of the sheet rather than over the box being typed into.
-    */
-    <div className="absolute inset-x-0 top-0 z-20 flex h-8 items-center border-b border-hairline bg-surface-panel px-2 shadow-lg shadow-black/20">
+    <div ref={ref} data-testid="floating-text-pill" className="absolute z-20 w-max overflow-auto rounded-lg border border-hairline bg-[#131418] p-1 shadow-lg shadow-black/40" style={{ visibility: 'hidden' }}>
       <CardTextBar
         zone={props.zone}
         style={props.style}

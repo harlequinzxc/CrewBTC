@@ -26,7 +26,7 @@ text underneath.
 - Both text boxes are real text fields. Type in them, add or remove lines, and select
   text to format it. **CROCKERIES** and **CONDIMENTS** apply their callout styles;
   **DIRECTIONS** makes text red. **Bold** and **Clear formatting** are also available.
-  Controls apply to the selection, or to the whole box when nothing is selected.
+  Controls apply to the selection, or to the whole box when nothing is selected. The floating formatting pill follows the active card and stays within the preview as you scroll or zoom.
 - In the inspector, enter keywords or phrases (one per line) for each callout and choose
   **Automate formatting** after cards are populated. It affects bottom text only; matches
   ignore case and respect whole word boundaries. It adds bullets to non-empty bottom-text lines, not visual wraps, and

@@ -43,7 +43,8 @@ above it is not shown as release notes. `package.json` and the newest entry must
   implicitly. The inspector reads Top, Bottom and Text; dividers adjust bands. Single-click
   presets apply formatting; CROCKERIES destructively uppercases stored text. DIRECTIONS
   applies red ink to selected text or the whole active box; an identical red highlight is
-  removed for legibility, while other formatting is retained.
+  removed for legibility, while other formatting is retained. The floating formatting pill
+  follows the active card and is clamped to the live sheet viewport without changing layout.
 - The inspector stores one keyword or phrase per line for each callout category. Automate
   formatting scans only the bottom text of all occupied cards, case-insensitively at whole-word
   boundaries, choosing
@@ -138,6 +139,11 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.23.0 — 2026-11-24 — Keep formatting near the active card
+
+- Replace the canvas-wide formatting bar with a floating pill anchored to the active card.
+- Flip and clamp the pill within the live preview as cards scroll, zoom or panels resize.
 
 ### 1.22.1 — 2026-11-24 — Refine panel and inspector defaults
 
