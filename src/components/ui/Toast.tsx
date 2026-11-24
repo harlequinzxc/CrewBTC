@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Info, TriangleAlert, XCircle } from 'lucide-react'
 import { cn } from '../../lib/cn'
-import { MOTION } from '../../lib/motion'
+import { EASE, isReducedMotion, MOTION } from '../../lib/motion'
 
 export type ToastVariant = 'success' | 'info' | 'warning' | 'error'
 
@@ -60,21 +60,23 @@ export function Toast({ toast, onDismiss, durationMs = 6000 }: ToastProps) {
 
   useEffect(() => {
     if (!leaving) return
-    const id = window.setTimeout(() => onDismiss(toast.id), MOTION.sheetExit)
+    const id = window.setTimeout(() => onDismiss(toast.id), isReducedMotion() ? 80 : MOTION.sheetExit)
     return () => window.clearTimeout(id)
   }, [leaving, onDismiss, toast.id])
 
   return (
     <div
+      data-motion-toast
+      data-leaving={leaving}
       role={toast.variant === 'error' ? 'alert' : 'status'}
       aria-live={toast.variant === 'error' ? 'assertive' : 'polite'}
       className={cn(
         'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border p-3',
         'border-hairline bg-surface-raised shadow-lg shadow-black/40 backdrop-blur',
-        'transition-[opacity,transform] ease-out',
-        leaving ? 'translate-y-2 opacity-0' : 'translate-y-0 opacity-100',
+        'transition-[opacity,transform]',
+        leaving ? 'opacity-0' : 'opacity-100',
       )}
-      style={{ transitionDuration: `${MOTION.sheetExit}ms` }}
+      style={{ transitionDuration: `${MOTION.sheetExit}ms`, transitionTimingFunction: EASE.sheet, transform: leaving ? 'translateY(8px)' : 'translateY(0)' }}
     >
       <Icon
         aria-hidden="true"
@@ -88,9 +90,9 @@ export function Toast({ toast, onDismiss, durationMs = 6000 }: ToastProps) {
         )}
       </div>
       {toast.undo === undefined ? null : (
-        <button type="button" data-target="dense" onClick={() => {
+        <button type="button" data-target="dense" disabled={leaving} onClick={() => {
             toast.undo?.()
-            onDismiss(toast.id)
+            setLeaving(true)
           }} className="h-8 min-h-8 rounded-md px-2 text-xs font-semibold text-accent-bright transition-colors duration-150 ease-out hover:bg-surface-active focus-visible:bg-surface-active">
           {toast.action ?? 'Undo'}
         </button>

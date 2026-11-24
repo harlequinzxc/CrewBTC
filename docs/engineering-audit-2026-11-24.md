@@ -1,0 +1,92 @@
+# Engineering-rule audit — 2026-11-24 (Singapore)
+
+Scope: repository inspection, the automated release gate and targeted Chromium motion tests.
+This is not a certification of WCAG, performance, installed-mode behavior, or all engineering
+rules. `[REVIEW]` and `[CRAFT]` items need the manual checks called for in the rules.
+
+## Motion (§3)
+
+- **Addressed:** the saved reduced-motion choice takes precedence over the system default;
+  initialization also falls back to the system when storage is blocked (`index.html`,
+  `MotionProvider.tsx`). CSS no longer removes *all* static transforms. Programmatic sheet
+  navigation now explicitly requests `auto`, not `smooth`, when reduced motion is enabled.
+- **Addressed:** inspector accordions animate grid rows and opacity; closed controls are
+  inert and hidden from accessibility, and retain their values. Settings has panel and
+  backdrop enter/exit, cancellable exit timers and Escape handling. Toasts enter and leave;
+  their actions run immediately and dismissal has an explicit timer. Reduced motion uses
+  short opacity-only changes where applicable.
+- **Still fails the all-state-motion review:** the print-selection dialog, Export menu,
+  PDF preview, panel/strip collapse, station active indicator, and Settings' What's New
+  expansion still mount, unmount or switch state without the requested enter/exit motion.
+  `FileRow.tsx` also uses a continuous Tailwind pulse for parsing; the standard-transition
+  ceiling and the requested treatment of ongoing loading indicators should be reviewed.
+- **Property rule needs further work:** many existing `transition-colors` utilities animate
+  color rather than the strictly allowed composited properties in §3. The layout scanner
+  only catches selected Tailwind property names, not all CSS/keyframes or actual runtime
+  animations; a passing scanner is not evidence of full compositor compliance.
+- **Not run:** a manual full-app reduced-motion walk-through and visual inspection of every
+  interaction, loading/list mutation, active state, and interruption/reopen path.
+
+## Other concrete findings
+
+- **Contrast — fail:** `#6e7480` muted text on `#131418` is approximately **3.92:1**;
+  it is used for small text, such as the 10px sheet settings metrics and 11px empty-state
+  copy, which need 4.5:1 for normal text. The contrast script currently treats muted
+  metadata as large text. `ExportControl.tsx` uses white text on `#ff6369` while hovered,
+  approximately **2.90:1**. The palette gate does not cover that combination.
+- **Async state — fail by inspection:** the rules require `aria-busy` on active async
+  submissions; no `aria-busy` usage was found in `src`. Some actions do disable while busy,
+  but that does not substitute for the requested status semantics.
+- **Design-system reuse — fail by inspection:** many recurring button/field styles are
+  implemented directly in feature components instead of the centralized primitives required
+  by §2. This audit did not refactor them, because doing so changes a wide shared surface.
+- **Theme — fail by inspection:** the application initializes dark mode; an adaptive or
+  toggleable light theme required by §3 was not found.
+- **Explicit user exception:** the requested 14px structural panel rails are below §4.1's
+  24px target floor. The user's direct sizing instruction takes precedence. CrewBTC's
+  desktop-only notice below 1024px is also an explicit scope exception in the rules.
+- **Automation limits:** `scripts/check-layout.mjs` uses regex heuristics and structural
+  annotations; it cannot prove hit-target sizes, focus behavior, motion properties, or all
+  contrast combinations. Lint, types, tests and the gates are regression checks, not a full
+  design/accessibility audit.
+
+## Appendix A.2 review status
+
+- **Focus trap and restoration:** partial pass for Settings close/Escape in Chromium;
+  complete keyboard Tab-cycle and every other modal: **not run**.
+- **Live regions:** toast `role=status`/`role=alert` and `aria-live` inspected; full async
+  results and screen-reader announcements: **not run**.
+- **Keyboard parity:** targeted formatting and undo tests exist; a complete primary task
+  without a pointer: **not run**.
+- **Breakpoints:** browser regression suite covers 1024, 1280 and 1440; the complete
+  768/390/320 at 200% ladder: **not run**, subject to the desktop-only exception.
+- **Installed mode and safe-area insets:** **not run** on physical desktop/mobile devices.
+- **Repeat-firing lifecycle:** Settings reopen and toast timer cleanup covered; every
+  other surface and submission cycle: **not run**.
+- **Error-boundary forced throw and all five interaction states:** **not run** in this audit.
+- **Service-worker update on a deployed running client and SPA deep-link rewrite:**
+  **not run** in this audit; automated tests/configuration alone are not deployment proof.
+- **Forced colors:** **not run**. Performance metrics LCP/CLS/INP on throttled hardware:
+  **not run**. Bundle-size gate is distinct from those measurements.
+
+## Shared dependents reviewed
+
+`Section` is used by CardDefaults, CardReadout, AutoFormatSection, SheetSection and
+BatchReview. `Switch` is used by SettingsView and SheetSection. Toasts are provided through
+ToastHub/useToasts and consumed by WorkspaceScreen, batch, project, export and automation
+flows. MotionProvider wraps App; SettingsDialog is hosted by WorkspaceScreen. `scrollToTop`
+is called by useSheetScroll. Root CSS and the early HTML script affect the whole app.
+No dependencies or persisted data formats were added.
+
+## Automated verification for v1.24.1
+
+- `npm run gate` with the configured Chromium binary: **exit 0**; 523 unit tests and
+  97 Chromium tests passed. The gate includes typecheck, both lint passes, production
+  build, contrast/layout/manifest/placeholder/secrets/bundle checks and browser tests.
+- The bundle check measured **143,230 B gzip initial JS** and **8,867 B gzip initial CSS**.
+  These are bundle measurements, not LCP, CLS or INP measurements.
+- Previous gate attempts exposed a broad `[inert]` test assumption and Settings exit
+  blocking the workspace. The scoped test and immediate modal release were corrected;
+  the complete gate above was rerun successfully.
+- Regression tests were not separately run against every pre-fix version; that portion of
+  §8B's mutation-proofing review is **not run**.

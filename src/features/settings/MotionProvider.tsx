@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { readStoredReducedMotion, systemPrefersReducedMotion } from '../../lib/motion'
 import { MotionContext } from './motion-context'
@@ -14,6 +14,8 @@ function resolveInitialChoice(): MotionChoice {
  *  A saved choice wins; otherwise the OS preference decides. */
 export function MotionProvider({ children }: { readonly children: ReactNode }) {
   const [choice, setChoiceState] = useState<MotionChoice>(resolveInitialChoice)
+
+  useEffect(() => { document.documentElement.dataset.reducedMotion = choice === 'on' ? 'true' : 'false' }, [choice])
 
   const setChoice = useCallback((next: MotionChoice) => {
     setChoiceState(next)

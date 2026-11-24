@@ -37,7 +37,7 @@ export function Switch({ label, checked, onChange, disabled }: SwitchProps) {
         aria-hidden="true"
         className={cn(
           'block size-3 rounded-full bg-white shadow-sm',
-          'transition-[transform] duration-150 ease-out',
+          'transition-transform duration-150 ease-out',
           checked ? 'translate-x-3.5' : 'translate-x-0.5',
         )}
       />

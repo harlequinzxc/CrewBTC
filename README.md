@@ -68,7 +68,7 @@ Three columns between a top bar and a bottom status bar:
   puts that card's **Top**, **Bottom** and **Text** numbers above them. Use the edge
   rails to collapse or expand Files, the inspector, or the Sheets strip. The inspector sections can also be expanded or collapsed; Automate formatting starts open, while New card defaults and Sheet & print start closed.
 - **The gear** opens settings over the sheet rather than on a page of its own: units,
-  reduced motion, and the changelog folded into one row that names the version you are on.
+  reduced motion, and the changelog folded into one row that names the version you are on. Reduced motion follows your system preference until you choose a setting; sheet navigation then scrolls without animation.
 
 Measurements read in millimetres, centimetres or inches, and the choice is applied to
 every field at once — the inspector, the sheet size, the card boxes. Changing it converts

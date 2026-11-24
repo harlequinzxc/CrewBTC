@@ -89,10 +89,11 @@ describe('below the desktop breakpoint', () => {
   it('is hidden from assistive tech and from the tab order while narrow', () => {
     const media = installMediaQuery(true)
     render(<App />)
-    expect(document.querySelector('[inert]')).toBeNull()
+    const header = document.querySelector('header')
+    expect(header?.closest('[inert]')).toBeNull()
 
     act(() => media.resizeTo(false))
-    const hidden = document.querySelector('[inert]')
+    const hidden = header?.closest('[inert]')
     expect(hidden).not.toBeNull()
     expect(hidden?.getAttribute('aria-hidden')).toBe('true')
   })

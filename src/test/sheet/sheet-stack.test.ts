@@ -83,6 +83,14 @@ describe('moving the stack without a browser', () => {
     expect(node.scrollTop).toBe(0)
   })
 
+  it('does not request smooth scrolling under reduced motion', () => {
+    const calls: ScrollToOptions[] = []
+    document.documentElement.dataset.reducedMotion = 'true'
+    try { scrollToTop({ scrollTop: 0, clientHeight: 800, scrollTo: (options) => calls.push(options) }, 120) }
+    finally { delete document.documentElement.dataset.reducedMotion }
+    expect(calls).toEqual([{ top: 120, behavior: 'auto' }])
+  })
+
   it('falls back to scrollTop when it does not', () => {
     // jsdom is this case. Unguarded, `scrollTo` threw inside an effect and took the whole
     // render down — the canvas would not have drawn a single sheet in a test.

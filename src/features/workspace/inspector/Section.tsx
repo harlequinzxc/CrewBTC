@@ -21,6 +21,8 @@ export function Section({ title, action, children, collapsible = false, initiall
       </h2>
       {action}
     </div>
-    <div id={id} hidden={collapsible && !open} className="pt-1">{children}</div>
+    {collapsible ? <div id={id} className="inspector-accordion" data-expanded={open} aria-hidden={!open} inert={!open}>
+      <div><div className="pt-1">{children}</div></div>
+    </div> : <div id={id} className="pt-1">{children}</div>}
   </section>
 }

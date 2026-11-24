@@ -70,7 +70,9 @@ above it is not shown as release notes. `package.json` and the newest entry must
   native text inputs keep their own undo. Switching stations, changing files or replacing
   a project clears the history.
   Station tabs and sheet thumbnails do not scroll vertically.
-  The click diagnostic remains in Settings.
+  Reduced motion follows the saved choice or system preference, preserves static layout
+  transforms and uses instant sheet navigation; inspector accordions, Settings and toasts
+  have bounded enter/exit motion. The click diagnostic remains in Settings.
   Station tabs are horizontally scrollable and support inline rename by double-click;
   the rename field sizes itself to the text and reveals the beginning when opened.
 - Station tabs isolate batches and cards, while settings are shared. Page filters can place
@@ -142,6 +144,12 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.24.1 — 2026-11-24 — Respect motion preferences
+
+- Respect reduced motion in sheet navigation and preserve static layout transforms.
+- Add bounded motion and timer-based cleanup for Settings, inspector accordions and toast actions.
+- Record the broader engineering-rule audit and outstanding review items.
 
 ### 1.24.0 — 2026-11-24 — Undo and redo edits
 

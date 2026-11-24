@@ -1,0 +1,72 @@
+import { expect, test } from '@playwright/test'
+
+test('reduced motion respects the system, preserves layout transforms and persists the explicit choice', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  await page.evaluate(() => localStorage.removeItem('ps.reduced-motion'))
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-reduced-motion', 'true')
+  const staticTransform = await page.evaluate(() => { const el = document.createElement('div'); el.style.transform = 'rotate(45deg)'; document.body.append(el); const value = getComputedStyle(el).transform; el.remove(); return value })
+  expect(staticTransform).not.toBe('none')
+  const footer = (await page.getByLabel('Sheet status and zoom').boundingBox())!
+  const zoom = (await page.getByLabel('Sheet zoom').boundingBox())!
+  expect(Math.abs(zoom.x + zoom.width / 2 - (footer.x + footer.width / 2))).toBeLessThan(1)
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  const toggle = page.getByRole('switch', { name: 'Reduced motion' })
+  await expect(toggle).toHaveAttribute('aria-checked', 'true')
+  const positions = await toggle.evaluate((el) => ({ track: el.getBoundingClientRect().left, knob: el.querySelector('span')!.getBoundingClientRect().left }))
+  expect(positions.knob - positions.track).toBeGreaterThan(10)
+  await toggle.click()
+  await expect(page.locator('html')).toHaveAttribute('data-reduced-motion', 'false')
+  await expect(toggle).toHaveAttribute('aria-checked', 'false')
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-reduced-motion', 'false')
+})
+
+test('settings modal animates exit, restores focus, and cancels a pending close on reopen', async ({ page }) => {
+  await page.goto('/')
+  const settings = page.getByRole('button', { name: 'Settings', exact: true })
+  await settings.click()
+  const dialog = page.locator('dialog[aria-label="Settings"]')
+  await expect(dialog).toBeVisible()
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: 'Close settings' }).click()
+  await expect(dialog).toHaveAttribute('data-motion-phase', 'exit')
+  await expect(dialog).toBeHidden()
+  await expect(settings).toBeFocused()
+  await settings.click()
+  await page.getByRole('button', { name: 'Close settings' }).click()
+  await page.evaluate(() => { (document.querySelector('button[aria-label="Settings"]') as HTMLButtonElement).click() })
+  await page.waitForTimeout(300)
+  await expect(dialog).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(settings).toBeFocused()
+})
+
+test('inspector accordions animate while closed content is inert and preserve input state', async ({ page }) => {
+  await page.goto('/')
+  const toggle = page.getByRole('button', { name: 'Toggle Automate formatting section' })
+  const input = page.getByLabel('crockeries keywords')
+  await input.fill('plate')
+  const region = page.locator('.inspector-accordion').filter({ has: input })
+  const transition = await region.evaluate((element) => getComputedStyle(element).transitionProperty)
+  expect(transition).toContain('grid-template-rows')
+  await toggle.click()
+  await expect(region).toHaveAttribute('inert', '')
+  await expect(region).toHaveAttribute('aria-hidden', 'true')
+  await expect(input).toBeHidden()
+  await toggle.click()
+  await expect(input).toBeVisible()
+  await expect(input).toHaveValue('plate')
+})
+
+test('system reduced-motion preference still applies if local storage is blocked', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.addInitScript(() => {
+    Storage.prototype.getItem = () => { throw new DOMException('Storage blocked', 'SecurityError') }
+  })
+  await page.goto('/')
+  await expect(page.locator('html')).toHaveAttribute('data-reduced-motion', 'true')
+  await expect(page.locator('html')).toHaveClass(/dark/)
+})
