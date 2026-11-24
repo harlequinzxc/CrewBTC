@@ -132,8 +132,21 @@ test('reduced motion makes tabs, menus, accordions and dialogs immediate', async
   await expect(print).toHaveCount(0)
   await expect(page.locator('.motion-backdrop-exit')).toHaveCount(0)
   const toggle = page.getByRole('button', { name: 'Toggle Automate formatting section' })
-  await toggle.click()
-  await assertNoMotion('.inspector-accordion')
+  const input = page.getByLabel('crockeries keywords')
+  const firstFrame = async () => toggle.evaluate(async (button) => {
+    const accordion = document.getElementById(button.getAttribute('aria-controls')!)!
+    ;(button as HTMLElement).click()
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    const style = getComputedStyle(accordion)
+    return { expanded: accordion.dataset.expanded, height: accordion.getBoundingClientRect().height, opacity: style.opacity, visibility: style.visibility, transition: style.transitionProperty }
+  })
+  const closed = await firstFrame()
+  expect(closed).toMatchObject({ expanded: 'false', opacity: '0', visibility: 'hidden', transition: 'none' })
+  expect(closed.height).toBe(0)
+  const opened = await firstFrame()
+  expect(opened).toMatchObject({ expanded: 'true', opacity: '1', visibility: 'visible', transition: 'none' })
+  expect(opened.height).toBeGreaterThan(0)
+  await expect(input).toBeVisible()
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   const dialog = page.locator('dialog[aria-label="Settings"]')
   await assertNoMotion('dialog[aria-label="Settings"]')
