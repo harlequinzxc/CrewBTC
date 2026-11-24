@@ -67,18 +67,7 @@ test('the first line of type begins on the same row in both states', async ({ pa
   }
 })
 
-/**
- * The formatting bar must never sit on the top bar.
- *
- * It is absolutely positioned inside the canvas column, and for a long time that column
- * was not a positioned ancestor — so the bar resolved against the app root and appeared at
- * y=0, full window width, straight over the zoom controls and the Export button. Measured
- * at the time: bar y=0, banner y=0 height 48, Export y=8.
- *
- * A z-index bug looks like this and is not: no stacking change can fix an element that has
- * escaped its container. The assertion is about where it is, not what is on top.
- */
-test('the formatting bar docks below the top bar, clear of Export', async ({ page }) => {
+test('the floating formatting pill stays clear of Export', async ({ page }) => {
   await uploadPdf(page)
   const box = await textZones(page).first().boundingBox()
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)

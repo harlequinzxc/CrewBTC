@@ -56,7 +56,7 @@ export function CardTextBar(props: CardTextBarProps) {
         <span className="text-[10px] text-ink-muted">{styled}</span>
       )}
 
-      <fieldset className="flex items-center gap-1 border-0 p-0">
+      <fieldset className="flex flex-wrap items-center gap-1 border-0 p-0">
         <legend className="sr-only">Recipe callout</legend>
         {CALLOUT_PRESETS.map((preset) => {
           const on = current?.id === preset.id
