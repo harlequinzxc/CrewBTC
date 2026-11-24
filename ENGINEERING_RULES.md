@@ -188,7 +188,7 @@ These pairs are verified against Tailwind's default palette. Do not substitute c
 
 - **`[GATE]`** Every app MUST include an explicit **Reduced Motion (`On` / `Off`)** toggle inside the Settings page, persisted in local storage/IndexedDB and reflected on the root `<html>` element (`data-reduced-motion="true" | "false"`).
 - **`[GATE]` Default initialization:** Use the user's explicit saved choice if set; otherwise fall back to `window.matchMedia('(prefers-reduced-motion: reduce)').matches`.
-- **`[GATE]` Behavior when `Reduced Motion: On`:** All UI state changes take effect immediately: no fades, slides, transitions, animations, animated scrolling, or delayed visual exit. Disable CSS animations and transitions (including delays and pseudo-elements) and use instant programmatic scrolling. Do not remove static transforms needed for layout or state. Cleanup must not wait for animation events or exit timers. This applies to the app toggle and the system preference when no explicit choice is saved.
+- **`[GATE]` Behavior when `Reduced Motion: On`:** All UI state changes take effect immediately, including both expanding and collapsing accordions, drawers, panels, tabs, and other surfaces: no fades, slides, transitions, animations, animated scrolling, or delayed visual exit. Disable CSS animations and transitions (including delays and pseudo-elements) and use instant programmatic scrolling. Do not remove static transforms needed for layout or state. Cleanup must not wait for animation events or exit timers. This applies to the app toggle and the system preference when no explicit choice is saved.
 
 ---
 
