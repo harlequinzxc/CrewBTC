@@ -31,7 +31,7 @@ export function SheetSection(props: SheetSectionProps) {
     { label: 'Spacing', key: 'gutterMm', value: sheet.gutterMm },
     { label: 'Margin', key: 'marginMm', value: sheet.marginMm },
   ] as const
-  return <Section title="Sheet & print" collapsible action={<ResetButton label="Reset sheet settings" onClick={props.onReset} />}>
+  return <Section title="Sheet & print" collapsible initiallyOpen={false} action={<ResetButton label="Reset sheet settings" onClick={props.onReset} />}>
     <div className="mb-2 flex items-center justify-between gap-2 text-[11px] text-ink-secondary">
       <span>Preset</span>
       <Select label="Sheet preset" value={activePreset} options={[...SHEET_PRESETS.map((preset) => ({ value: preset.id, label: preset.label })), { value: 'custom', label: 'Custom' }]} onChange={(id) => { const preset = SHEET_PRESETS.find((item) => item.id === id); if (preset !== undefined) onChange({ sheetWidthMm: preset.widthMm, sheetHeightMm: preset.heightMm }) }} />

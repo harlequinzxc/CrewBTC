@@ -1,3 +1,4 @@
+import { openSheetSettings } from './fixtures'
 import { exportCurrent } from './fixtures'
 import type { PDFArray } from '@cantoo/pdf-lib'
 import { expect, test } from '@playwright/test'
@@ -6,7 +7,9 @@ import { uploadPdf } from './fixtures'
 test('review jumps to an affected card and current export writes its sheet', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 768 })
   await uploadPdf(page)
+  await openSheetSettings(page)
   await page.getByLabel('Cell width').fill('190')
+  await openSheetSettings(page)
   await page.getByLabel('Cell height').fill('200')
   await expect(page.getByText('210 × 297 mm · 2 sheets')).toBeVisible()
   await expect(page.getByTitle('Print review status; details are in the inspector')).toBeVisible({ timeout: 30000 })
@@ -86,7 +89,9 @@ test('status flags overflow while full review remains accessible', async ({ page
 
 test('status counts cards with non-clipping warnings shown in review', async ({ page }) => {
   await uploadPdf(page)
+  await openSheetSettings(page)
   await page.getByLabel('All text size').fill('60')
+  await openSheetSettings(page)
   await page.getByLabel('All text size').press('Tab')
   const status = page.getByTitle('Print review status; details are in the inspector')
   const zone = page.getByRole('button', { name: /card text:/i }).first()

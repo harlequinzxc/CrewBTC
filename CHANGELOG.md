@@ -64,7 +64,7 @@ above it is not shown as release notes. `package.json` and the newest entry must
   bar carries paper size, sheet count and centered zoom controls. The status counts cards
   with any review warnings and is informational; details remain in the inspector.
   Full-span 14 px structural rails collapse Files, the sheet strip and the inspector without clipping.
-  New card defaults and Sheet & print open as accordions; Automate formatting starts closed.
+  The inspector uses accordions: Automate formatting starts open, while New card defaults and Sheet & print start closed.
   Station tabs and sheet thumbnails do not scroll vertically.
   The click diagnostic remains in Settings.
   Station tabs are horizontally scrollable and support inline rename by double-click;
@@ -138,6 +138,11 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.22.1 — 2026-11-24 — Refine panel and inspector defaults
+
+- Use a pointer cursor on all panel collapse and expand rails.
+- Open Automate formatting by default, close the other inspector accordions, and simplify its helper copy.
 
 ### 1.22.0 — 2026-11-24 — Structural rails and inspector refresh
 

@@ -1,3 +1,4 @@
+import { openSheetSettings } from './fixtures'
 import { openFormatting } from './fixtures'
 import { projectAction } from './fixtures'
 import type { PDFArray } from '@cantoo/pdf-lib'
@@ -31,11 +32,15 @@ test('stations survive switching, reload and project transfer; selected cards pa
   await expect(textZones(page).first()).toContainText('SIN SIGNATURE', { timeout: 30000 })
   await page.getByRole('button', { name: 'HND', exact: true }).click()
   await expect(textZones(page).first()).toContainText('HND SIGNATURE')
+  await openSheetSettings(page)
   await page.getByLabel('Cell width').fill('190')
+  await openSheetSettings(page)
   await page.getByLabel('Cell height').fill('200')
   await page.getByRole('button', { name: 'SIN', exact: true }).click()
   await expect(textZones(page).first()).toContainText('SIN SIGNATURE')
+  await openSheetSettings(page)
   await page.getByLabel('Cell width').fill('52')
+  await openSheetSettings(page)
   await page.getByLabel('Cell height').fill('67')
   await page.getByRole('button', { name: 'HND', exact: true }).click()
   await expect(textZones(page).first()).toContainText('HND SIGNATURE')
@@ -107,6 +112,7 @@ test('stations survive switching, reload and project transfer; selected cards pa
 
 test('new project clears all stations but preserves shared inspector settings', async ({ page }) => {
   await uploadPdf(page)
+  await openSheetSettings(page)
   await page.getByLabel('Cell width').fill('60')
   await openFormatting(page)
   await page.getByLabel('crockeries keywords').fill('tray')
@@ -123,12 +129,14 @@ test('new project clears all stations but preserves shared inspector settings', 
   await projectAction(page, 'New project')
   await expect(textZones(page)).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'HND', exact: true })).toHaveCount(0)
+  await openSheetSettings(page)
   await expect(page.getByLabel('Cell width')).toHaveValue('60')
   await expect(page.getByLabel('crockeries keywords')).toHaveValue('tray')
   await page.waitForTimeout(900)
   await page.reload()
   await openFormatting(page)
   await expect(textZones(page)).toHaveCount(0)
+  await openSheetSettings(page)
   await expect(page.getByLabel('Cell width')).toHaveValue('60')
 })
 
