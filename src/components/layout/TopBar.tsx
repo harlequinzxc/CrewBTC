@@ -51,7 +51,7 @@ export interface TopBarProps {
 }
 
 const iconButton = cn(
-  'grid size-7 place-items-center rounded-md text-ink-secondary',
+  'inline-flex size-8 items-center justify-center rounded-md text-ink-secondary',
   'transition-colors duration-150 ease-out',
   'hover:bg-surface-active hover:text-ink-primary focus-visible:bg-surface-active focus-visible:text-ink-primary',
   'disabled:opacity-40 disabled:hover:bg-transparent disabled:focus-visible:bg-transparent',
@@ -119,6 +119,7 @@ export function TopBar(props: TopBarProps) {
           type="button"
           data-target="dense"
           aria-label="Zoom out"
+          title="Zoom out"
           disabled={scale <= MIN_ZOOM + 1e-6}
           onClick={() => props.onStep(-1)}
           className={iconButton}
@@ -143,6 +144,7 @@ export function TopBar(props: TopBarProps) {
           type="button"
           data-target="dense"
           aria-label="Zoom in"
+          title="Zoom in"
           disabled={scale >= MAX_ZOOM - 1e-6}
           onClick={() => props.onStep(1)}
           className={iconButton}
@@ -160,6 +162,7 @@ export function TopBar(props: TopBarProps) {
           type="button"
           data-target="dense"
           aria-label="Fit sheet to width"
+          title="Fit sheet to width"
           onClick={props.onFit}
           className={cn(iconButton, 'ml-1 w-auto gap-1 px-1.5')}
         >
@@ -169,7 +172,7 @@ export function TopBar(props: TopBarProps) {
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
-      {props.hasBatch && props.reviewLabel !== undefined ? <button type="button" data-target="dense" onClick={props.onReview} className="min-h-8 shrink-0 rounded border border-hairline px-2 text-xs text-ink-primary hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{props.reviewLabel}</button> : null}
+      {props.hasBatch && props.reviewLabel !== undefined ? <button type="button" data-target="dense" title="Review print issues" onClick={props.onReview} className="min-h-8 shrink-0 rounded border border-hairline px-2 text-xs text-ink-primary hover:bg-surface-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{props.reviewLabel}</button> : null}
       <button
         type="button"
         data-target="dense"
@@ -177,7 +180,7 @@ export function TopBar(props: TopBarProps) {
         aria-pressed={props.inspectorOpen}
         title={props.inspectorOpen ? 'Hide inspector' : 'Show inspector'}
         onClick={props.onToggleInspector}
-        className={cn(iconButton, 'hidden lg:grid')}
+        className={cn(iconButton, 'hidden lg:inline-flex')}
       >
         {props.inspectorOpen ? (
           <PanelRightClose aria-hidden className="size-3.5" />
@@ -190,13 +193,14 @@ export function TopBar(props: TopBarProps) {
         type="button"
         data-target="dense"
         aria-label="Settings"
+        title="Settings"
         onClick={props.onOpenSettings}
         className={iconButton}
       >
         <Settings2 aria-hidden className="size-3.5" />
       </button>
 
-      <button id="pdf-preview-toggle" type="button" data-target="dense" aria-label="Preview PDF" title="Preview the generated PDF" aria-pressed={props.previewOpen ?? false} disabled={!props.hasBatch} onClick={props.onTogglePreview} className={cn(iconButton, 'flex w-auto gap-1 px-1.5', props.previewOpen && 'bg-surface-active text-ink-primary')}>
+      <button id="pdf-preview-toggle" type="button" data-target="dense" aria-label="Preview PDF" title="Preview the generated PDF" aria-pressed={props.previewOpen ?? false} disabled={!props.hasBatch} onClick={props.onTogglePreview} className={cn(iconButton, 'w-auto gap-1 px-1.5', props.previewOpen && 'bg-surface-active text-ink-primary')}>
         <Eye aria-hidden className="size-4" /><span className="text-[11px]">Preview</span>
       </button>
       <ExportControl

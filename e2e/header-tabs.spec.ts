@@ -10,7 +10,7 @@ test('header zoom is centered and controls do not overlap at supported widths', 
     const controls = page.locator('header button:visible')
     const boxes = await controls.evaluateAll((elements) => elements.map((element) => {
       const r = element.getBoundingClientRect()
-      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }
+      return { name: element.getAttribute('aria-label') || element.textContent, left: r.left, right: r.right, top: r.top, bottom: r.bottom }
     }))
     for (let i = 0; i < boxes.length; i++) {
       const a = boxes[i]!
@@ -18,7 +18,8 @@ test('header zoom is centered and controls do not overlap at supported widths', 
       expect(a.right).toBeLessThanOrEqual(width)
       expect(a.top).toBeGreaterThanOrEqual(0)
       expect(a.bottom).toBeLessThanOrEqual(48)
-      for (const b of boxes.slice(i + 1)) expect(Math.min(a.right, b.right) - Math.max(a.left, b.left)).toBeLessThanOrEqual(0)
+      expect(Math.abs((a.top + a.bottom) / 2 - 23.5)).toBeLessThanOrEqual(1)
+      for (const b of boxes.slice(i + 1)) expect(Math.min(a.right, b.right) - Math.max(a.left, b.left), `${a.name} overlaps ${b.name} at ${width}px`).toBeLessThanOrEqual(0)
     }
   }
 })
@@ -114,4 +115,33 @@ test('opening a long station name shows its first character', async ({ page }) =
   expect(field.content).toBeLessThanOrEqual(field.available)
   expect(field.start).toBe(0)
   expect(field.end).toBe(name.length)
+})
+
+test('header icons and labels share a single centered row without clipping', async ({ page }) => {
+  await uploadPdf(page)
+  for (const width of [1024, 1280, 1440]) {
+    await page.setViewportSize({ width, height: 768 })
+    for (const name of ['Fit sheet to width', 'Project options', 'Preview PDF', 'Export PDF']) {
+      if (name === 'Project options' && width < 1280) continue
+      const button = page.getByRole('button', { name, exact: true })
+      const bounds = await button.evaluate((el) => {
+        const outer = el.getBoundingClientRect()
+        const icon = el.querySelector('svg')!.getBoundingClientRect()
+        const text = el.querySelector('span')!.getBoundingClientRect()
+        return { display: getComputedStyle(el).display, height: outer.height, outerTop: outer.top, outerBottom: outer.bottom, iconLeft: icon.left, iconRight: icon.right, iconTop: icon.top, iconBottom: icon.bottom, textLeft: text.left, textTop: text.top, textBottom: text.bottom }
+      })
+      expect(['flex', 'inline-flex']).toContain(bounds.display)
+      expect(bounds.height).toBeGreaterThanOrEqual(28)
+      expect(bounds.height).toBeLessThanOrEqual(32)
+      expect(bounds.iconRight).toBeLessThanOrEqual(bounds.textLeft)
+      expect(Math.abs((bounds.iconTop + bounds.iconBottom) / 2 - (bounds.textTop + bounds.textBottom) / 2)).toBeLessThanOrEqual(1)
+      expect(bounds.iconTop).toBeGreaterThanOrEqual(bounds.outerTop)
+      expect(bounds.iconBottom).toBeLessThanOrEqual(bounds.outerBottom)
+      expect(bounds.textTop).toBeGreaterThanOrEqual(bounds.outerTop)
+      expect(bounds.textBottom).toBeLessThanOrEqual(bounds.outerBottom)
+    }
+    for (const name of ['Zoom in', 'Zoom out', 'Settings', 'Hide inspector']) {
+      await expect(page.getByRole('button', { name, exact: true })).toHaveAttribute('title', name)
+    }
+  }
 })
