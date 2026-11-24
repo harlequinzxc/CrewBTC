@@ -2,6 +2,7 @@ import { cardForStorage, numberedCards } from './cards/numbered-cards'
 import { useCallback, useMemo, useState } from 'react'
 import { DEFAULT_TEXT_SCALE } from '../../types/card-typography'
 import { TopBar } from '../../components/layout/TopBar'
+import { EdgeHandle } from '../../components/ui/EdgeHandle'
 import { BottomBar } from '../../components/layout/BottomBar'
 import { Inspector } from './Inspector'
 import { useBatch } from './files/use-batch'
@@ -56,7 +57,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const [keywords, setKeywords] = useKeywords()
   const [selectedCell, setSelectedCell] = useState<number | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false); const [stripCollapsed, setStripCollapsed] = useState(false)
-  const [inspectorOpen, setInspectorOpen] = useState(true)
+  const [inspectorOpen, setInspectorOpen] = useState(true); const [filesOpen, setFilesOpen] = useState(true)
   const [previewOpen, setPreviewOpen] = useState(false); const [printing, setPrinting] = useState(false)
   useUpdateNotice(() => {
     notify({
@@ -163,18 +164,16 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
         hasMoreThanOneSheet={exporter.hasMoreThanOneSheet}
         exporting={exporter.busy}
         hasBatch={hasBatch}
-        inspectorOpen={inspectorOpen}
-        onToggleInspector={toggleInspector}
         reviewStatus={review.status} issueCount={review.issues.length} hasPrintableCards={sheetCount > 0}
-        onReview={() => { setInspectorOpen(true); window.requestAnimationFrame(() => document.getElementById('batch-review')?.focus()) }}
         previewOpen={previewOpen}
         onTogglePreview={() => setPreviewOpen((open) => !open)}
       />
       <StationTabs stations={stationState.stations} activeId={stationState.activeId} busy={batch.busy || project.busy || !session.restored} onSwitch={(id) => { stationState.switchTo(id); setSelectedCell(null); setPreviewOpen(false) }} onAdd={(name) => { stationState.add(name); setSelectedCell(null); setPreviewOpen(false) }} onRename={stationState.rename} />
       <main className="relative flex min-h-0 flex-1">
+        <div className="relative flex shrink-0">
         <aside
-          aria-label="Files"
-          className="hidden w-[220px] shrink-0 border-r border-hairline bg-surface-panel md:flex md:flex-col"
+          aria-label="Files" hidden={!filesOpen}
+          className={filesOpen ? 'hidden w-[220px] shrink-0 border-r border-hairline bg-surface-panel md:flex md:flex-col' : 'hidden'}
         >
           <LeftPane
             documents={batch.documents} activeId={batch.activeId}
@@ -185,6 +184,8 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
             placements={reveal.placements} onReveal={reveal.onReveal}
           />
         </aside>
+        <EdgeHandle label={filesOpen ? 'Collapse Files' : 'Expand Files'} expanded={filesOpen} direction={filesOpen ? 'left' : 'right'} onClick={() => setFilesOpen((open) => !open)} className={filesOpen ? 'absolute left-full top-1/2 z-40 -translate-x-1/2 -translate-y-1/2' : 'absolute left-0 top-1/2 z-40 -translate-y-1/2'} />
+        </div>
         <CentrePane
           documentsLoaded={hasBatch} busy={batch.busy}
           onFiles={batch.addFiles} sheet={sheet.settings} grid={sheet.grid} pages={pageRefs}
@@ -214,6 +215,8 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           }
         />
         {previewOpen && hasBatch && sheetCount > 0 ? <PdfPreview sheetCount={sheetCount} initialSheet={sheetIndex} onClose={() => setPreviewOpen(false)} settings={sheet.settings} grid={sheet.grid} pages={pageRefs} drawCutMarks={showCutMarks} cards={visibleCards} /> : null}
+        <div className="relative flex shrink-0">
+        <EdgeHandle label={inspectorOpen ? 'Collapse inspector' : 'Expand inspector'} expanded={inspectorOpen} direction={inspectorOpen ? 'right' : 'left'} onClick={toggleInspector} className={inspectorOpen ? 'absolute right-full top-1/2 z-40 translate-x-1/2 -translate-y-1/2' : 'absolute right-0 top-1/2 z-40 -translate-y-1/2'} />
         <Inspector
           card={selectedCard}
           cellIndex={selectionKey === null ? null : selectedCell}
@@ -231,6 +234,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
           busy={batch.busy || project.busy}
           open={inspectorOpen}
         />
+        </div>
       </main>
       <BottomBar paper={{ widthMm: sheet.settings.sheetWidthMm, heightMm: sheet.settings.sheetHeightMm }} sheetCount={sheetCount} scale={zoom.scale} fitting={zoom.fitting} onStep={zoom.step} onFit={zoom.fit} />
       {printing ? <PrintSelection stations={stationState.stations} grid={sheet.grid} settings={sheet.settings} drawCutMarks={showCutMarks} onClose={() => setPrinting(false)} notify={notify} /> : null}

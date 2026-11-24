@@ -92,7 +92,7 @@ describe('the sheet strip', () => {
     const { props } = strip({ collapsed: true })
     const pill = screen.getByRole('button', { name: 'Expand sheet strip, 2 sheets' })
     expect(pill).toHaveAttribute('aria-expanded', 'false')
-    expect(pill.textContent).toContain('Sheets (2)')
+    expect(pill).toHaveAttribute('aria-label', 'Expand sheet strip, 2 sheets')
     // Collapsed means no thumbnails at all: that is the height being given back.
     expect(screen.queryByRole('button', { name: 'Sheet 1' })).not.toBeInTheDocument()
     fireEvent.click(pill)

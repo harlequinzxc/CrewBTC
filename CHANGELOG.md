@@ -62,7 +62,9 @@ above it is not shown as release notes. `package.json` and the newest entry must
   original PDF, with an explanation when the original is unavailable.
 - The header has inline project actions, a print-review status and export choices; a bottom
   bar carries paper size, sheet count and centered zoom controls. The status counts cards
-  with any review warnings. The click diagnostic remains in Settings.
+  with any review warnings and is informational; details remain in the inspector.
+  Border-docked handles collapse Files, the sheet strip and the inspector.
+  The click diagnostic remains in Settings.
   Station tabs are horizontally scrollable and support inline rename by double-click;
   the rename field sizes itself to the text and reveals the beginning when opened.
 - Station tabs isolate batches and cards, while settings are shared. Page filters can place
@@ -134,6 +136,11 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.21.0 — 2026-11-24 — Unified panel edge handles
+
+- Add matching edge controls for Files, the sheet strip and inspector; keep print status informational.
+- Remove vertical overflow from the sheet thumbnails while retaining horizontal scrolling.
 
 ### 1.20.1 — 2026-11-24 — Keep export status in sync
 
