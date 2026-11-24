@@ -85,7 +85,7 @@ export function WorkspaceScreen({ notify }: WorkspaceScreenProps) {
   const history = useWorkspaceHistory(cardStore, sheet, sharedSheet, stationState.activeId, batch.documents)
   const clearHistory = history.clear
   const pageRefs = useMemo(() => toPageRefs(batch.documents), [batch.documents])
-  const zoom = useSheetZoom(sheet.settings.sheetWidthMm)
+  const zoom = useSheetZoom(sheet.settings.sheetWidthMm, `${filesOpen}:${inspectorOpen}`)
   useSaveSession(session.restored && batch.hydrated, {
     documents: batch.documents,
     cards: cardStore.cards,

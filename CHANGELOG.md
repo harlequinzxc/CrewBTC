@@ -73,7 +73,8 @@ above it is not shown as release notes. `package.json` and the newest entry must
   Reduced motion follows the saved choice or system preference, preserves static layout
   transforms and makes UI state changes and scrolling immediate when enabled. When off,
   inspector accordions, Settings, toasts, Export, print selection and release notes animate;
-  other state transitions remain under review. The click diagnostic remains in Settings.
+  other state transitions remain under review. Side rails and the fitted sheet resize together
+  before paint. The click diagnostic remains in Settings.
   Station tabs are horizontally scrollable and support inline rename by double-click;
   the rename field sizes itself to the text and reveals the beginning when opened.
 - Station tabs isolate batches and cards, while settings are shared. Page filters can place
@@ -145,6 +146,11 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.24.4 — 2026-11-24 — Synchronize side rail changes
+
+- Update the fitted sheet in the same frame as left and right rail collapse or expansion.
+- Test both reduced-motion preference sources and both directions on each rail.
 
 ### 1.24.3 — 2026-11-24 — Make reduced motion immediate
 

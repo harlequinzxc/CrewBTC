@@ -20,8 +20,9 @@ export interface ElementSize {
  * Tracks an element's rendered size so a physical preview can be scaled to fit the
  * space actually available — no hardcoded zoom, no scrolling inside the pane.
  */
-export function useElementSize<T extends HTMLElement>(): [(node: T | null) => void, ElementSize] {
+export function useElementSize<T extends HTMLElement>(): [(node: T | null) => void, ElementSize, () => void] {
   const observerRef = useRef<ResizeObserver | null>(null)
+  const nodeRef = useRef<T | null>(null)
   const [size, setSize] = useState<ElementSize>({ width: 0, height: 0 })
 
   // Only a *changed* measurement is state. A ref callback can be detached and re-attached
@@ -34,10 +35,20 @@ export function useElementSize<T extends HTMLElement>(): [(node: T | null) => vo
     )
   }, [])
 
+  // Match ResizeObserver's content box, including on panes with padding.
+  const measure = useCallback(() => {
+    const node = nodeRef.current
+    if (!node) return
+    const style = getComputedStyle(node)
+    const px = (value: string) => Number.parseFloat(value) || 0
+    commit(node.clientWidth - px(style.paddingLeft) - px(style.paddingRight), node.clientHeight - px(style.paddingTop) - px(style.paddingBottom))
+  }, [commit])
+
   const ref = useCallback(
     (node: T | null) => {
     observerRef.current?.disconnect()
     observerRef.current = null
+    nodeRef.current = node
 
     if (node === null) return
 
@@ -59,5 +70,5 @@ export function useElementSize<T extends HTMLElement>(): [(node: T | null) => vo
 
   useEffect(() => () => observerRef.current?.disconnect(), [])
 
-  return [ref, size]
+  return [ref, size, measure]
 }

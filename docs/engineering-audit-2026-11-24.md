@@ -4,6 +4,14 @@ Scope: repository inspection, the automated release gate and targeted Chromium m
 This is not a certification of WCAG, performance, installed-mode behavior, or all engineering
 rules. `[REVIEW]` and `[CRAFT]` items need the manual checks called for in the rules.
 
+## Follow-up — v1.24.4
+
+A frame-by-frame Chromium reproduction found the side rails changed immediately but the
+width-fitted sheet resized one frame later through ResizeObserver. The fit measurement now
+runs before paint when either side rail changes. Targeted tests check both directions of
+both rails and the sheet width over successive frames for system and saved reduced-motion
+preferences. This does not certify other surfaces or the unrun manual review below.
+
 ## Follow-up — v1.24.3
 
 The reduced-motion rule now explicitly requires immediate state changes, with no fades,
@@ -136,3 +144,9 @@ No dependencies or persisted data formats were added.
 
 - `npm run gate` with the configured Chromium binary: **exit 0**, 523 unit tests and
   100 Chromium tests passed. These are regression checks, not a full manual motion audit.
+
+## Automated verification for v1.24.4
+
+- `npm run gate` with the configured Chromium binary: **exit 0**, 523 unit tests and
+  102 Chromium tests passed. The added browser checks cover both side rails with the
+  system and saved reduced-motion preferences.
