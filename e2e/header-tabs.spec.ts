@@ -142,7 +142,7 @@ test('header icons and labels share a single centered row without clipping', asy
       expect(bounds.textTop).toBeGreaterThanOrEqual(bounds.outerTop)
       expect(bounds.textBottom).toBeLessThanOrEqual(bounds.outerBottom)
     }
-    for (const name of ['Zoom in', 'Zoom out', 'Settings', 'Hide inspector']) {
+    for (const name of ['Zoom in', 'Zoom out', 'Settings', 'Collapse inspector']) {
       await expect(page.getByRole('button', { name, exact: true })).toHaveAttribute('title', name)
     }
   }

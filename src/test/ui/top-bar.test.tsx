@@ -22,8 +22,6 @@ const render_ = (overrides: Partial<React.ComponentProps<typeof TopBar> & React.
     onOpenSettings: vi.fn(),
     onExportCurrent: vi.fn(),
     onExportAll: vi.fn(),
-    inspectorOpen: true,
-    onToggleInspector: vi.fn(),
     ...overrides,
   }
   render(<><TopBar {...props} /><BottomBar {...props} /></>)
@@ -144,21 +142,22 @@ describe('the top bar', () => {
 describe('print review status', () => {
   it('does not claim readiness when a batch has no printable cards', () => {
     render_({ hasBatch: true, hasPrintableCards: false, reviewStatus: 'ready' })
-    expect(screen.getByRole('button', { name: 'No cards' })).toBeDisabled()
+    expect(screen.getByRole('status')).toHaveTextContent('No cards')
   })
-  it('shows a green ready status and opens the wider review', () => {
-    const props = render_({ reviewStatus: 'ready', issueCount: 0, onReview: vi.fn() })
-    const status = screen.getByRole('button', { name: 'Ready for export' })
+  it('shows a green noninteractive ready status', () => {
+    render_({ reviewStatus: 'ready', issueCount: 0 })
+    const status = screen.getByRole('status')
+    expect(status).toHaveTextContent('Ready for export')
     expect(status).toHaveClass('text-emerald-400')
-    fireEvent.click(status)
-    expect(props.onReview).toHaveBeenCalledOnce()
+    expect(status.tagName).not.toBe('BUTTON')
   })
   it('shows an orange count when cards need review', () => {
     render_({ reviewStatus: 'ready', issueCount: 2 })
-    expect(screen.getByRole('button', { name: '2 issues' })).toHaveClass('text-amber-400')
+    expect(screen.getByRole('status')).toHaveTextContent('2 issues')
+    expect(screen.getByRole('status')).toHaveClass('text-amber-400')
   })
   it('does not claim readiness when the check fails', () => {
     render_({ reviewStatus: 'error' })
-    expect(screen.getByRole('button', { name: 'Check unavailable' })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Check unavailable')
   })
 })

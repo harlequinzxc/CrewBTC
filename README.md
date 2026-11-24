@@ -53,14 +53,15 @@ clipped text or corner labels before printing.
 
 ## The screen
 
-Three columns and a bar across the top:
+Three columns between a top bar and a bottom status bar:
 
 - **Files** on the left, 220px: your PDFs, one row each, and the single **Add PDFs**
   button.
 - **The sheet** in the middle, as big as the window allows.
 - **The inspector** on the right, 260px. It shows the document's own settings — sheet
   size, cell size, spacing, margin, rotation, cut guides — and when you select a card it
-  puts that card's **Top**, **Bottom** and **Text** numbers above them.
+  puts that card's **Top**, **Bottom** and **Text** numbers above them. Use the edge
+  handles to collapse or expand Files, the inspector, or the Sheets strip.
 - **The gear** opens settings over the sheet rather than on a page of its own: units,
   reduced motion, and the changelog folded into one row that names the version you are on.
 
@@ -114,8 +115,8 @@ momentary action — it never stays lit, because width-fit is already where the 
 
 Twelve cards fit one A4 sheet, so a document longer than twelve pages has more than one.
 When that happens a strip of sheet miniatures appears along the bottom of the canvas:
-click one to move the canvas to that sheet, or collapse it to a `Sheets (2)` pill to get
-the height back. Clicking a file in the **Files** rail jumps to the sheet its first card
+click one to move the canvas to that sheet, or use its top-edge handle to collapse
+the strip and get the height back. The thumbnails scroll horizontally when needed. Clicking a file in the **Files** rail jumps to the sheet its first card
 is on. The active sheet is the one with the accent border.
 
 ## Getting started
@@ -125,7 +126,7 @@ is on. The active sheet is the one with the accent border.
 3. Pick a card, then edit its text, colour and photo.
 4. Drag the selected card’s dividers; check the heights in the inspector.
 5. Open **Preview PDF** beside Export to inspect the generated PDF as you edit. Navigate sheets, zoom, fit or expand the preview; it updates shortly after changes. On narrower windows it overlays part of the editor.
-6. Select the top-bar print-review status to open the full review and jump to affected cards. Green **Ready for export** means the review found no issues; an orange count shows how many cards need review. Warnings are advisory: missing content can be intentional, and the check does not replace inspecting the PDF.
+6. The top-bar status is informational; use **Print & batch review** in the inspector to inspect warnings and jump to affected cards. Green **Ready for export** means the review found no issues; an orange count shows how many cards need review. Warnings are advisory: missing content can be intentional, and the check does not replace inspecting the PDF.
 7. To reuse band heights, select a card and choose **Use selected card** under New card defaults. The saved heights apply only to newly seeded cards; text size remains sheet-wide.
 8. **Save** saves an editable project if needed. **Export → This sheet** prints the active sheet; **Export → Custom selection** combines chosen cards from any station.
 

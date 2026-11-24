@@ -39,8 +39,7 @@ export interface InspectorProps {
   /**
    * Whether the rail is showing.
    *
-   * Hiding returns the 260px to the sheet, which is what the collapse button beside the
-   * gear is for. Below `lg` the rail is not rendered at all, so this only decides the
+   * Hiding returns the 260px to the sheet; the inspector edge handle controls it. Below `lg` the rail is not rendered at all, so this only decides the
    * width at which it *would* be — the breakpoint still wins, because the breakpoint is
    * a property of the window and the toggle is a property of the session.
    */

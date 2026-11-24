@@ -1,4 +1,4 @@
-import { CircleCheck, Eye, FilePlus2, FolderOpen, PanelRightClose, PanelRightOpen, Save, Settings, TriangleAlert } from 'lucide-react'
+import { CircleCheck, Eye, FilePlus2, FolderOpen, Save, Settings, TriangleAlert } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { ExportControl } from './ExportControl'
 import { CHANGELOG } from '../../data/changelog'
@@ -22,11 +22,8 @@ export interface TopBarProps {
   readonly hasPrintableCards?: boolean
   readonly reviewStatus?: 'checking' | 'error' | 'ready'
   readonly issueCount?: number
-  readonly onReview?: () => void
   readonly previewOpen?: boolean
   readonly onTogglePreview?: () => void
-  readonly inspectorOpen: boolean
-  readonly onToggleInspector: () => void
 }
 
 const baseButton = 'inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded px-1.5 text-xs hover:bg-surface-active focus-visible:bg-surface-active disabled:opacity-40'
@@ -49,12 +46,9 @@ export function TopBar(props: TopBarProps) {
       <button type="button" data-target="dense" aria-label="Save project" title="Save editable project" disabled={props.projectBusy || !(props.hasProject ?? props.hasBatch)} onClick={props.onSaveProject} className={button}><Save aria-hidden className="size-4" /><span>Save</span></button>
     </div>
     <div className="ml-auto flex shrink-0 items-center gap-1">
-      <button type="button" data-target="dense" disabled={!canCheck} title="Print review; open all issues" onClick={props.onReview} className={cn(baseButton, !canCheck || checking || error ? 'text-ink-secondary' : count === 0 ? 'text-emerald-400' : 'text-amber-400')}>
+      <output title="Print review status; details are in the inspector" className={cn('inline-flex h-8 items-center gap-1 px-1.5 text-xs', !canCheck || checking || error ? 'text-ink-secondary' : count === 0 ? 'text-emerald-400' : 'text-amber-400')}>
         {canCheck && !checking && !error ? count === 0 ? <CircleCheck aria-hidden className="size-4" /> : <TriangleAlert aria-hidden className="size-4" /> : null}<span>{label}</span>
-      </button>
-      <button type="button" data-target="dense" aria-label={props.inspectorOpen ? 'Hide inspector' : 'Show inspector'} aria-pressed={props.inspectorOpen} title={props.inspectorOpen ? 'Hide inspector' : 'Show inspector'} onClick={props.onToggleInspector} className={cn(button, 'w-8 px-0')}>
-        {props.inspectorOpen ? <PanelRightClose aria-hidden className="size-4" /> : <PanelRightOpen aria-hidden className="size-4" />}
-      </button>
+      </output>
       <button type="button" data-target="dense" aria-label="Settings" title="Settings" onClick={props.onOpenSettings} className={button}><Settings aria-hidden className="size-4" /><span>Settings</span></button>
       <button id="pdf-preview-toggle" type="button" data-target="dense" aria-label="Preview PDF" title="Preview the generated PDF" aria-pressed={props.previewOpen ?? false} disabled={!props.hasBatch} onClick={props.onTogglePreview} className={cn(button, props.previewOpen && 'bg-surface-active text-ink-primary')}><Eye aria-hidden className="size-4" /><span>Preview</span></button>
       <ExportControl hasBatch={props.hasBatch} hasMoreThanOneSheet={props.hasMoreThanOneSheet} exporting={props.exporting || (props.projectBusy ?? false)} hasProjectCards={props.anyProjectCards ?? props.hasBatch} onCustomSelection={props.onPrintSelection} onExportCurrent={props.onExportCurrent} onExportAll={props.onExportAll} />
