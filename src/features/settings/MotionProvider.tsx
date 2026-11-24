@@ -25,6 +25,14 @@ export function MotionProvider({ children }: { readonly children: ReactNode }) {
       // Private mode can refuse writes; the in-memory state still applies.
     }
     document.documentElement.dataset.reducedMotion = next === 'on' ? 'true' : 'false'
+    if (next === 'on') {
+      // Cancel smooth scrolling already in progress as well as future requests.
+      for (const element of document.querySelectorAll<HTMLElement>('*')) {
+        if (element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth) {
+          element.scrollTo?.({ top: element.scrollTop, left: element.scrollLeft, behavior: 'auto' })
+        }
+      }
+    }
   }, [])
 
   const value = useMemo<MotionContextValue>(

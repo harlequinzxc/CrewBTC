@@ -142,26 +142,30 @@
   }
 }
 
+/* Disable motion without removing static layout transforms. Include the root and
+   pseudo-elements, and honor the OS preference until an explicit choice is saved. */
 @media (prefers-reduced-motion: reduce) {
-  :root:not([data-reduced-motion='false']) * {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+  :root:not([data-reduced-motion='false']),
+  :root:not([data-reduced-motion='false'])::before,
+  :root:not([data-reduced-motion='false'])::after,
+  :root:not([data-reduced-motion='false']) *,
+  :root:not([data-reduced-motion='false']) *::before,
+  :root:not([data-reduced-motion='false']) *::after {
+    animation: none !important;
+    transition: none !important;
     scroll-behavior: auto !important;
   }
 }
-
-/* §3 — suppress spatial motion without removing static layout transforms, such as
-   centered zoom controls and switch positions. Only opacity transitions may run. */
+[data-reduced-motion='true'],
+[data-reduced-motion='true']::before,
+[data-reduced-motion='true']::after,
 [data-reduced-motion='true'] *,
 [data-reduced-motion='true'] *::before,
 [data-reduced-motion='true'] *::after {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 80ms !important;
-  transition-property: opacity !important;
+  animation: none !important;
+  transition: none !important;
   scroll-behavior: auto !important;
 }
-
 
 /* Stateful motion uses compositor-friendly properties and explicit exit timers. */
 .inspector-accordion {
@@ -192,10 +196,6 @@ dialog[data-motion-phase='enter']::backdrop { animation: fade-in var(--duration-
 [data-motion-toast] { animation: toast-enter var(--duration-sheet-enter) var(--ease-sheet) backwards; }
 [data-motion-toast][data-leaving='true'] { animation: none; }
 [data-reduced-motion='true'] [data-motion-toast] { transform: none !important; }
-[data-reduced-motion='true'] dialog[data-motion-phase='enter'] { animation-name: fade-in !important; animation-duration: 80ms !important; }
-[data-reduced-motion='true'] dialog[data-motion-phase='exit'] { animation-name: fade-out !important; animation-duration: 80ms !important; }
-[data-reduced-motion='true'] dialog[data-motion-phase]::backdrop { animation-duration: 80ms !important; }
-[data-reduced-motion='true'] .motion-backdrop-exit { animation-duration: 80ms !important; }
 
 /* Menus remain non-interactive as their exit fades, without delaying actions. */
 [data-motion-popup] {
@@ -214,3 +214,13 @@ dialog[data-motion-phase='enter']::backdrop { animation: fade-in var(--duration-
   transition: opacity var(--duration-sheet-enter) var(--ease-sheet), transform var(--duration-sheet-enter) var(--ease-sheet), visibility 0s;
 }
 [data-reduced-motion='true'] [data-motion-popup] { transform: none !important; }
+
+/* Dialog backdrops are not descendants for CSS selector purposes. */
+[data-reduced-motion='true'] dialog::backdrop { animation: none !important; transition: none !important; }
+[data-reduced-motion='true'] dialog[data-motion-phase='exit'],
+[data-reduced-motion='true'] .motion-backdrop-exit { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-reduced-motion='false']) dialog::backdrop { animation: none !important; transition: none !important; }
+  :root:not([data-reduced-motion='false']) dialog[data-motion-phase='exit'],
+  :root:not([data-reduced-motion='false']) .motion-backdrop-exit { display: none !important; }
+}

@@ -4,6 +4,18 @@ Scope: repository inspection, the automated release gate and targeted Chromium m
 This is not a certification of WCAG, performance, installed-mode behavior, or all engineering
 rules. `[REVIEW]` and `[CRAFT]` items need the manual checks called for in the rules.
 
+## Follow-up — v1.24.3
+
+The reduced-motion rule now explicitly requires immediate state changes, with no fades,
+transitions, animations, animated scrolling or delayed visual exit. Earlier references to
+80 ms fades below are historical, not the current requirement. CSS disables motion for
+the root, descendants, pseudo-elements and dialog backdrops; static layout transforms are
+preserved. Dialog and toast exits do not wait in reduced motion, and enabling the setting
+cancels in-progress scrolling. Targeted browser tests cover tabs, menu, modal, accordion,
+the system preference and restoring motion; unit tests cover immediate toast dismissal.
+A full manual app-wide and real-device walkthrough remains unrun, and the motion-off
+all-state gaps and other audit findings remain outstanding.
+
 ## Follow-up — v1.24.2
 
 This follow-up supersedes the relevant v1.24.1 findings below, which are retained as
@@ -119,3 +131,8 @@ No dependencies or persisted data formats were added.
   99 Chromium tests passed, including the new menu, print-dialog and release-notes tests.
 - This verifies the automated regression gate only; it does not resolve or prove the
   outstanding manual and all-state motion findings described above.
+
+## Automated verification for v1.24.3
+
+- `npm run gate` with the configured Chromium binary: **exit 0**, 523 unit tests and
+  100 Chromium tests passed. These are regression checks, not a full manual motion audit.

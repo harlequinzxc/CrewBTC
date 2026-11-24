@@ -8,10 +8,20 @@ export function useModalMotion(open: boolean) {
   useEffect(() => {
     const dialog = ref.current
     if (!dialog) return
+    const cancel = () => {
+      if (isReducedMotion() && dialog.dataset.motionPhase === 'enter') delete dialog.dataset.motionPhase
+    }
+    dialog.addEventListener('animationcancel', cancel)
+    return () => dialog.removeEventListener('animationcancel', cancel)
+  }, [])
+  useEffect(() => {
+    const dialog = ref.current
+    if (!dialog) return
     if (open) {
       dialog.inert = false
       dialog.removeAttribute('aria-hidden')
-      dialog.dataset.motionPhase = 'enter'
+      if (isReducedMotion()) delete dialog.dataset.motionPhase
+      else dialog.dataset.motionPhase = 'enter'
       if (!dialog.open) {
         if (typeof dialog.showModal === 'function') dialog.showModal()
         else dialog.setAttribute('open', '')
@@ -22,14 +32,16 @@ export function useModalMotion(open: boolean) {
     if (!dialog.open && !dialog.hasAttribute('open')) return
     dialog.inert = true
     dialog.setAttribute('aria-hidden', 'true')
-    dialog.dataset.motionPhase = 'exit'
+    if (isReducedMotion()) delete dialog.dataset.motionPhase
+    else dialog.dataset.motionPhase = 'exit'
     if (typeof dialog.close === 'function') dialog.close()
     else dialog.removeAttribute('open')
+    if (isReducedMotion()) return
     const backdrop = document.createElement('div')
     backdrop.className = 'motion-backdrop-exit'
     backdrop.setAttribute('aria-hidden', 'true')
     document.body.append(backdrop)
-    const timer = window.setTimeout(() => { delete dialog.dataset.motionPhase; backdrop.remove() }, isReducedMotion() ? 80 : MOTION.sheetExit)
+    const timer = window.setTimeout(() => { delete dialog.dataset.motionPhase; backdrop.remove() }, MOTION.sheetExit)
     return () => { window.clearTimeout(timer); backdrop.remove() }
   }, [open])
   const onAnimationEnd = useCallback((event: AnimationEvent<HTMLDialogElement>) => {

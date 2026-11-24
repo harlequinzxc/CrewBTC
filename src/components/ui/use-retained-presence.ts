@@ -7,8 +7,8 @@ export function useRetainedPresence(open: boolean): boolean {
   if (open && !retained) setRetained(true)
   useEffect(() => {
     if (open || !retained) return
-    const timer = window.setTimeout(() => setRetained(false), isReducedMotion() ? 80 : MOTION.sheetExit)
+    const timer = window.setTimeout(() => setRetained(false), isReducedMotion() ? 0 : MOTION.sheetExit)
     return () => window.clearTimeout(timer)
   }, [open, retained])
-  return open || retained
+  return open || (retained && !isReducedMotion())
 }
