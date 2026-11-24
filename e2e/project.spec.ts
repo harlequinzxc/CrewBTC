@@ -1,3 +1,4 @@
+import { openSheetSettings } from './fixtures'
 import { projectAction, expectSaveEnabled, exportCurrent } from './fixtures'
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
@@ -25,11 +26,14 @@ test('project transfers edited cards, photo, settings and original PDF to a fres
   await page.getByLabel('Edit card text').fill('PORTABLE EDIT')
   await page.keyboard.press('Escape')
   await page.getByLabel('Card corner label').first().fill('ABC')
+  await openSheetSettings(page)
   await page.getByLabel('All text size').fill('125')
+  await openSheetSettings(page)
   await page.getByLabel('All text size').press('Tab')
   await page.waitForTimeout(1000)
   await page.reload()
   await expect(page.getByLabel('Card corner label').first()).toHaveValue('ABC')
+  await openSheetSettings(page)
   await page.getByRole('switch', { name: 'Show cut guides' }).click()
   const pending = page.waitForEvent('download')
   await projectAction(page, 'Save project')
@@ -47,8 +51,10 @@ test('project transfers edited cards, photo, settings and original PDF to a fres
   await expect(fresh.getByText('Project opened', { exact: true })).toBeVisible()
   await expect(fresh.locator('[data-cell]').first()).toContainText('PORTABLE EDIT')
   await expect(fresh.getByLabel('Card corner label').first()).toHaveValue('ABC')
+  await openSheetSettings(fresh)
   await expect(fresh.getByLabel('All text size')).toHaveValue('125')
   await expect(fresh.getByLabel('Card number').first()).toHaveValue('32')
+  await openSheetSettings(fresh)
   await expect(fresh.getByRole('switch', { name: 'Show cut guides' })).toHaveAttribute('aria-checked', 'false')
   const restoredBox = (await fresh.locator('[data-cell]').first().boundingBox())!
   await fresh.mouse.click(restoredBox.x + restoredBox.width / 2, restoredBox.y + restoredBox.height * 0.45)
@@ -60,6 +66,7 @@ test('project transfers edited cards, photo, settings and original PDF to a fres
   await fresh.waitForTimeout(1000)
   await fresh.reload()
   await expect(fresh.locator('[data-cell]').first()).toContainText('PORTABLE EDIT')
+  await openSheetSettings(fresh)
   await expect(fresh.getByRole('switch', { name: 'Show cut guides' })).toHaveAttribute('aria-checked', 'false')
   await fresh.getByRole('button', { name: 'Settings', exact: true }).click()
   await expect(fresh.getByLabel('Units')).toHaveValue('cm')

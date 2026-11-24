@@ -1,3 +1,4 @@
+import { openSheetSettings } from './fixtures'
 import { expect, test } from '@playwright/test'
 import { uploadPdf, textZones } from './fixtures'
 
@@ -8,12 +9,14 @@ test('numbering wraps, label edits survive reload, and sheet text size affects b
   await numbers.first().selectOption('40')
   await expect(numbers.nth(1)).toHaveValue('1')
   const labels = page.getByLabel('Card corner label')
+  await openSheetSettings(page)
   await expect(page.getByLabel('All text size')).toHaveValue('90')
   await labels.first().fill('AB123')
   await expect(labels.nth(1)).toHaveValue('AB123')
   await labels.nth(1).fill('REST')
   await expect(labels.first()).toHaveValue('AB123')
   const before = await textZones(page).nth(1).locator('span').first().evaluate((el) => getComputedStyle(el).fontSize)
+  await openSheetSettings(page)
   const size = page.getByLabel('All text size')
   await size.fill('150')
   await size.press('Tab')
@@ -26,6 +29,7 @@ test('numbering wraps, label edits survive reload, and sheet text size affects b
   await expect(page.getByLabel('Card corner label').nth(1)).toHaveValue('REST')
   await page.getByLabel('Card corner label').first().fill('')
   await expect(page.getByLabel('Card corner label').nth(1)).toHaveValue('REST')
+  await openSheetSettings(page)
   await expect(page.getByLabel('All text size')).toHaveValue('150')
 })
 
@@ -92,6 +96,7 @@ test('all card text uses one size and font, and both corner boxes grow with it',
     return { header: props(header), body: props(body), number: props(number), label: props(label) }
   })
   for (const percent of ['100', '150', '200']) {
+    await openSheetSettings(page)
     const size = page.getByLabel('All text size')
     await size.fill(percent)
     await size.press('Tab')
@@ -160,6 +165,7 @@ test('selected card readouts follow the divider and sheet text size', async ({ p
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 20, { steps: 5 })
   await page.mouse.up()
   await expect(top).not.toHaveText(before!)
+  await openSheetSettings(page)
   await page.getByLabel('All text size').fill('120')
   await expect(text).toHaveText('120%')
 })

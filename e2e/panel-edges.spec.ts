@@ -1,10 +1,13 @@
+import { openSheetSettings } from './fixtures'
 import { expect, test } from '@playwright/test'
 import { uploadPdf } from './fixtures'
 
 test('edge handles share geometry, collapse and restore without losing cards', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await uploadPdf(page)
+  await openSheetSettings(page)
   await page.getByLabel('Cell width').fill('190')
+  await openSheetSettings(page)
   await page.getByLabel('Cell height').fill('200')
   const left = page.getByRole('button', { name: 'Collapse Files' })
   const right = page.getByRole('button', { name: 'Collapse inspector' })
@@ -65,12 +68,17 @@ test('print status does not respond to hover or click', async ({ page }) => {
 test('all edge buttons are fully visible and hit-testable in both states', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 640 })
   await uploadPdf(page)
+  await openSheetSettings(page)
   await page.getByLabel('Cell width').fill('190')
+  await openSheetSettings(page)
   await page.getByLabel('Cell height').fill('200')
   await expect(page.locator('[role=status].pointer-events-auto')).toHaveCount(0, { timeout: 10000 })
   async function assertHandle(name: RegExp) {
     const button = page.getByRole('button', { name })
     await expect(button).toBeVisible()
+    await expect(button).toHaveCSS('cursor', 'pointer')
+    await button.hover()
+    await expect(button).toHaveCSS('cursor', 'pointer')
     const result = await button.evaluate((el) => {
       const r = el.getBoundingClientRect()
       const points = [[r.left + 3, r.top + 3], [r.right - 3, r.top + 3], [r.left + 3, r.bottom - 3], [r.right - 3, r.bottom - 3], [r.left + r.width / 2, r.top + r.height / 2]]
@@ -114,10 +122,10 @@ test('inspector sections toggle independently and preserve their inputs', async 
   const defaults = page.getByRole('button', { name: 'Toggle New Card Defaults section' })
   const formatting = page.getByRole('button', { name: 'Toggle Automate Formatting section' })
   const sheet = page.getByRole('button', { name: 'Toggle Sheet & Print section' })
-  await expect(defaults).toHaveAttribute('aria-expanded', 'true')
-  await expect(formatting).toHaveAttribute('aria-expanded', 'false')
-  await expect(sheet).toHaveAttribute('aria-expanded', 'true')
-  await formatting.click()
+  await expect(defaults).toHaveAttribute('aria-expanded', 'false')
+  await expect(formatting).toHaveAttribute('aria-expanded', 'true')
+  await expect(sheet).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByText('Define keyword or phrase per line for automatic formatting.')).toBeVisible()
   const keywords = page.getByLabel('Crockeries keywords')
   await keywords.fill('plate')
   await formatting.click()
@@ -126,7 +134,7 @@ test('inspector sections toggle independently and preserve their inputs', async 
   await expect(keywords).toHaveValue('plate')
   await defaults.click()
   await sheet.click()
-  await expect(defaults).toHaveAttribute('aria-expanded', 'false')
-  await expect(sheet).toHaveAttribute('aria-expanded', 'false')
+  await expect(defaults).toHaveAttribute('aria-expanded', 'true')
+  await expect(sheet).toHaveAttribute('aria-expanded', 'true')
   await expect(formatting).toHaveAttribute('aria-expanded', 'true')
 })

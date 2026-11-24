@@ -1,3 +1,4 @@
+import { openSheetSettings } from './fixtures'
 import { expect, test } from '@playwright/test'
 import { textZones, uploadPdf } from './fixtures'
 
@@ -46,9 +47,11 @@ test('the narrow overlay can be opened and closed without unmounting the workspa
 
 test('preview navigation renders each actual sheet and does not silently show sheet one', async ({ page }) => {
   await uploadPdf(page)
+  await openSheetSettings(page)
   const width = page.getByLabel('Cell width')
   await width.fill('190')
   await width.press('Tab')
+  await openSheetSettings(page)
   const height = page.getByLabel('Cell height')
   await height.fill('200')
   await height.press('Tab')

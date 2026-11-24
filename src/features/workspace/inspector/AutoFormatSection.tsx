@@ -12,8 +12,8 @@ interface Props {
 
 export function AutoFormatSection({ keywords, onChange, onApply, onRemove, available, busy }: Props) {
   return (
-    <Section title="Automate formatting" collapsible initiallyOpen={false}>
-      <p className="mb-2 text-[11px] text-ink-secondary">One keyword or phrase per line. Matching ignores case and applies to whole words.</p>
+    <Section title="Automate formatting" collapsible>
+      <p className="mb-2 text-[11px] text-ink-secondary">Define keyword or phrase per line for automatic formatting.</p>
       <div className="flex flex-col gap-2">
         {(['crockeries', 'directions', 'condiments'] as const).map((category) => (
           <label key={category} className="flex flex-col gap-1 text-[11px] font-medium uppercase text-ink-secondary">

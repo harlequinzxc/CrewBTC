@@ -162,3 +162,10 @@ export async function openFormatting(page: Page): Promise<void> {
   await expect(toggle).toBeVisible()
   if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click()
 }
+
+/** Open sheet settings only when the accordion is closed. */
+export async function openSheetSettings(page: Page): Promise<void> {
+  const toggle = page.getByRole('button', { name: 'Toggle Sheet & print section' })
+  await expect(toggle).toBeVisible()
+  if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click()
+}

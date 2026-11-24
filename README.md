@@ -61,7 +61,7 @@ Three columns between a top bar and a bottom status bar:
 - **The inspector** on the right, 260px. It shows the document's own settings — sheet
   size, cell size, spacing, margin, rotation, cut guides — and when you select a card it
   puts that card's **Top**, **Bottom** and **Text** numbers above them. Use the edge
-  rails to collapse or expand Files, the inspector, or the Sheets strip. The inspector sections can also be expanded or collapsed; Automate formatting starts closed.
+  rails to collapse or expand Files, the inspector, or the Sheets strip. The inspector sections can also be expanded or collapsed; Automate formatting starts open, while New card defaults and Sheet & print start closed.
 - **The gear** opens settings over the sheet rather than on a page of its own: units,
   reduced motion, and the changelog folded into one row that names the version you are on.
 
