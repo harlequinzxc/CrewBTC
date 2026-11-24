@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useElementSize } from '../../../lib/use-element-size'
 import { useNonPassiveWheel } from '../../../lib/use-wheel'
 import { fitWidthScale, nextZoom, previousZoom, wheelZoom } from '../../../lib/zoom'
@@ -36,7 +36,7 @@ export const CANVAS_PADDING = 32
  * `sheetWidthMm` is the only dimension the fit depends on now; height is not a parameter
  * because width-fit must not start caring about it again.
  */
-export function useSheetZoom(sheetWidthMm: number): SheetZoom {
+export function useSheetZoom(sheetWidthMm: number, layoutKey = ''): SheetZoom {
   const [manualScale, setManualScale] = useState<number | null>(null)
 
   /**
@@ -48,7 +48,10 @@ export function useSheetZoom(sheetWidthMm: number): SheetZoom {
    * later resize.
    */
   const pin = (next: number): void => setManualScale(next)
-  const [measureRef, size] = useElementSize<HTMLDivElement>()
+  const [measureRef, size, measure] = useElementSize<HTMLDivElement>()
+  // A rail changes the available width in the same commit. Measure before paint so
+  // the paper and rail jump together instead of waiting for ResizeObserver's next frame.
+  useLayoutEffect(() => { measure() }, [layoutKey, measure])
 
   // Width, not height: filling the width is what makes a card's type readable on load.
   // The sheet is taller than the pane as a result, and the pane scrolls vertically.
