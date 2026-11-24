@@ -1,3 +1,5 @@
+import { isReducedMotion } from '../../../lib/motion'
+
 /**
  * Moving the stack.
  *
@@ -23,7 +25,7 @@ export interface ScrollSurface {
  */
 export function scrollToTop(node: ScrollSurface, top: number, smooth = true): void {
   if (typeof node.scrollTo === 'function') {
-    node.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' })
+    node.scrollTo({ top, behavior: smooth && !isReducedMotion() ? 'smooth' : 'auto' })
     return
   }
   node.scrollTop = top

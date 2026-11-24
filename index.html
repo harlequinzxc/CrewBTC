@@ -14,17 +14,13 @@
     <title>CrewBTC</title>
     <script>
       // Applies the saved motion preference before first paint to avoid a flash of motion.
-      try {
-        var saved = localStorage.getItem('ps.reduced-motion');
-        var reduced =
-          saved === 'on' || saved === 'off'
-            ? saved === 'on'
-            : window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        document.documentElement.dataset.reducedMotion = reduced ? 'true' : 'false';
-        document.documentElement.classList.add('dark');
-      } catch (error) {
-        void error;
-      }
+      var saved = null;
+      try { saved = localStorage.getItem('ps.reduced-motion'); } catch (error) { void error; }
+      var reduced = saved === 'on' || saved === 'off'
+        ? saved === 'on'
+        : typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.documentElement.dataset.reducedMotion = reduced ? 'true' : 'false';
+      document.documentElement.classList.add('dark');
     </script>
   </head>
   <body class="bg-zinc-950">
