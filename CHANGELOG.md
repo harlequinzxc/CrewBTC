@@ -66,6 +66,9 @@ above it is not shown as release notes. `package.json` and the newest entry must
   with any review warnings and is informational; details remain in the inspector.
   Full-span 14 px structural rails collapse Files, the sheet strip and the inspector without clipping.
   The inspector uses accordions: Automate formatting starts open, while New card defaults and Sheet & print start closed.
+  Session-only undo/redo tracks up to 80 card, formatting and sheet-setting actions;
+  native text inputs keep their own undo. Switching stations, changing files or replacing
+  a project clears the history.
   Station tabs and sheet thumbnails do not scroll vertically.
   The click diagnostic remains in Settings.
   Station tabs are horizontally scrollable and support inline rename by double-click;
@@ -139,6 +142,11 @@ above it is not shown as release notes. `package.json` and the newest entry must
   are not evidence for later changes; use `npm run gate` and inspect results for each release.
 
 ## Release history
+
+### 1.24.0 — 2026-11-24 — Undo and redo edits
+
+- Add keyboard shortcuts and bottom-bar undo and redo for card edits, formatting, dividers and sheet settings.
+- Preserve native text-field undo and bound session history to 80 actions.
 
 ### 1.23.0 — 2026-11-24 — Keep formatting near the active card
 

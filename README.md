@@ -23,6 +23,11 @@ being left blank. It needs a connection the first time, and it reads English onl
 **You edit the card, not the PDF.** Three zones: text on top, photo in the middle,
 text underneath.
 
+Use the bottom-bar **Undo edit** and **Redo edit** buttons, or Ctrl/Cmd+Z and
+Ctrl/Cmd+Shift+Z (Ctrl+Y also redoes), for card edits, formatting and sheet dimensions.
+Text fields keep their native undo while focused. History holds up to 80 actions and is
+session-only; switching stations, changing the file list, or replacing a project clears it.
+
 - Both text boxes are real text fields. Type in them, add or remove lines, and select
   text to format it. **CROCKERIES** and **CONDIMENTS** apply their callout styles;
   **DIRECTIONS** makes text red. **Bold** and **Clear formatting** are also available.

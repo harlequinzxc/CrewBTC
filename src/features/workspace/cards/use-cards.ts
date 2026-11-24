@@ -32,6 +32,7 @@ export interface CardStore {
   readonly setBands: (key: string, bands: CardBands, cellHeightMm: number) => void
   readonly reset: () => void
   /** Put a whole set back, for Undo. Replaces rather than merges. */
+  readonly patchCards: (cards: Readonly<Record<string, Card>>) => void
   readonly restoreCards: (cards: Readonly<Record<string, Card>>) => void
   readonly undoFormattedCards: (before: Readonly<Record<string, Card>>, after: Readonly<Record<string, Card>>) => void
 }
@@ -108,6 +109,7 @@ export function useCards(restore?: Readonly<Record<string, Card>> | null): CardS
     [patch],
   )
 
+  const patchCards = useCallback((patches: Readonly<Record<string, Card>>) => setCards((current) => ({ ...current, ...patches })), [])
   const reset = useCallback(() => setCards({}), [])
   const restoreCards = useCallback(
     (restored: Readonly<Record<string, Card>>) => setCards({ ...restored }),
@@ -138,9 +140,10 @@ export function useCards(restore?: Readonly<Record<string, Card>> | null): CardS
       setBands,
       reset,
       restoreCards,
+      patchCards,
       undoFormattedCards,
     }),
-    [cards, setCard, seedCard, setText, setStyle, setImage, setBands, reset, restoreCards, undoFormattedCards],
+    [cards, setCard, seedCard, setText, setStyle, setImage, setBands, reset, restoreCards, patchCards, undoFormattedCards],
   )
 }
 
