@@ -59,7 +59,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, State> {
             type="button"
             data-target="dense"
             onClick={() => window.location.reload()}
-            className="mx-auto mt-3 flex h-8 items-center gap-1.5 rounded-md bg-accent-solid px-3 text-[12px] font-medium text-white transition-colors duration-150 ease-out hover:bg-accent-bright focus-visible:bg-accent-bright"
+            className="mx-auto mt-3 flex h-8 items-center gap-1.5 rounded-md bg-accent-solid px-3 text-[12px] font-medium text-white transition-colors duration-150 ease-out hover:bg-red-700 focus-visible:bg-red-700"
           >
             <RotateCw aria-hidden className="size-3.5" />
             Reload

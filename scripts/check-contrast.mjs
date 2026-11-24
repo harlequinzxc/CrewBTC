@@ -11,11 +11,12 @@ const C = {
   hover: '#22252c',
   primary: '#f4f4f6',
   secondary: '#a0a5b0',
-  muted: '#6e7480',
+  muted: '#89909c',
   accent: '#e5484d',
   accentSolid: '#d33a3f',
   accentBright: '#ff6369',
   white: '#ffffff',
+  red700: '#b91c1c',
 }
 
 const hex = h => [1,3,5].map(i => parseInt(h.slice(i,i+2),16)/255)
@@ -32,9 +33,10 @@ const PAIRS = [
   { name:'secondary on raised',      fg:'secondary',    bg:'raised',  level:'normal', expect:'pass' },
   { name:'secondary on hover',       fg:'secondary',    bg:'hover',   level:'normal', expect:'pass' },
 
-  // Muted is for metadata only and is allowed the large-text floor; it still has to be
-  // legible, which is the whole point of replacing the old zinc-500-on-zinc-950 guesswork.
-  { name:'muted on panel (meta)',    fg:'muted',        bg:'panel',   level:'large',  expect:'pass' },
+  // Metadata is still normal-sized text; check all surfaces at the 4.5:1 floor.
+  { name:'muted on panel', fg:'muted', bg:'panel', level:'normal', expect:'pass' },
+  { name:'muted on raised', fg:'muted', bg:'raised', level:'normal', expect:'pass' },
+  { name:'muted on hover', fg:'muted', bg:'hover', level:'normal', expect:'pass' },
 
   // The single accent: as text, as a fill under white, and as a focus ring.
   { name:'accent-bright on panel',   fg:'accentBright', bg:'panel',   level:'normal', expect:'pass' },
@@ -43,6 +45,7 @@ const PAIRS = [
   // fills use the deeper `solid` step. Both pairs are checked, including the failure, so a
   // future palette edit cannot quietly move white text back onto the lighter fill.
   { name:'white on accent fill',     fg:'white',        bg:'accent',  level:'normal', expect:'fail' },
+  { name:'white on red hover', fg:'white', bg:'red700', level:'normal', expect:'pass' },
   { name:'white on accent-solid',    fg:'white',        bg:'accentSolid', level:'normal', expect:'pass' },
 ]
 

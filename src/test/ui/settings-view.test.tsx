@@ -30,8 +30,8 @@ describe('settings', () => {
 
     const notes = screen.getByRole('button', { name: /what.s new/i })
     expect(notes).toHaveAttribute('aria-expanded', 'false')
-    // Nothing from the release history is rendered while it is closed.
-    expect(screen.queryByText(CHANGELOG[0]?.title ?? '')).not.toBeInTheDocument()
+    // The closed region stays mounted for motion but is inert and hidden from accessibility.
+    expect(screen.getByText(CHANGELOG[0]?.title ?? '').closest('[aria-hidden]')).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('puts units first, then motion, then the release notes', () => {
@@ -101,7 +101,7 @@ describe('settings', () => {
     for (const label of ['Print output', 'Bleed', 'Crop-mark margin', 'Trim width', 'Trim height']) {
       expect(screen.queryByText(label)).not.toBeInTheDocument()
     }
-    // And the sub-line that only existed to explain them is gone with them.
-    expect(screen.queryByText(/global defaults for every sheet/i)).not.toBeInTheDocument()
+    // Historical release notes remain mounted but are hidden from the settings view.
+    expect(screen.getByText(/global defaults for every sheet/i).closest('[aria-hidden]')).toHaveAttribute('aria-hidden', 'true')
   })
 })

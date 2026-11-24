@@ -1,7 +1,6 @@
-import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '../../lib/cn'
-import { isReducedMotion, MOTION } from '../../lib/motion'
+import { useModalMotion } from '../../components/ui/use-modal-motion'
 import { SettingsView } from './SettingsView'
 import type { PageSettings } from '../../types/settings'
 
@@ -25,42 +24,7 @@ export interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ open, onClose, onProbe, settings, onSettingsChange }: SettingsDialogProps) {
-  const ref = useRef<HTMLDialogElement>(null)
-
-  useEffect(() => {
-    const dialog = ref.current
-    if (dialog === null) return
-
-    if (open) {
-      dialog.inert = false
-      dialog.removeAttribute('aria-hidden')
-      dialog.dataset.motionPhase = 'enter'
-      if (!dialog.open) {
-        if (typeof dialog.showModal === 'function') dialog.showModal()
-        else dialog.setAttribute('open', '')
-      }
-      dialog.querySelector<HTMLElement>('[data-settings-panel]')?.focus()
-      return
-    }
-    if (!dialog.open && !dialog.hasAttribute('open')) return
-    // Release the native modal immediately so its focus trap never blocks the workspace.
-    // A non-interactive visual remnant and backdrop finish the exit independently.
-    dialog.inert = true
-    dialog.setAttribute('aria-hidden', 'true')
-    dialog.dataset.motionPhase = 'exit'
-    if (typeof dialog.close === 'function') dialog.close()
-    else dialog.removeAttribute('open')
-    const backdrop = document.createElement('div')
-    backdrop.className = 'motion-backdrop-exit'
-    backdrop.setAttribute('aria-hidden', 'true')
-    document.body.append(backdrop)
-    const timer = window.setTimeout(() => {
-      delete dialog.dataset.motionPhase
-      backdrop.remove()
-    }, isReducedMotion() ? 80 : MOTION.sheetExit)
-    return () => { window.clearTimeout(timer); backdrop.remove() }
-  }, [open])
-
+  const { ref, onAnimationEnd } = useModalMotion(open)
 
   return (
     <dialog
@@ -79,9 +43,7 @@ export function SettingsDialog({ open, onClose, onProbe, settings, onSettingsCha
         'open:flex open:flex-col',
       )}
       onCancel={(event) => { event.preventDefault(); onClose() }}
-      onAnimationEnd={(event) => {
-        if (event.target === event.currentTarget && event.currentTarget.dataset.motionPhase === 'enter') delete event.currentTarget.dataset.motionPhase
-      }}
+      onAnimationEnd={onAnimationEnd}
       onPointerDown={(event) => {
         // A click on the backdrop lands on the dialog element itself, outside the panel.
         const panel = ref.current?.querySelector('[data-settings-panel]')
@@ -90,7 +52,7 @@ export function SettingsDialog({ open, onClose, onProbe, settings, onSettingsCha
         }
       }}
     >
-      <div data-settings-panel tabIndex={-1} className="flex min-h-0 flex-col focus-visible:outline-none">
+      <div data-settings-panel data-dialog-focus tabIndex={-1} className="flex min-h-0 flex-col focus-visible:outline-none">
           <div className="flex h-10 shrink-0 items-center justify-between border-b border-hairline pl-4 pr-1.5">
             <h2 className="text-[13px] font-medium text-ink-primary">Settings</h2>
             <button
