@@ -51,16 +51,20 @@ export function Toast({ toast, onDismiss, durationMs = 6000 }: ToastProps) {
   }
 
   useEffect(() => {
-    const exitIn = Math.max(0, durationMs - MOTION.sheetExit)
-    timer.current = window.setTimeout(() => setLeaving(true), exitIn)
+    const exitIn = Math.max(0, durationMs - (isReducedMotion() ? 0 : MOTION.sheetExit))
+    timer.current = window.setTimeout(() => {
+      if (isReducedMotion()) onDismiss(toast.id)
+      else setLeaving(true)
+    }, exitIn)
     return () => {
       if (timer.current !== null) window.clearTimeout(timer.current)
     }
-  }, [durationMs, toast.id])
+  }, [durationMs, onDismiss, toast.id])
 
   useEffect(() => {
     if (!leaving) return
-    const id = window.setTimeout(() => onDismiss(toast.id), isReducedMotion() ? 80 : MOTION.sheetExit)
+    if (isReducedMotion()) { onDismiss(toast.id); return }
+    const id = window.setTimeout(() => onDismiss(toast.id), MOTION.sheetExit)
     return () => window.clearTimeout(id)
   }, [leaving, onDismiss, toast.id])
 
@@ -92,7 +96,8 @@ export function Toast({ toast, onDismiss, durationMs = 6000 }: ToastProps) {
       {toast.undo === undefined ? null : (
         <button type="button" data-target="dense" disabled={leaving} onClick={() => {
             toast.undo?.()
-            setLeaving(true)
+            if (isReducedMotion()) onDismiss(toast.id)
+            else setLeaving(true)
           }} className="h-8 min-h-8 rounded-md px-2 text-xs font-semibold text-accent-bright transition-colors duration-150 ease-out hover:bg-surface-active focus-visible:bg-surface-active">
           {toast.action ?? 'Undo'}
         </button>

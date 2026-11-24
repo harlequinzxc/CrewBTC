@@ -17,15 +17,12 @@ describe('toast motion lifecycle', () => {
     expect(dismiss).toHaveBeenCalledWith('a')
   })
 
-  it('uses a short reduced-motion exit and cancels timers on unmount', () => {
+  it('dismisses immediately in reduced motion and cancels timers on unmount', () => {
     vi.useFakeTimers()
     document.documentElement.dataset.reducedMotion = 'true'
     const dismiss = vi.fn()
     const view = render(<Toast toast={{ id: 'b', variant: 'info', title: 'Changed', undo: vi.fn() }} onDismiss={dismiss} />)
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
-    act(() => { vi.advanceTimersByTime(79) })
-    expect(dismiss).not.toHaveBeenCalled()
-    act(() => { vi.advanceTimersByTime(1) })
     expect(dismiss).toHaveBeenCalledTimes(1)
     view.unmount()
     act(() => { vi.advanceTimersByTime(6000) })

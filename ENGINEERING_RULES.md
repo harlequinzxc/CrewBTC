@@ -176,19 +176,19 @@ These pairs are verified against Tailwind's default palette. Do not substitute c
 | sheet / drawer / expansion **exit** | `200ms` same curve — **exit must never exceed enter** |
 | hard ceiling | `350ms` for any standard UI transition |
 
-- **`[REVIEW]` Animate All UI State Transitions:** Anything that appears, disappears, pops up, slides in/out, expands, contracts, or changes state MUST be animated smoothly — never snapping abruptly into or out of existence:
+- **`[REVIEW]` Animate All UI State Transitions:** When Reduced Motion is **Off**, anything that appears, disappears, pops up, slides in/out, expands, contracts, or changes state MUST be animated smoothly — never snapping abruptly into or out of existence. Reduced Motion **On** is the mandatory immediate-state exception below:
   - **Popups, Modals & `<BottomSheet />`:** Backdrop fade (`opacity`) paired with directional slide/scale (`translateY` / `scale`) on **both** mount and unmount (keep elements mounted until exit animations finish).
   - **Expand / Collapse (Accordions, Drawers, Filter Bars):** Smooth height/grid-row (`grid-template-rows: 0fr -> 1fr`) + `opacity` transitions.
   - **Lists, Toasts, Tabs & Data Updates:** Subtle entrance/exit slides for `<Toast />` and list mutations, animated active-tab indicators, and smooth tweened transitions for gauges, progress bars, and chart updates.
   - **Tactile Press Feedback:** Subtle `active:scale-[0.98]` + `150ms` `ease-out` on interactive buttons and cards.
 - **`[GATE]` 60fps GPU Performance:** Animate strictly GPU-composited properties (`transform`, `opacity`, `clip-path`, or CSS Grid row tracks). Never animate `height`, `width`, `top`, `left`, or `box-shadow`. Never make task completion or data saving wait for animation completion.
-- **`[GATE]` Exit cleanup must never depend solely on `transitionend`.** Use `onAnimationEnd`/`animationend` for enter, and drive unmount from an **explicit timer fallback** (`setTimeout` matched to the token, cleared on unmount). With `transform: none` and near-zero durations, `transitionend` may never fire and a `transitionend`-only unmount leaks the element permanently.
+- **`[GATE]` Exit cleanup must never depend solely on `transitionend`.** When motion is enabled, use `onAnimationEnd`/`animationend` for enter, and drive unmount from an **explicit timer fallback** (`setTimeout` matched to the token, cleared on unmount). When Reduced Motion is on, remove exit surfaces immediately without waiting for an event or timer.
 
 ### Two-State `Reduced Motion` (`On` / `Off`) Toggle in Settings
 
 - **`[GATE]`** Every app MUST include an explicit **Reduced Motion (`On` / `Off`)** toggle inside the Settings page, persisted in local storage/IndexedDB and reflected on the root `<html>` element (`data-reduced-motion="true" | "false"`).
 - **`[GATE]` Default initialization:** Use the user's explicit saved choice if set; otherwise fall back to `window.matchMedia('(prefers-reduced-motion: reduce)').matches`.
-- **`[REVIEW]` Behavior when `Reduced Motion: On`:** Suppress all spatial translations, slides, scales, bounces, and parallax (`transform: none`), replacing essential state changes with a near-instant (`≤80ms`) opacity cross-fade. Set durations to `0.01ms` only where a CSS transition must exist for lifecycle reasons — and pair it with the timer fallback above so unmount always occurs.
+- **`[GATE]` Behavior when `Reduced Motion: On`:** All UI state changes take effect immediately: no fades, slides, transitions, animations, animated scrolling, or delayed visual exit. Disable CSS animations and transitions (including delays and pseudo-elements) and use instant programmatic scrolling. Do not remove static transforms needed for layout or state. Cleanup must not wait for animation events or exit timers. This applies to the app toggle and the system preference when no explicit choice is saved.
 
 ---
 
@@ -735,7 +735,7 @@ A screen is not one design; it is five — loading, empty, error, disabled, succ
 6. Tab through it — does focus follow reading order, and is it visible?
 7. Trigger an error — is there a way forward?
 8. Watch it at both 1440px **and** 375px — anything overflowing, cramped, stretched, or clipped? Does the PC view use the space, or just inflate the mobile one? Does the mobile view keep every action, or quietly drop some?
-9. Turn on Reduced Motion — anything still sliding?
+9. Turn on Reduced Motion — verify state changes, including tabs, fades and scrolling, are immediate with no animation or delayed exit.
 10. Read the copy aloud — does it sound like a product or a prompt?
 
 ---
